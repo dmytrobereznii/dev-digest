@@ -8,12 +8,14 @@ Four standalone packages — **not** a workspace. Each has its own `package.json
 and lockfile; cross-package imports resolve through tsconfig path aliases, not
 published modules. Run every script from inside its package directory.
 
-| Package | Manager | Scripts |
-|---|---|---|
-| `server/` | pnpm | `dev` `test` `typecheck` `db:generate` `db:migrate` `db:seed` |
-| `client/` | pnpm | `dev` `build` `test` `typecheck` |
-| `reviewer-core/` | **npm** | `test` `typecheck` |
-| `e2e/` | **npm** | `test` `typecheck` `e2e:hermetic` |
+Everything is TypeScript on Node ≥ 22, with Zod contracts at every boundary.
+
+| Package | Stack | Manager | Scripts |
+|---|---|---|---|
+| `server/` | Fastify, Drizzle ORM on Postgres + pgvector, `fastify-type-provider-zod`, Octokit, OpenAI/Anthropic SDKs, ast-grep · vitest + testcontainers | pnpm | `dev` `test` `typecheck` `db:generate` `db:migrate` `db:seed` |
+| `client/` | Next.js 15 (App Router), React, TanStack Query, next-intl, Tailwind · vitest + React Testing Library (jsdom) | pnpm | `dev` `build` `test` `typecheck` |
+| `reviewer-core/` | Pure engine, `openai` SDK (OpenRouter) + Zod, no runtime deps beyond them · vitest | **npm** | `test` `typecheck` |
+| `e2e/` | Vercel agent-browser driven by a `tsx` runner, JSON flow specs | **npm** | `test` `typecheck` `e2e:hermetic` |
 
 Never run pnpm in `reviewer-core/` or `e2e/`, or npm in `server/`/`client/`.
 
@@ -58,11 +60,42 @@ Full suite map, per-package commands and conventions: @TESTING.md
   when the user explicitly asks for one — never to "clean up" or fix a hang.
   `make stop` is the safe stop; for a clean DB, use `make e2e`'s ephemeral stack.
 
+## Do not touch
+
+These change only through the tool that owns them. Hand edits break things
+far from the diff.
+
+| Zone | Owner — the only way to change it |
+|---|---|
+| `server/src/db/migrations/**`, incl. `meta/_journal.json` | Edit `server/src/db/schema/`, then `pnpm db:generate` in `server/`. A merged migration is never edited; add a new one |
+| `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml` | `pnpm install` / `pnpm add` in that package |
+| `reviewer-core/package-lock.json`, `e2e/package-lock.json` | `npm install` in that package |
+| `server/clones/**` | Runtime data written by the server; git-ignored |
+
+A lockfile appears in a diff only as the by-product of a dependency change made
+with that package's own manager. Running the wrong manager (see _Repo shape_)
+creates a second, conflicting lockfile — delete that stray file, never commit
+it.
+
+## Naming conventions
+
+| Thing | Convention | Example |
+|---|---|---|
+| React component folder + file | PascalCase, colocated under `_components/` | `_components/FindingsPanel/FindingsPanel.tsx` |
+| Per-component / per-module support files | fixed lowercase names | `helpers.ts` `constants.ts` `styles.ts` `index.ts` |
+| Server module | kebab-case folder, fixed file roles | `modules/repo-intel/routes.ts` `service.ts` `repository.ts` |
+| Hooks, lib files | kebab-case | `lib/hooks/repo-intel.ts` |
+| Zod contracts and their types | PascalCase, same name for schema and type | `PrMeta`, `SeverityCounts` |
+| API JSON fields | snake_case | `cost_usd`, `run_id` |
+| DB | snake_case tables/columns in SQL, camelCase in Drizzle | `agent_runs.cost_usd` ↔ `agentRuns.costUsd` |
+| i18n keys | camelCase, nested per feature file | `prReview.json` → `panel.hideLowConfidence` |
+| Tests | `*.test.ts(x)` next to the code; DB-backed `*.it.test.ts` | `helpers.test.ts` |
+| E2E flows | `NN-kebab.flow.json`, sequential | `e2e/specs/04-pr-findings.flow.json` |
+| `.context/` files | kebab-case; specs `NN-kebab-slug.md` | `.context/specs/01-run-cost.md` |
+| Commit subjects | `type(area): summary` | `fix(db): …`, `feat(conventions): …` |
+
 ## Conventions
 
-- Migrations are generated from the Drizzle schema. Never hand-edit
-  `server/src/db/migrations/` or its `meta/_journal.json`.
-- Commit subjects are prefixed by area, e.g. `fix(db):`, `feat(conventions):`.
 - This repo is a **course starter**. `main` stays at the starter state;
   per-lesson work belongs in forks or feature branches.
 

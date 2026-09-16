@@ -31,6 +31,10 @@ and it also skips the design decisions the lesson exists to surface.
 faster and lands a known-good diff, which is precisely why it defeats the
 point — and the shortcut is tempting enough that L01 was very nearly built
 that way.
+**Evidence:** the live code to build on is
+`server/src/adapters/llm/pricing.ts:37` (`estimateCost`) and
+`server/src/platform/price-book.ts:21` (`PriceBook`); the off-limits removal is
+`git show --stat d45ab0d`.
 
 ## What Works
 
