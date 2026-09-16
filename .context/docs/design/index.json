@@ -1,0 +1,264 @@
+{
+  "source": "DevDigest_design.html",
+  "sourceBytes": 1799366,
+  "sourceMd5": "c135ea73e466fda754a24550206c0b04",
+  "extractedAt": "2026-09-16",
+  "generated": [
+    {
+      "file": "src/icons.jsx",
+      "desc": "lucide-style stroke icons as React components.",
+      "order": 3,
+      "bytes": 9726
+    },
+    {
+      "file": "src/primitives.jsx",
+      "desc": "atoms & molecules shared across screens",
+      "order": 4,
+      "bytes": 14004
+    },
+    {
+      "file": "src/charts.jsx",
+      "desc": "minimal SVG charts: Sparkline, LineChart, BarRow, Donut",
+      "order": 5,
+      "bytes": 5748
+    },
+    {
+      "file": "src/kit2.jsx",
+      "desc": "shared templates for iteration #2: Drawer, Modal, Tabs, Dropdown, FormField",
+      "order": 6,
+      "bytes": 8076
+    },
+    {
+      "file": "src/data.jsx",
+      "desc": "realistic mock data for DevDigest screens",
+      "order": 7,
+      "bytes": 23309
+    },
+    {
+      "file": "src/data2.jsx",
+      "desc": "iteration #2 data: agents, eval cases, traces, CI runs, agent perf, community skills",
+      "order": 8,
+      "bytes": 10309
+    },
+    {
+      "file": "src/components2.jsx",
+      "desc": "iteration #2 reusable components",
+      "order": 9,
+      "bytes": 9437
+    },
+    {
+      "file": "src/chrome.jsx",
+      "desc": "app shell: sidebar nav + topbar. Wraps each screen frame.",
+      "order": 10,
+      "bytes": 7197
+    },
+    {
+      "file": "src/blast.jsx",
+      "desc": "Blast Radius: tree (default) + graph (drill-in) variants",
+      "order": 11,
+      "bytes": 7222
+    },
+    {
+      "file": "src/findings.jsx",
+      "desc": "FindingCard (+ trifecta & secret variants), FindingList, VerdictBanner",
+      "order": 12,
+      "bytes": 10869
+    },
+    {
+      "file": "src/diff.jsx",
+      "desc": "Reviewer-Ordered Diff: group headers, file cards, inline code w/ finding markers, split nudger",
+      "order": 13,
+      "bytes": 9066
+    },
+    {
+      "file": "src/prdetail_runs.jsx",
+      "desc": "Agent runs tab: Timeline (runs + commits) + Review Runs (expandable)",
+      "order": 14,
+      "bytes": 15842
+    },
+    {
+      "file": "src/screen_pr_detail.jsx",
+      "desc": "the priority screen",
+      "order": 15,
+      "bytes": 16401
+    },
+    {
+      "file": "src/screen_dashboard.jsx",
+      "desc": "Repo Dashboard: PR list + filters",
+      "order": 16,
+      "bytes": 10254
+    },
+    {
+      "file": "src/screen_skills.jsx",
+      "desc": "Skills Lab (list + editor + eval panel) and Eval Dashboard",
+      "order": 17,
+      "bytes": 17953
+    },
+    {
+      "file": "src/screen_onboarding.jsx",
+      "desc": "first-run wizard, centered full-screen",
+      "order": 18,
+      "bytes": 5559
+    },
+    {
+      "file": "src/screen_memory.jsx",
+      "desc": "cross-session Memory Browser",
+      "order": 19,
+      "bytes": 9083
+    },
+    {
+      "file": "src/screen_agents.jsx",
+      "desc": "N1 Agents list + N2 Agent Editor (Config/Skills/Evals/Stats/CI)",
+      "order": 20,
+      "bytes": 18798
+    },
+    {
+      "file": "src/screen_trace.jsx",
+      "desc": "N10 Run Trace + Live Log drawer (live + historical)",
+      "order": 21,
+      "bytes": 11989
+    },
+    {
+      "file": "src/screen_multiagent.jsx",
+      "desc": "N4 Multi-Agent Review (dynamic columns + tabs)",
+      "order": 22,
+      "bytes": 10894
+    },
+    {
+      "file": "src/screen_export.jsx",
+      "desc": "N12 Export to CI Wizard (4 steps, modal)",
+      "order": 23,
+      "bytes": 11294
+    },
+    {
+      "file": "src/screen_agentperf.jsx",
+      "desc": "N11 Agent Performance (replaces Cost)",
+      "order": 24,
+      "bytes": 7525
+    },
+    {
+      "file": "src/screen_settings.jsx",
+      "desc": "N9 Settings (focus: Automatic Reviews + Integrations)",
+      "order": 25,
+      "bytes": 9539
+    },
+    {
+      "file": "src/screen_cizruns.jsx",
+      "desc": "N13 CI Runs + N3 Eval Case Editor",
+      "order": 26,
+      "bytes": 11650
+    },
+    {
+      "file": "src/screen_tour_context.jsx",
+      "desc": "N5 Onboarding Tour + N6 Project Context",
+      "order": 27,
+      "bytes": 16537
+    },
+    {
+      "file": "src/screen_conv_conf.jsx",
+      "desc": "N7 Conventions extractor + N8 Conformance Report",
+      "order": 28,
+      "bytes": 9182
+    },
+    {
+      "file": "canvas/tweaks-panel.jsx",
+      "desc": "",
+      "order": 29,
+      "bytes": 23879
+    },
+    {
+      "file": "canvas/DesignCanvas.jsx",
+      "desc": "Figma-ish design canvas wrapper",
+      "order": 30,
+      "bytes": 48659
+    },
+    {
+      "file": "canvas/canvas.jsx",
+      "desc": "artboard composition: sections, artboards, post-its",
+      "order": 999,
+      "bytes": 11248
+    }
+  ],
+  "skipped": [
+    {
+      "id": "4a25decb-805e-442d-bcde-527e1a64652f",
+      "why": "vendor bundle (React/Babel)",
+      "bytes": 109931
+    },
+    {
+      "id": "18880276-7a60-434b-ace4-f032954f7ade",
+      "why": "vendor bundle (React/Babel)",
+      "bytes": 1080205
+    },
+    {
+      "id": "c54159f0-7982-4984-b6f6-0cab4546471e",
+      "why": "vendor bundle (React/Babel)",
+      "bytes": 3137752
+    },
+    {
+      "id": "0c03ea17-376b-4959-a589-6beb29c751be",
+      "why": "font",
+      "bytes": 34460
+    },
+    {
+      "id": "88f23287-3a43-464f-a0ad-ad29ff4a06ac",
+      "why": "font",
+      "bytes": 24992
+    },
+    {
+      "id": "2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539",
+      "why": "font",
+      "bytes": 15032
+    },
+    {
+      "id": "06ea96ee-c040-4d48-b301-8a8f0fc707c4",
+      "why": "font",
+      "bytes": 25392
+    },
+    {
+      "id": "466b5da1-145e-4933-9d43-2d9604728d1f",
+      "why": "font",
+      "bytes": 13708
+    },
+    {
+      "id": "3734a607-49ca-4aac-a833-bdfe28e17e71",
+      "why": "font",
+      "bytes": 113696
+    },
+    {
+      "id": "79e9b974-06a7-4dba-ad41-cd2a54f92a92",
+      "why": "font",
+      "bytes": 64576
+    },
+    {
+      "id": "22500ad5-58e0-492f-bcd5-91fce64d4b0f",
+      "why": "font",
+      "bytes": 2220
+    },
+    {
+      "id": "517f43bb-fdf7-4b8f-a313-8de8e35ffbc6",
+      "why": "font",
+      "bytes": 11856
+    },
+    {
+      "id": "971e55c3-d2b2-4f24-bf57-dd002be623e9",
+      "why": "font",
+      "bytes": 9068
+    },
+    {
+      "id": "4fe2f7b1-aa9f-41b6-8be3-0989c0a1ef97",
+      "why": "font",
+      "bytes": 7832
+    },
+    {
+      "id": "c8b255b7-ff01-448c-ad6d-72b03381764d",
+      "why": "font",
+      "bytes": 15464
+    },
+    {
+      "id": "0d82179b-b8c0-4c61-b317-6110f76ffb34",
+      "why": "font",
+      "bytes": 41788
+    }
+  ]
+}

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-density="regular"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevDigest — Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("0c03ea17-376b-4959-a589-6beb29c751be") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("88f23287-3a43-464f-a0ad-ad29ff4a06ac") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("06ea96ee-c040-4d48-b301-8a8f0fc707c4") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("466b5da1-145e-4933-9d43-2d9604728d1f") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("3734a607-49ca-4aac-a833-bdfe28e17e71") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("79e9b974-06a7-4dba-ad41-cd2a54f92a92") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("0c03ea17-376b-4959-a589-6beb29c751be") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("88f23287-3a43-464f-a0ad-ad29ff4a06ac") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("06ea96ee-c040-4d48-b301-8a8f0fc707c4") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("466b5da1-145e-4933-9d43-2d9604728d1f") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("3734a607-49ca-4aac-a833-bdfe28e17e71") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("79e9b974-06a7-4dba-ad41-cd2a54f92a92") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("0c03ea17-376b-4959-a589-6beb29c751be") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("88f23287-3a43-464f-a0ad-ad29ff4a06ac") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("06ea96ee-c040-4d48-b301-8a8f0fc707c4") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("466b5da1-145e-4933-9d43-2d9604728d1f") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("3734a607-49ca-4aac-a833-bdfe28e17e71") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("79e9b974-06a7-4dba-ad41-cd2a54f92a92") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("0c03ea17-376b-4959-a589-6beb29c751be") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("88f23287-3a43-464f-a0ad-ad29ff4a06ac") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("06ea96ee-c040-4d48-b301-8a8f0fc707c4") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("466b5da1-145e-4933-9d43-2d9604728d1f") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("3734a607-49ca-4aac-a833-bdfe28e17e71") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("79e9b974-06a7-4dba-ad41-cd2a54f92a92") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("22500ad5-58e0-492f-bcd5-91fce64d4b0f") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("517f43bb-fdf7-4b8f-a313-8de8e35ffbc6") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("971e55c3-d2b2-4f24-bf57-dd002be623e9") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4fe2f7b1-aa9f-41b6-8be3-0989c0a1ef97") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c8b255b7-ff01-448c-ad6d-72b03381764d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("0d82179b-b8c0-4c61-b317-6110f76ffb34") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("22500ad5-58e0-492f-bcd5-91fce64d4b0f") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("517f43bb-fdf7-4b8f-a313-8de8e35ffbc6") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("971e55c3-d2b2-4f24-bf57-dd002be623e9") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("4fe2f7b1-aa9f-41b6-8be3-0989c0a1ef97") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c8b255b7-ff01-448c-ad6d-72b03381764d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("0d82179b-b8c0-4c61-b317-6110f76ffb34") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("22500ad5-58e0-492f-bcd5-91fce64d4b0f") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("517f43bb-fdf7-4b8f-a313-8de8e35ffbc6") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("971e55c3-d2b2-4f24-bf57-dd002be623e9") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("4fe2f7b1-aa9f-41b6-8be3-0989c0a1ef97") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("c8b255b7-ff01-448c-ad6d-72b03381764d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("0d82179b-b8c0-4c61-b317-6110f76ffb34") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>/* ===========================================================
+   DevDigest — design tokens & base
+   Dark primary, light secondary. Function-first, hard edges.
+   =========================================================== */
+
+:root,
+[data-theme="dark"] {
+  --bg-primary: #0a0a0a;
+  --bg-surface: #141414;
+  --bg-elevated: #1c1c1c;
+  --bg-hover: #242424;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --text-primary: #ededed;
+  --text-secondary: #999999;
+  --text-muted: #6a6a6a;
+  --accent: #3b82f6;
+  --accent-hover: #2f6fd6;
+  --accent-bg: rgba(59, 130, 246, 0.12);
+  --accent-text: #93bbfc;
+
+  --crit: #ef4444;
+  --crit-bg: rgba(239, 68, 68, 0.12);
+  --warn: #f59e0b;
+  --warn-bg: rgba(245, 158, 11, 0.12);
+  --sugg: #3b82f6;
+  --sugg-bg: rgba(59, 130, 246, 0.12);
+  --info: #6b7280;
+  --info-bg: rgba(107, 114, 128, 0.12);
+
+  --ok: #10b981;
+  --ok-bg: rgba(16, 185, 129, 0.12);
+  --pending: #f59e0b;
+  --failed: #ef4444;
+  --stale: #6b7280;
+
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-drawer: -8px 0 32px rgba(0, 0, 0, 0.45);
+  --code-add: rgba(16, 185, 129, 0.10);
+  --code-del: rgba(239, 68, 68, 0.10);
+  --code-add-text: #10b981;
+  --code-del-text: #ef4444;
+  --code-bg: #0c0c0c;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-surface: #fafafa;
+  --bg-elevated: #ffffff;
+  --bg-hover: #f2f2f2;
+  --border: #e6e6e6;
+  --border-strong: #d4d4d4;
+  --text-primary: #18181b;
+  --text-secondary: #595964;
+  --text-muted: #8a8a92;
+  --accent: #2563eb;
+  --accent-hover: #1d4fd0;
+  --accent-bg: rgba(37, 99, 235, 0.08);
+  --accent-text: #1d4fd0;
+
+  --crit: #dc2626;
+  --crit-bg: rgba(220, 38, 38, 0.08);
+  --warn: #d97706;
+  --warn-bg: rgba(217, 119, 6, 0.10);
+  --sugg: #2563eb;
+  --sugg-bg: rgba(37, 99, 235, 0.08);
+  --info: #6b7280;
+  --info-bg: rgba(107, 114, 128, 0.10);
+
+  --ok: #059669;
+  --ok-bg: rgba(5, 150, 105, 0.08);
+  --pending: #d97706;
+  --failed: #dc2626;
+  --stale: #9ca3af;
+
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.18);
+  --shadow-drawer: -8px 0 32px rgba(0, 0, 0, 0.12);
+  --code-add: rgba(5, 150, 105, 0.09);
+  --code-del: rgba(220, 38, 38, 0.08);
+  --code-add-text: #059669;
+  --code-del-text: #dc2626;
+  --code-bg: #f6f8fa;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.006em;
+}
+
+#root { height: 100%; }
+
+.mono {
+  font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  font-feature-settings: "calt" 1, "zero" 1;
+}
+
+/* ---- density ---- */
+[data-density="compact"] { --row-pad: 6px; --card-pad: 12px; --gap: 8px; }
+[data-density="regular"] { --row-pad: 9px; --card-pad: 16px; --gap: 12px; }
+[data-density="comfy"]   { --row-pad: 13px; --card-pad: 22px; --gap: 16px; }
+
+/* ---- scrollbars ---- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 2px solid var(--bg-primary); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+::selection { background: var(--accent-bg); }
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+a { color: inherit; text-decoration: none; }
+
+h1, h2, h3, h4, p { margin: 0; }
+
+/* focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* utility */
+.tnum { font-variant-numeric: tabular-nums; }
+
+@keyframes ddspin { to { transform: rotate(360deg); } }
+@keyframes ddpulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes ddslidein { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes ddfadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ddpop { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: ddshimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes ddshimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+
+</head>
+<body>
+<div id="root"></div>
+
+<script src="4a25decb-805e-442d-bcde-527e1a64652f" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="18880276-7a60-434b-ace4-f032954f7ade" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="c54159f0-7982-4984-b6f6-0cab4546471e" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="764bf796-06fa-4b56-8755-1f6b4d2a906c"></script>
+<script type="text/babel" src="34082cc0-a0b0-40c4-8a0d-7b37d747d5f7"></script>
+<script type="text/babel" src="cea83c68-2144-43d5-a8ab-6fe51a280b09"></script>
+<script type="text/babel" src="0e231472-5a66-452c-9e68-84cb25602e1c"></script>
+<script type="text/babel" src="e4ec2d8e-4aaa-44a6-862b-7980855900b6"></script>
+<script type="text/babel" src="25a3aead-ff15-4438-97cd-7fa53a1f99cb"></script>
+<script type="text/babel" src="6a90d804-9c57-49d9-9009-8ec73490bbde"></script>
+<script type="text/babel" src="6f027daa-c8ef-4045-a344-ab80a3d63511"></script>
+<script type="text/babel" src="ebad30c3-8916-481d-9ab9-5e5f059c97b6"></script>
+<script type="text/babel" src="733eb982-2917-4614-aa65-f409a5ef5a43"></script>
+<script type="text/babel" src="52567fb9-f1c8-4db5-bfcc-e1e84d2e47df"></script>
+<script type="text/babel" src="5dd941dc-9719-4b50-90a1-7449afda815d"></script>
+<script type="text/babel" src="40d82be0-e3c8-48c4-a354-e6b3ef0c731f"></script>
+<script type="text/babel" src="e843ac29-c1c2-46a8-ae4a-df4fe7980bed"></script>
+<script type="text/babel" src="9481dacd-5b5b-4146-b44b-db9386d0bea0"></script>
+<script type="text/babel" src="895c538b-e27f-46ab-a090-c03f47158a18"></script>
+<script type="text/babel" src="0092a5a9-cf6f-4d17-bd8e-043f84db6c31"></script>
+<script type="text/babel" src="6a6c14ab-9b08-456c-8f4b-d241eb3b6c14"></script>
+<script type="text/babel" src="f798d8ad-c0cd-4816-a16b-f446689aff8a"></script>
+<script type="text/babel" src="b26607ab-cfdc-4281-8d18-a12b97e62d03"></script>
+<script type="text/babel" src="6618e8e9-4104-498a-a9bd-c335e8e01f93"></script>
+<script type="text/babel" src="e064d214-7c96-4a6a-9818-ff1819185b2c"></script>
+<script type="text/babel" src="65318f99-d63f-4dea-b56c-c1fdebaef6fa"></script>
+<script type="text/babel" src="e639c6c6-e690-4c2e-8728-6c7026a76bb7"></script>
+<script type="text/babel" src="6b4bd252-f74f-484f-95c0-0574656ffaae"></script>
+<script type="text/babel" src="b465f931-386f-4eef-808f-1cfd2c7f59a8"></script>
+<script type="text/babel" src="6fef1f22-3ead-48ca-ac30-9f3caf84d1fe"></script>
+<script type="text/babel" src="96811d81-c505-494b-9ade-f3a79efb082c"></script>
+
+<script type="text/babel">
+const { useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "dark",
+  "density": "regular",
+  "accent": "#3b82f6",
+  "agentCount": 4
+}/*EDITMODE-END*/;
+
+function StudyFrame({ title, note, children, w, h }) {
+  return (
+    <div style={{ width: "100%", minHeight: h, background: "var(--bg-primary)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 24 }}>
+      <div style={{ width: w, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-surface)" }}>
+          <window.Icon.Workflow size={14} style={{ color: "var(--accent)" }} />
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
+          {note && <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>{note}</span>}
+        </div>
+        <div style={{ padding: 18 }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+const bg = { background: "var(--bg-primary)" };
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  useEffect(() => {
+    const r = document.documentElement;
+    r.setAttribute("data-theme", t.theme);
+    r.setAttribute("data-density", t.density);
+    r.style.setProperty("--accent", t.accent);
+    r.style.setProperty("--accent-text", t.accent);
+    r.style.setProperty("--sugg", t.accent);
+  }, [t.theme, t.density, t.accent]);
+
+  return (
+    <React.Fragment>
+      <DesignCanvas>
+        <DCSection id="core" title="Core workflow" subtitle="PR Detail — tabbed: Overview · Agent runs · Files changed">
+          <DCArtboard id="pr-overview" label="PR Detail · Overview (Brief)" width={1440} height={1180} style={bg}>
+            <window.ScreenPRDetail blastView="tree" tab="overview" h={1180} />
+          </DCArtboard>
+          <DCArtboard id="pr-runs" label="PR Detail · Agent runs (timeline + review runs)" width={1440} height={2200} style={bg}>
+            <window.ScreenPRDetail blastView="tree" tab="runs" h={2200} />
+          </DCArtboard>
+          <DCArtboard id="pr-files" label="PR Detail · Files changed (diff)" width={1440} height={1500} style={bg}>
+            <window.ScreenPRDetail blastView="tree" tab="files" h={1500} />
+          </DCArtboard>
+          <DCArtboard id="pr-compose" label="PR Detail · Compose Review drawer" width={1440} height={1180} style={bg}>
+            <window.ScreenPRDetail blastView="tree" tab="overview" h={1180} composeOpen={true} />
+          </DCArtboard>
+          <DCArtboard id="dashboard" label="Pull Requests · Run Review + auto-status + Cost" width={1440} height={780} style={bg}>
+            <window.ScreenDashboard h={780} />
+          </DCArtboard>
+          <DCArtboard id="memory" label="Memory · now incl. Learnings" width={1440} height={760} style={bg}>
+            <window.ScreenMemory h={760} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="trace" title="Run Trace + Live Log — N10" subtitle="Opens from a timeline run · trace / log · searchable prompt blocks">
+          <DCArtboard id="trace-hist" label="Run Trace · completed" width={1440} height={900} style={bg}>
+            <window.ScreenTrace running={false} h={900} />
+          </DCArtboard>
+          <DCArtboard id="trace-prompt" label="Run Trace · prompt-block search modal" width={1440} height={900} style={bg}>
+            <window.ScreenTrace running={false} h={900} promptOpen="repoSkeleton" />
+          </DCArtboard>
+          <DCArtboard id="trace-live" label="Run Trace · live log" width={1440} height={900} style={bg}>
+            <window.ScreenTrace running={true} h={900} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="agents" title="Agents — N1 / N2" subtitle="Users build their own reviewers · all five editor tabs">
+          <DCArtboard id="agents-empty" label="Agents · empty state" width={1180} height={680} style={bg}>
+            <window.AppFrameMount empty />
+          </DCArtboard>
+          <DCArtboard id="agent-config" label="Agent Editor · Config" width={1280} height={860} style={bg}>
+            <window.ScreenAgents tab="Config" h={860} />
+          </DCArtboard>
+          <DCArtboard id="agent-skills" label="Agent Editor · Skills" width={1280} height={860} style={bg}>
+            <window.ScreenAgents tab="Skills" h={860} />
+          </DCArtboard>
+          <DCArtboard id="agent-evals" label="Agent Editor · Evals" width={1280} height={860} style={bg}>
+            <window.ScreenAgents tab="Evals" h={860} />
+          </DCArtboard>
+          <DCArtboard id="agent-stats" label="Agent Editor · Stats" width={1280} height={1180} style={bg}>
+            <window.ScreenAgents tab="Stats" h={1180} />
+          </DCArtboard>
+          <DCArtboard id="agent-ci" label="Agent Editor · CI" width={1280} height={860} style={bg}>
+            <window.ScreenAgents tab="CI" h={860} />
+          </DCArtboard>
+          <DCArtboard id="evalcase" label="Eval Case Editor (N3)" width={1280} height={720} style={bg}>
+            <window.ScreenEvalCase h={720} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="multiagent" title="Multi-Agent Review — N4" subtitle="Dynamic columns = enabled agents (try the Agents tweak)">
+          <DCArtboard id="ma-cols" label="Columns" width={1440} height={1120} style={bg}>
+            <window.ScreenMultiAgent view="columns" agentCount={t.agentCount} h={1120} />
+          </DCArtboard>
+          <DCArtboard id="ma-tabs" label="Tabs + detail" width={1440} height={1120} style={bg}>
+            <window.ScreenMultiAgent view="tabs" agentCount={t.agentCount} h={1120} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="ci" title="CI & Export — N11 / N12 / N13" subtitle="Ship agents to CI and watch them run">
+          <DCArtboard id="agent-perf" label="Agent Performance (N11)" width={1440} height={920} style={bg}>
+            <window.ScreenAgentPerf h={920} />
+          </DCArtboard>
+          <DCArtboard id="export" label="Export to CI Wizard (N12)" width={1180} height={720} style={bg}>
+            <window.ScreenExport h={720} />
+          </DCArtboard>
+          <DCArtboard id="ci-runs" label="CI Runs (N13)" width={1440} height={720} style={bg}>
+            <window.ScreenCIRuns h={720} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="settings" title="Settings — N9" subtitle="Automatic Reviews + Integrations">
+          <DCArtboard id="set-auto" label="Settings · Automatic Reviews" width={1280} height={760} style={bg}>
+            <window.ScreenSettings section="Automatic Reviews" h={760} />
+          </DCArtboard>
+          <DCArtboard id="set-int" label="Settings · Integrations" width={1280} height={760} style={bg}>
+            <window.ScreenSettings section="Integrations" h={760} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="repo" title="Repo intelligence — N5 / N6 / N7 / N8" subtitle="Onboarding, context, conventions, conformance">
+          <DCArtboard id="tour" label="Onboarding Tour (N5)" width={1280} height={1560} style={bg}>
+            <window.ScreenTour h={1560} />
+          </DCArtboard>
+          <DCArtboard id="context" label="Project Context (N6)" width={1280} height={760} style={bg}>
+            <window.ScreenContext h={760} />
+          </DCArtboard>
+          <DCArtboard id="conventions" label="Conventions (N7)" width={1280} height={860} style={bg}>
+            <window.ScreenConventions h={860} />
+          </DCArtboard>
+          <DCArtboard id="conformance" label="Conformance Report (N8)" width={1280} height={760} style={bg}>
+            <window.ScreenConformance h={760} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="empties" title="Empty states" subtitle="Every new screen has a considered first-run">
+          <DCArtboard id="e-ci" label="CI Runs · empty" width={1180} height={640} style={bg}>
+            <window.ScreenCIRuns h={640} empty />
+          </DCArtboard>
+          <DCArtboard id="e-tour" label="Onboarding Tour · empty" width={1180} height={640} style={bg}>
+            <window.ScreenTour h={640} empty />
+          </DCArtboard>
+          <DCArtboard id="e-context" label="Project Context · empty" width={1180} height={640} style={bg}>
+            <window.ScreenContext h={640} empty />
+          </DCArtboard>
+          <DCArtboard id="e-conv" label="Conventions · empty" width={1180} height={640} style={bg}>
+            <window.ScreenConventions h={640} empty />
+          </DCArtboard>
+          <DCArtboard id="e-ma" label="Multi-Agent · no agents" width={1180} height={640} style={bg}>
+            <window.ScreenMultiAgent agentCount={0} h={640} />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="firstrun" title="First run & open questions" subtitle="Onboarding wizard + the blast-radius study">
+          <DCArtboard id="onboarding" label="Onboarding · First run" width={960} height={720} style={bg}>
+            <window.ScreenOnboarding h={720} />
+          </DCArtboard>
+          <DCArtboard id="blast-tree" label="Blast radius · Tree (default)" width={620} height={470} style={bg}>
+            <StudyFrame title="Blast radius" note="14 callers · 3 endpoints" w={572} h={470}>
+              <window.BlastRadius view="tree" />
+            </StudyFrame>
+          </DCArtboard>
+          <DCArtboard id="blast-graph" label="Blast radius · Graph drill-in" width={620} height={470} style={bg}>
+            <StudyFrame title="Blast radius" note="hierarchical node-link" w={572} h={470}>
+              <window.BlastRadius view="graph" />
+            </StudyFrame>
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="Theme" />
+        <TweakRadio label="Mode" value={t.theme} options={["dark", "light"]} onChange={(v) => setTweak("theme", v)} />
+        <TweakColor label="Accent" value={t.accent} options={["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b"]} onChange={(v) => setTweak("accent", v)} />
+        <TweakSection label="Density" />
+        <TweakRadio label="Spacing" value={t.density} options={["compact", "regular", "comfy"]} onChange={(v) => setTweak("density", v)} />
+        <TweakSection label="Multi-Agent Review" />
+        <TweakSlider label="Enabled agents" value={t.agentCount} min={2} max={5} step={1} onChange={(v) => setTweak("agentCount", v)} />
+      </TweaksPanel>
+    </React.Fragment>
+  );
+}
+
+// Agents empty-state mount helper (wraps the empty list in the app frame)
+window.AppFrameMount = function ({ empty }) {
+  return React.createElement(window.AppFrame, { active: "agents", h: 680, crumb: [{ label: "Skills Lab" }, { label: "Agents" }] },
+    React.createElement("div", { style: { display: "flex", height: 628 } },
+      React.createElement("div", { style: { width: 280, flexShrink: 0, borderRight: "1px solid var(--border)", background: "var(--bg-surface)", padding: 14 } },
+        React.createElement("h1", { style: { fontSize: 16, fontWeight: 700 } }, "Agents")),
+      React.createElement(window.AgentsEmpty)));
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+</script>
+
+
+</body></html>
