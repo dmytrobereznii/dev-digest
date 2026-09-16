@@ -166,6 +166,53 @@ d('Testcontainers: DB-backed routes via app.inject', () => {
     await app.close();
   });
 
+  it('GET /repos/:id/pulls counts findings per severity from the LATEST review only', async () => {
+    const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
+    const app = await buildApp({
+      config,
+      db: pg.handle.db,
+      overrides: { git: new MockGitClient(), github: new MockGitHubClient() },
+    });
+    const repoId = (await app.inject({ method: 'GET', url: '/repos' })).json()[0]!.id;
+    type Row = { id: string; number: number; score: number | null; findings: unknown };
+    const pulls: Row[] = (await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` })).json();
+
+    // Seeded demo review on #482: one CRITICAL + one WARNING.
+    const target = pulls.find((p) => p.number === 482)!;
+    expect(target.findings).toEqual({ CRITICAL: 1, WARNING: 1, SUGGESTION: 0 });
+    // A PR that was never reviewed has no counts, like its score.
+    for (const p of pulls.filter((p) => p.score == null)) expect(p.findings).toBeNull();
+
+    // A newer review REPLACES the counts (no summing across runs), and a
+    // dismissed finding drops out.
+    const [{ id: workspaceId }] = await pg.handle.db.select().from(t.workspaces);
+    const [review] = await pg.handle.db
+      .insert(t.reviews)
+      .values({ workspaceId, prId: target.id, kind: 'review', score: 70, createdAt: new Date(Date.now() + 60_000) })
+      .returning();
+    const finding = {
+      reviewId: review!.id,
+      file: 'src/a.ts',
+      startLine: 1,
+      endLine: 1,
+      category: 'style',
+      title: 't',
+      rationale: 'r',
+      confidence: 0.9,
+    };
+    await pg.handle.db.insert(t.findings).values([
+      { ...finding, severity: 'SUGGESTION' },
+      { ...finding, severity: 'SUGGESTION' },
+      { ...finding, severity: 'CRITICAL', dismissedAt: new Date() },
+    ]);
+
+    const after: Row[] = (await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` })).json();
+    const row = after.find((p) => p.id === target.id)!;
+    expect(row.score).toBe(70);
+    expect(row.findings).toEqual({ CRITICAL: 0, WARNING: 0, SUGGESTION: 2 });
+    await app.close();
+  });
+
   it('POST /repos/:id/poll syncs PR list and does NOT trigger a review', async () => {
     const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
     const app = await buildApp({

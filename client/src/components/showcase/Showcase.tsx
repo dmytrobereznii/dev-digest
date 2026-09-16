@@ -14,6 +14,7 @@ import {
   Avatar,
   ConfidenceNum,
   CostBadge,
+  SeverityCounts,
   MonoLink,
   ProgressBar,
   PercentProgress,
@@ -99,6 +100,9 @@ export function Gallery() {
         {CATEGORIES.map((c) => (
           <CategoryTag key={c} category={c} />
         ))}
+        <SeverityCounts counts={{ CRITICAL: 2, WARNING: 1, SUGGESTION: 4 }} />
+        <SeverityCounts counts={{ CRITICAL: 0, WARNING: 0, SUGGESTION: 1 }} />
+        <SeverityCounts counts={null} empty="—" />
       </Group>
 
       <Group title="Chips, Avatars, Confidence, Cost, MonoLink, Kbd">

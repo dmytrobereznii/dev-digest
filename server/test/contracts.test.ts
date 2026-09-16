@@ -251,4 +251,25 @@ describe('platform DTOs', () => {
     expect(PrMeta.parse({ ...base, cost_usd: 0.03 }).cost_usd).toBe(0.03);
     expect(PrMeta.parse({ ...base, cost_usd: null }).cost_usd).toBeNull();
   });
+
+  it('PrMeta findings is optional — only the list endpoint supplies counts', () => {
+    const base = {
+      id: 'p1',
+      number: 482,
+      title: 't',
+      author: 'a',
+      branch: 'b',
+      base: 'main',
+      head_sha: 'sha',
+      additions: 1,
+      deletions: 0,
+      files_count: 1,
+      status: 'open',
+    };
+    const counts = { CRITICAL: 2, WARNING: 0, SUGGESTION: 1 };
+    expect(PrMeta.parse(base).findings).toBeUndefined();
+    expect(PrMeta.parse({ ...base, findings: null }).findings).toBeNull();
+    expect(PrMeta.parse({ ...base, findings: counts }).findings).toEqual(counts);
+    expect(() => PrMeta.parse({ ...base, findings: { CRITICAL: 1 } })).toThrow();
+  });
 });

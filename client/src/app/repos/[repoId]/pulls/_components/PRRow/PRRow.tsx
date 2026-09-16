@@ -4,7 +4,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Icon, Avatar, Badge, CircularScore, CostBadge } from "@devdigest/ui";
+import { Icon, Avatar, Badge, CircularScore, CostBadge, SeverityCounts } from "@devdigest/ui";
 import type { PrMeta } from "@/lib/types";
 import { SIZE_COLOR, STATUS_META } from "../../constants";
 import { relativeTime, sizeOf } from "../../helpers";
@@ -52,6 +52,9 @@ export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
         ) : (
           <span style={s.muted}>—</span>
         )}
+      </div>
+      <div>
+        <SeverityCounts counts={pr.findings} empty={<span style={s.muted}>—</span>} />
       </div>
       <div>
         <Badge dot color={st.c} bg="transparent">
