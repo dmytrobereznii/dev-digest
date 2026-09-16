@@ -220,6 +220,81 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
     if (!existing) await db.insert(t.agents).values(a);
   }
 
+  // ---- the run behind the sample review ----
+  // Separate from the PR block above (and self-healing) on purpose: the sample
+  // review predates agent_runs, so DBs seeded earlier have a review with no
+  // run. Without a run there is no duration/token/cost to show, and the Cost
+  // column, the timeline meta line and the trace drawer all read "—".
+  const [seedReview] = await db
+    .select()
+    .from(t.reviews)
+    .where(and(eq(t.reviews.prId, pr!.id), eq(t.reviews.model, 'seed')));
+  if (seedReview && !seedReview.runId) {
+    const [securityAgent] = await db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, 'Security Reviewer')));
+    const [run] = await db
+      .insert(t.agentRuns)
+      .values({
+        workspaceId,
+        prId: pr!.id,
+        agentId: securityAgent?.id ?? null,
+        ranAt: seedReview.createdAt,
+        provider: DEFAULT_PROVIDER,
+        model: DEFAULT_MODEL,
+        durationMs: 8200,
+        tokensIn: 14820,
+        tokensOut: 1240,
+        costUsd: 0.014,
+        status: 'done',
+        source: 'local',
+        findingsCount: 2,
+        grounding: '2/2 passed',
+        score: seedReview.score,
+        blockers: 1,
+      })
+      .returning();
+    // agentId too, so the review accordion names the agent instead of "Agent".
+    await db
+      .update(t.reviews)
+      .set({ runId: run!.id, agentId: securityAgent?.id ?? null })
+      .where(eq(t.reviews.id, seedReview.id));
+    await db.insert(t.runTraces).values({
+      runId: run!.id,
+      trace: {
+        config: {
+          agent: 'Security Reviewer',
+          version: '1',
+          provider: DEFAULT_PROVIDER,
+          model: DEFAULT_MODEL,
+          pr: 482,
+          source: 'local',
+        },
+        stats: {
+          duration_ms: 8200,
+          tokens_in: 14820,
+          tokens_out: 1240,
+          cost_usd: 0.014,
+          findings: 2,
+          grounding: '2/2 passed',
+        },
+        prompt_assembly: {
+          system: 'You are a security-focused PR reviewer.',
+          skills: null,
+          memory: null,
+          specs: null,
+          user: 'Review pull request #482 "Add rate limiting to public API endpoints".',
+        },
+        tool_calls: [],
+        raw_output: '',
+        memory_pulled: [],
+        specs_read: [],
+        log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
+      },
+    });
+  }
+
   return { workspaceId, userId };
 }
 

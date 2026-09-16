@@ -131,6 +131,41 @@ d('Testcontainers: DB-backed routes via app.inject', () => {
     await app.close();
   });
 
+  it('GET /repos/:id/pulls totals cost across COMPLETED runs only', async () => {
+    const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
+    const app = await buildApp({
+      config,
+      db: pg.handle.db,
+      overrides: { git: new MockGitClient(), github: new MockGitHubClient() },
+    });
+    const repoId = (await app.inject({ method: 'GET', url: '/repos' })).json()[0]!.id;
+    const pulls = (await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` })).json();
+    // The seeded PR already carries a run, so assert on the DELTA rather than
+    // assuming a clean slate; `other` is a PR with no runs at all.
+    const target = pulls[0]!;
+    const baseline: number = target.cost_usd ?? 0;
+    const other = pulls.find((p: { id: string; cost_usd: number | null }) => p.cost_usd == null);
+
+    const [{ id: workspaceId }] = await pg.handle.db.select().from(t.workspaces);
+    await pg.handle.db.insert(t.agentRuns).values([
+      { workspaceId, prId: target.id, status: 'done', costUsd: 0.01 },
+      { workspaceId, prId: target.id, status: 'done', costUsd: 0.02 },
+      // unpriced model: SUM skips it rather than treating it as free
+      { workspaceId, prId: target.id, status: 'done', costUsd: null },
+      // a failed run cost us nothing the user should be billed for in the list
+      { workspaceId, prId: target.id, status: 'failed', costUsd: 0.99 },
+    ]);
+
+    const after = (await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` })).json();
+    const row = after.find((p: { id: string }) => p.id === target.id);
+    expect(row.cost_usd).toBeCloseTo(baseline + 0.03, 10);
+    if (other) {
+      const untouched = after.find((p: { id: string }) => p.id === other.id);
+      expect(untouched.cost_usd).toBeNull();
+    }
+    await app.close();
+  });
+
   it('POST /repos/:id/poll syncs PR list and does NOT trigger a review', async () => {
     const config = loadConfig({ ...process.env, NODE_ENV: 'test' } as NodeJS.ProcessEnv);
     const app = await buildApp({
