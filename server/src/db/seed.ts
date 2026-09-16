@@ -7,6 +7,25 @@ import {
   SECURITY_REVIEWER_PROMPT,
   PERFORMANCE_REVIEWER_PROMPT,
 } from './seed-prompts.js';
+import {
+  RATELIMIT_PATCH,
+  WEBHOOKS_PATCH,
+  CONFIG_PATCH,
+  USERS_PATCH,
+} from './seed-diffs.js';
+
+/**
+ * The demo PR's changed files, with their unified-diff patches. A row whose
+ * `patch` is null is SKIPPED when the reviewer reconstructs the diff (the demo
+ * repo is never cloned, so that reconstruction is the only source), which
+ * leaves every agent reviewing an empty diff.
+ */
+const DEMO_PR_FILES = [
+  { path: 'src/middleware/ratelimit.ts', additions: 84, deletions: 0, patch: RATELIMIT_PATCH },
+  { path: 'src/api/public/webhooks.ts', additions: 31, deletions: 6, patch: WEBHOOKS_PATCH },
+  { path: 'src/config.ts', additions: 4, deletions: 0, patch: CONFIG_PATCH },
+  { path: 'src/api/users.ts', additions: 7, deletions: 2, patch: USERS_PATCH },
+] as const;
 
 /** Default provider/model for the built-in reviewer agents. */
 const DEFAULT_PROVIDER = 'openrouter' as const;
@@ -116,13 +135,10 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       })
       .returning();
 
-    // pr_files (subset)
-    await db.insert(t.prFiles).values([
-      { prId: pr!.id, path: 'src/middleware/ratelimit.ts', additions: 84, deletions: 0 },
-      { prId: pr!.id, path: 'src/api/public/webhooks.ts', additions: 31, deletions: 6 },
-      { prId: pr!.id, path: 'src/config.ts', additions: 4, deletions: 0 },
-      { prId: pr!.id, path: 'src/api/users.ts', additions: 7, deletions: 2 },
-    ]);
+    // pr_files (subset of the 9 changed files)
+    await db
+      .insert(t.prFiles)
+      .values(DEMO_PR_FILES.map((f) => ({ prId: pr!.id, ...f })));
 
     // pr_commits
     await db.insert(t.prCommits).values({
@@ -173,6 +189,26 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         confidence: 0.86,
       },
     ]);
+  }
+
+  // ---- demo PR files: reconcile, don't just insert-once ----
+  // A DB seeded before the patches existed (or a fork whose demo PR came in
+  // without them) already has the PR row, so the block above is skipped and the
+  // rows keep a null patch. Reconcile every run so the fixtures are the source
+  // of truth: insert a missing file, refresh an existing one.
+  for (const f of DEMO_PR_FILES) {
+    const [existing] = await db
+      .select()
+      .from(t.prFiles)
+      .where(and(eq(t.prFiles.prId, pr!.id), eq(t.prFiles.path, f.path)));
+    if (existing) {
+      await db
+        .update(t.prFiles)
+        .set({ additions: f.additions, deletions: f.deletions, patch: f.patch })
+        .where(eq(t.prFiles.id, existing.id));
+    } else {
+      await db.insert(t.prFiles).values({ prId: pr!.id, ...f });
+    }
   }
 
   // ---- built-in agents (the three starter presets) ----
