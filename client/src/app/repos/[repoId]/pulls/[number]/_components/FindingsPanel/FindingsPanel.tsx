@@ -8,14 +8,9 @@ import { Chip, Toggle, EmptyState, SEV, type Severity } from "@devdigest/ui";
 import type { FindingRecord } from "@devdigest/shared";
 import { FindingCard } from "../FindingCard";
 import { useFindingAction } from "../../../../../../../lib/hooks/reviews";
-import { FILTERABLE_SEVERITIES, KEY_TO_ACTION } from "./constants";
-import { countBySeverity, visibleFindings } from "./helpers";
+import { KEY_TO_ACTION } from "./constants";
+import { countBySeverity, presentSeverities, visibleFindings } from "./helpers";
 import { s } from "./styles";
-
-/** All severities shown — the default, and what "no filter" means. */
-const ALL_SEVERITIES: Record<string, boolean> = Object.fromEntries(
-  FILTERABLE_SEVERITIES.map((sv) => [sv, true]),
-);
 
 export function FindingsPanel({
   findings,
@@ -30,13 +25,17 @@ export function FindingsPanel({
 }) {
   const t = useTranslations("prReview");
   const action = useFindingAction();
-  const [sevFilter, setSevFilter] = React.useState<Record<string, boolean>>(ALL_SEVERITIES);
+  // One severity at a time; null = no filter, the whole run is shown.
+  const [selected, setSelected] = React.useState<string | null>(null);
   const [hideLow, setHideLow] = React.useState(false);
   const [focusIdx, setFocusIdx] = React.useState(0);
 
-  // Counted over every finding in the run, so a chip's number stays put while
+  // Counted over every finding in the run, so a pill's number stays put while
   // the filters narrow the list below it.
   const counts = React.useMemo(() => countBySeverity(findings), [findings]);
+  const severities = presentSeverities(counts);
+  // A refetch can drop the last finding of the selected level; fall back to all.
+  const sevFilter = selected && counts[selected] ? selected : null;
   const shown = React.useMemo(
     () => visibleFindings(findings, hideLow, sevFilter),
     [findings, hideLow, sevFilter],
@@ -63,20 +62,30 @@ export function FindingsPanel({
   return (
     <div>
       <div style={s.toolbar}>
-        <div style={s.sevChips}>
-          {FILTERABLE_SEVERITIES.map((sv) => (
-            <Chip
-              key={sv}
-              active={sevFilter[sv]}
-              onClick={() => setSevFilter((f) => ({ ...f, [sv]: !f[sv] }))}
-              icon={SEV[sv as Severity].icon}
-              color={SEV[sv as Severity].c}
-              count={counts[sv] ?? 0}
-            >
-              {t(`panel.severity.${sv}`)}
-            </Chip>
-          ))}
-        </div>
+        {severities.length > 0 && (
+          <div style={s.sevChips}>
+            {severities.map((sv, i) => (
+              <React.Fragment key={sv}>
+                {i > 0 && (
+                  <span aria-hidden style={s.sevSeparator}>
+                    ·
+                  </span>
+                )}
+                <Chip
+                  active={sevFilter === sv}
+                  onClick={() => setSelected((cur) => (cur === sv ? null : sv))}
+                  icon={SEV[sv as Severity].icon}
+                  color={SEV[sv as Severity].c}
+                >
+                  {t("panel.severityPill", {
+                    count: counts[sv]!,
+                    label: t(`panel.severity.${sv}`),
+                  })}
+                </Chip>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
 
         <div style={s.toggleGroup}>
           {t("panel.hideLowConfidence")}

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { FindingRecord } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
@@ -52,9 +52,9 @@ function renderWithIntl(ui: React.ReactElement) {
   );
 }
 
-/** The chip is a button labelled "<Severity> <count>". */
-function chip(label: string) {
-  return screen.getByRole("button", { name: new RegExp(`^${label}`) });
+/** The pill is a button labelled "<count> <SEVERITY>". */
+function pill(label: string) {
+  return screen.getByRole("button", { name: new RegExp(`^\\d+ ${label}$`) });
 }
 
 describe("FindingsPanel (smoke)", () => {
@@ -71,35 +71,49 @@ describe("FindingsPanel (smoke)", () => {
 });
 
 describe("FindingsPanel severity filter", () => {
-  it("counts each severity, including one with no findings", () => {
+  it("draws a pill per severity present, labelled with its count", () => {
     renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
-    expect(within(chip("Critical")).getByText("1")).toBeInTheDocument();
-    expect(within(chip("Warning")).getByText("1")).toBeInTheDocument();
-    expect(within(chip("Suggestion")).getByText("0")).toBeInTheDocument();
+    expect(pill("CRITICAL")).toHaveTextContent("1 CRITICAL");
+    expect(pill("WARNING")).toHaveTextContent("1 WARNING");
+    expect(screen.queryByRole("button", { name: /SUGGESTION$/ })).not.toBeInTheDocument();
   });
 
-  it("hides a severity's findings when its chip is clicked", () => {
+  it("draws no pills for a run with no findings", () => {
+    renderWithIntl(<FindingsPanel findings={[]} prId="pr1" />);
+    expect(screen.queryByRole("button", { name: /CRITICAL$/ })).not.toBeInTheDocument();
+  });
+
+  it("counts every finding of a severity, matching the cards below", () => {
+    const three = [...FINDINGS, finding({ id: "f3", title: "SQL injection" })];
+    renderWithIntl(<FindingsPanel findings={three} prId="pr1" />);
+    expect(pill("CRITICAL")).toHaveTextContent("2 CRITICAL");
+    fireEvent.click(pill("CRITICAL"));
+    expect(screen.getByText("Hardcoded secret")).toBeInTheDocument();
+    expect(screen.getByText("SQL injection")).toBeInTheDocument();
+  });
+
+  it("shows only that severity's findings when its pill is clicked", () => {
     renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
-    fireEvent.click(chip("Critical"));
-    expect(screen.queryByText("Hardcoded secret")).not.toBeInTheDocument();
+    fireEvent.click(pill("WARNING"));
     expect(screen.getByText("Unbounded retry loop")).toBeInTheDocument();
-    // The count is over the run's full set, so it doesn't move.
-    expect(within(chip("Critical")).getByText("1")).toBeInTheDocument();
+    expect(screen.queryByText("Hardcoded secret")).not.toBeInTheDocument();
+    // The count is over the run's full set, so the other pill keeps its number.
+    expect(pill("CRITICAL")).toHaveTextContent("1 CRITICAL");
   });
 
-  it("restores the findings when the chip is clicked again", () => {
+  it("clears the filter when the same pill is clicked again", () => {
     renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
-    fireEvent.click(chip("Critical"));
-    fireEvent.click(chip("Critical"));
+    fireEvent.click(pill("CRITICAL"));
+    fireEvent.click(pill("CRITICAL"));
     expect(screen.getByText("Hardcoded secret")).toBeInTheDocument();
     expect(screen.getByText("Unbounded retry loop")).toBeInTheDocument();
   });
 
-  it("shows the empty state when every severity is filtered out", () => {
+  it("switches to another severity when a different pill is clicked", () => {
     renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
-    fireEvent.click(chip("Critical"));
-    fireEvent.click(chip("Warning"));
-    fireEvent.click(chip("Suggestion"));
-    expect(screen.getByText("No findings match")).toBeInTheDocument();
+    fireEvent.click(pill("CRITICAL"));
+    fireEvent.click(pill("WARNING"));
+    expect(screen.queryByText("Hardcoded secret")).not.toBeInTheDocument();
+    expect(screen.getByText("Unbounded retry loop")).toBeInTheDocument();
   });
 });

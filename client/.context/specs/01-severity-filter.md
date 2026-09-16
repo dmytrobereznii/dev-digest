@@ -24,7 +24,7 @@ Severity counts appear on 7 surfaces across the design bundle; 1 is in scope.
 
 | # | Screen | Design | What lands |
 |---|---|---|---|
-| 1 | PR detail · review run toolbar | `findings.jsx:113-117` | Chip row: icon + label + count per severity, toggling that level in the list |
+| 1 | PR detail · Agent runs · Review runs · expanded run, under the verdict and PR SCORE | `findings.jsx:113-117` | Pill row `N CRITICAL · N WARNING · N SUGGESTION`; clicking a pill narrows the list to that level |
 
 ## Decisions
 
@@ -32,26 +32,40 @@ Severity counts appear on 7 surfaces across the design bundle; 1 is in scope.
   `ReviewRunAccordion`, so the counts and the filter are that run's and the
   state is naturally scoped. A PR-level aggregate would double-count the same
   issue across re-runs of the same agent.
-- **Multi-select, all on by default.** A chip is `active` when its level is
-  *shown*; clicking toggles it out. All three off yields the existing "No
-  findings match" empty state. This is the artboard's model — the chips are an
-  inclusion set, not a single selected level.
+- **Single-select, nothing selected by default.** Clicking a pill shows only
+  that severity; clicking the same pill again clears the filter and restores
+  the run's full list; clicking another pill switches to it. State is one
+  `string | null`. This departs from the artboard, whose chips are a
+  multi-select inclusion set where a click *hides* a level — the homework
+  acceptance criteria require "click leaves only this severity".
 - **Counts are over the run's full finding set**, computed before both the
-  severity filter and `hideLow`, so a chip's number never moves as you filter.
-- **Zero renders as `0`, and the chip stays clickable.** All three always draw,
-  so the row's shape is stable between runs.
+  severity filter and `hideLow`, so a pill's number never moves as you filter
+  and always equals the number of cards for that level when nothing else is
+  narrowing the list.
+- **Only severities present in the run draw.** A zero-count level gets no pill
+  (`presentSeverities`), and a run with no findings gets no pill row. If a
+  refetch removes the last finding of the selected level, the filter falls back
+  to "all" rather than stranding an empty list behind a pill that is gone.
+- **Label is count first, uppercase level**: `panel.severityPill` =
+  `"{count} {label}"`, with `panel.severity.*` in caps, separated by a
+  decorative `·`. The count goes in the label, not `Chip`'s trailing `count`
+  slot, so the pill reads `2 CRITICAL`.
 - **Three levels only.** The `Severity` contract has exactly `CRITICAL |
   WARNING | SUGGESTION`. `INFO` exists in the kit's token union and in
   `SEVERITY_ORDER` but never in data, so it stays out of the row and stays in
   the sort map.
+- **Accept / Reject on each card.** The dismiss action's button and tag read
+  "Reject" / "rejected" (`finding.dismiss`, `finding.dismissed`). Only the copy
+  changed: the API action and the `dismissed_at` column keep their names, so
+  the i18n keys follow the data model, not the label.
 - **Filter order** is severity → hide-low-confidence → sort by severity, so the
   two toolbar controls compose.
 - **Labels come from i18n, icon and colour from the kit.** `panel.severity.*`
   in `messages/en/prReview.json` per the package's string convention; `SEV`
   (`vendor/ui/primitives/tokens.ts`) supplies the glyph and hue so the chip
   matches the `SeverityBadge` on each card.
-- **`Chip` is reused as-is**, not re-implemented: `active`, `count`, `icon` and
-  `color` are exactly this control. Same pattern as the PR list's `FilterBar`.
+- **`Chip` is reused as-is**, not re-implemented: `active`, `icon` and `color`
+  are exactly this control. Same pattern as the PR list's `FilterBar`.
 - **Client-only.** `review.findings` already arrives with the run, so there is
   no server, contract or migration work, and neither vendored `shared/` copy is
   touched.
