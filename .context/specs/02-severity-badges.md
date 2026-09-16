@@ -56,9 +56,23 @@ finding, not counts.
   numbers agree.
 - **Blockers suffix stays** on the timeline (`· 2 blockers`), as in the design.
   It's the gate count, not a severity count.
-- **No hover tooltip.** The design pairs both surfaces with `FindingsTooltip`;
-  on the PR list that means shipping every PR's findings through the list
-  endpoint. Deferred.
+- **PR list hover popover, loaded on hover.** Hovering (or focusing) the PR
+  list's counts opens "N FINDINGS IN THIS RUN" (`FindingsTooltip` in the
+  design), a read-only text preview per finding: severity icon, title,
+  category, `file:line`, confidence, a two-line rationale — no buttons; triage
+  stays on the PR page. The findings are fetched on first hover from the
+  existing `GET /pulls/:id/reviews` (`usePrReviews`, cached), and
+  `latestRunFindings` picks the same set the server counts: newest `review`,
+  dismissed dropped. Shipping every PR's findings through the list endpoint
+  was rejected — it grows the list payload for data most rows never show.
+- **The popover is portalled to `document.body`, `position: fixed`.** The
+  list's `tableCard` has `overflow: hidden` for its rounded corners, which
+  clips an absolutely positioned child. It flips upward when less than 340px
+  remain below the cell, and closes on a 120ms delay so the pointer can cross
+  into it. Clicks inside stop propagation: React bubbles portal events up the
+  component tree, so they would otherwise reach `PRRow` and navigate.
+- **No popover on the timeline.** Surface 2 keeps plain counts; the criterion
+  and this change cover the PR list only.
 - **Each count carries `title`/`aria-label`** ("2 critical") — an icon and a
   bare digit say nothing to a screen reader. The text comes from the kit's
   `SEV[].label`, like `SeverityBadge`; the vendored kit has no i18n.
@@ -116,4 +130,4 @@ finding, not counts.
 
 ## Out of scope
 
-The hover tooltip; surfaces 4 and 5; the Review Runs accordion header.
+The timeline hover popover; surfaces 4 and 5; the Review Runs accordion header.

@@ -71,6 +71,11 @@
     "title": "Pull Requests",
     "summary": "{open} open · {needsReview} need review",
     "loading": "Loading pull requests…",
+    "findingsPopover": {
+      "title": "{count, plural, one {# FINDING} other {# FINDINGS}} IN THIS RUN",
+      "loading": "Loading findings…",
+      "error": "Couldn’t load this run’s findings."
+    },
     "status": {
       "open": "Open",
       "closed": "Closed",

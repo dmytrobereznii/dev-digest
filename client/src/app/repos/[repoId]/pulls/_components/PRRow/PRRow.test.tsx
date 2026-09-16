@@ -4,6 +4,10 @@ import { NextIntlClientProvider } from "next-intl";
 import type { PrMeta } from "@devdigest/shared";
 import messages from "../../../../../../../messages/en/prReview.json";
 
+vi.mock("@/lib/hooks/reviews", () => ({
+  usePrReviews: () => ({ data: undefined, isPending: true, isError: false }),
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
