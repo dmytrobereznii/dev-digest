@@ -1,10 +1,10 @@
 {
   "finding": {
     "accepted": "accepted",
-    "dismissed": "dismissed",
+    "dismissed": "rejected",
     "suggestedFix": "Suggested fix",
     "accept": "Accept",
-    "dismiss": "Dismiss",
+    "dismiss": "Reject",
     "learn": "Learn",
     "replyToAuthor": "Reply to author",
     "replyPlaceholder": "Reply to the author about this finding…",
@@ -29,7 +29,13 @@
   "panel": {
     "hideLowConfidence": "Hide low confidence",
     "noMatchTitle": "No findings match",
-    "noMatchBody": "Adjust the filters above, or run a review to generate findings."
+    "noMatchBody": "Adjust the filters above, or run a review to generate findings.",
+    "severityPill": "{count} {label}",
+    "severity": {
+      "CRITICAL": "CRITICAL",
+      "WARNING": "WARNING",
+      "SUGGESTION": "SUGGESTION"
+    }
   },
   "runReview": {
     "runAll": "Run all enabled agents",
@@ -65,6 +71,11 @@
     "title": "Pull Requests",
     "summary": "{open} open · {needsReview} need review",
     "loading": "Loading pull requests…",
+    "findingsPopover": {
+      "title": "{count, plural, one {# FINDING} other {# FINDINGS}} IN THIS RUN",
+      "loading": "Loading findings…",
+      "error": "Couldn’t load this run’s findings."
+    },
     "status": {
       "open": "Open",
       "closed": "Closed",
@@ -91,7 +102,9 @@
       "author": "Author",
       "size": "Size",
       "score": "Score",
+      "findings": "Findings",
       "status": "Status",
+      "cost": "Cost",
       "updated": "Updated"
     },
     "filesCount": "{count} files",

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { and, desc, eq, inArray } from 'drizzle-orm';
-import type { PrMeta, PrDetail, GitHubClient, PrReviewComment } from '@devdigest/shared';
+import { and, count, desc, eq, inArray, isNull, sum } from 'drizzle-orm';
+import type { PrMeta, PrDetail, GitHubClient, PrReviewComment, SeverityCounts } from '@devdigest/shared';
 import { PrCommentInput } from '@devdigest/shared';
 import * as t from '../../db/schema.js';
 import { getContext } from '../_shared/context.js';
@@ -113,19 +113,56 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
 
     // Latest-review SCORE per PR for the list's score ring. Computed on read
     // from reviews (no FK denorm); the list is small, so one IN-query + JS
-    // grouping is cheap. (The per-severity FINDINGS breakdown is intentionally
-    // not surfaced on the list — findings live on the PR detail page.)
+    // grouping is cheap.
     const prIds = rows.map((r) => r.id);
-    const latestReviewByPr = new Map<string, { score: number | null }>();
+    const latestReviewByPr = new Map<string, { id: string; score: number | null }>();
     if (prIds.length > 0) {
       const reviewRows = await container.db
-        .select({ prId: t.reviews.prId, score: t.reviews.score })
+        .select({ id: t.reviews.id, prId: t.reviews.prId, score: t.reviews.score })
         .from(t.reviews)
         .where(and(inArray(t.reviews.prId, prIds), eq(t.reviews.kind, 'review')))
         .orderBy(desc(t.reviews.createdAt));
       // Rows are newest-first → first seen per PR is the latest review.
       for (const rv of reviewRows) {
-        if (!latestReviewByPr.has(rv.prId)) latestReviewByPr.set(rv.prId, { score: rv.score });
+        if (!latestReviewByPr.has(rv.prId)) {
+          latestReviewByPr.set(rv.prId, { id: rv.id, score: rv.score });
+        }
+      }
+    }
+
+    // Per-severity FINDINGS of that same latest review, for the list's Findings
+    // column. Dismissed findings drop out, matching the PR page's blocker count.
+    const findingsByReview = new Map<string, SeverityCounts>();
+    const latestReviewIds = [...latestReviewByPr.values()].map((rv) => rv.id);
+    if (latestReviewIds.length > 0) {
+      const countRows = await container.db
+        .select({ reviewId: t.findings.reviewId, severity: t.findings.severity, n: count() })
+        .from(t.findings)
+        .where(and(inArray(t.findings.reviewId, latestReviewIds), isNull(t.findings.dismissedAt)))
+        .groupBy(t.findings.reviewId, t.findings.severity);
+      for (const id of latestReviewIds) {
+        findingsByReview.set(id, { CRITICAL: 0, WARNING: 0, SUGGESTION: 0 });
+      }
+      for (const c of countRows) {
+        const counts = findingsByReview.get(c.reviewId);
+        if (counts && c.severity in counts) counts[c.severity as keyof SeverityCounts] = c.n;
+      }
+    }
+
+    // TOTAL spend per PR = every completed run on it, not just the latest.
+    // SQL SUM skips NULLs, so runs on an unpriced model (estimateCost returns
+    // null for a model that is not in the pricing table) drop out of the total,
+    // and a PR whose runs are all unpriced comes back NULL -> "-" in the UI.
+    const costByPr = new Map<string, number>();
+    if (prIds.length > 0) {
+      const costRows = await container.db
+        .select({ prId: t.agentRuns.prId, total: sum(t.agentRuns.costUsd) })
+        .from(t.agentRuns)
+        .where(and(inArray(t.agentRuns.prId, prIds), eq(t.agentRuns.status, 'done')))
+        .groupBy(t.agentRuns.prId);
+      for (const c of costRows) {
+        // Postgres returns an aggregate over double precision as a string.
+        if (c.prId && c.total != null) costByPr.set(c.prId, Number(c.total));
       }
     }
 
@@ -153,6 +190,8 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         opened_at: r.openedAt?.toISOString() ?? null,
         updated_at: r.updatedAt?.toISOString() ?? null,
         score: review ? review.score : null,
+        cost_usd: costByPr.get(r.id) ?? null,
+        findings: review ? (findingsByReview.get(review.id) ?? null) : null,
       };
     });
   });

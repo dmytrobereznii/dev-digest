@@ -6,6 +6,8 @@ export { Badge, SeverityBadge, CategoryTag } from "./Badge";
 export { Chip } from "./Chip";
 export { Avatar } from "./Avatar";
 export { ConfidenceNum } from "./ConfidenceNum";
+export { CostBadge, formatUsd } from "./CostBadge";
+export { SeverityCounts } from "./SeverityCounts";
 export { MonoLink } from "./MonoLink";
 export { ProgressBar, PercentProgress } from "./ProgressBar";
 export { CircularScore } from "./CircularScore";

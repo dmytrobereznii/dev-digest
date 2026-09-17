@@ -13,6 +13,8 @@ import {
   Chip,
   Avatar,
   ConfidenceNum,
+  CostBadge,
+  SeverityCounts,
   MonoLink,
   ProgressBar,
   PercentProgress,
@@ -98,9 +100,12 @@ export function Gallery() {
         {CATEGORIES.map((c) => (
           <CategoryTag key={c} category={c} />
         ))}
+        <SeverityCounts counts={{ CRITICAL: 2, WARNING: 1, SUGGESTION: 4 }} />
+        <SeverityCounts counts={{ CRITICAL: 0, WARNING: 0, SUGGESTION: 1 }} />
+        <SeverityCounts counts={null} empty="—" />
       </Group>
 
-      <Group title="Chips, Avatars, Confidence, MonoLink, Kbd">
+      <Group title="Chips, Avatars, Confidence, Cost, MonoLink, Kbd">
         <Chip active icon="Check">
           Active
         </Chip>
@@ -111,6 +116,9 @@ export function Gallery() {
         <Avatar name="you" size={28} />
         <ConfidenceNum value={0.91} />
         <ConfidenceNum value={0.6} />
+        <CostBadge usd={0.014} />
+        <CostBadge usd={1.5} size="lg" tokens="14.8k→1.2k" />
+        <CostBadge usd={null} />
         <MonoLink>src/config.ts:12</MonoLink>
         <Kbd>⌘K</Kbd>
         <Toggle on={toggle} onChange={setToggle} />

@@ -26,6 +26,8 @@ export interface ReviewDto {
   summary: string | null;
   score: number | null;
   model: string | null;
+  /** Estimated USD spend of the run behind this review; null when unpriced. */
+  cost_usd: number | null;
   grounding?: string | null;
   created_at: string;
   findings: ReviewDtoFinding[];
@@ -56,6 +58,7 @@ export function reviewToDto(
   review: ReviewRow,
   findings: FindingRow[],
   agentName?: string | null,
+  costUsd: number | null = null,
 ): ReviewDto {
   return {
     id: review.id,
@@ -68,6 +71,7 @@ export function reviewToDto(
     summary: review.summary,
     score: review.score,
     model: review.model,
+    cost_usd: costUsd,
     created_at: review.createdAt.toISOString(),
     findings: findings.map(findingRowToDto),
   };

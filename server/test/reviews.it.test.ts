@@ -209,6 +209,14 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     expect(run!.findingsCount).toBe(1);
     expect(run!.grounding).toBe('1/2 passed');
 
+    // Cost is carried from the engine to every surface that shows it: the run
+    // row (PR-list total), the trace stats (drawer COST tile) and the review
+    // DTO (accordion badge). MockLLMProvider bills 0.001 per completion.
+    expect(run!.costUsd).toBeGreaterThan(0);
+    expect(run!.costUsd! % 0.001).toBeCloseTo(0, 6);
+    expect(trace.stats.cost_usd).toBeCloseTo(run!.costUsd!, 10);
+    expect(review.cost_usd).toBeCloseTo(run!.costUsd!, 10);
+
     await app.close();
   });
 

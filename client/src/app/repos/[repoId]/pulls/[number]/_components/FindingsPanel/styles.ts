@@ -9,6 +9,13 @@ export const s = {
     marginBottom: 16,
     flexWrap: "wrap",
   } satisfies CSSProperties,
+  sevChips: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  } satisfies CSSProperties,
+  sevSeparator: { color: "var(--text-muted)", fontSize: 13 } satisfies CSSProperties,
   divider: {
     width: 1,
     height: 18,

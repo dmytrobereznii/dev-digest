@@ -16,3 +16,6 @@ export const KEY_TO_ACTION: Record<string, FindingActionKind> = {
   a: "accept",
   d: "dismiss",
 };
+
+/** Severities the filter row offers, in display order (the contract's three). */
+export const FILTERABLE_SEVERITIES = ["CRITICAL", "WARNING", "SUGGESTION"] as const;
