@@ -79,8 +79,11 @@ names rings that exist rather than importing a generic
   because it is **already a `server/` dependency** (v17, used by the repo-intel
   import-graph adapter), so the ruleset added a config file and no package.
 - [eslint-plugin-boundaries](https://github.com/javierbrea/eslint-plugin-boundaries)
-  — the alternative, rejected for now: the server has no ESLint config at all,
-  so adopting it would mean introducing a linter as well as a ruleset.
+  — the alternative, still rejected. `server/eslint.config.mjs` now exists, so
+  the original objection (no linter at all) is gone, but the ring rules stay in
+  one place: `.dependency-cruiser.cjs` owns every boundary, and the ESLint
+  config is deliberately thin so there is never a second source of truth for
+  one rule.
 
 ### Gotchas found while writing the config
 

@@ -29,8 +29,9 @@ typecheck: ## Type-check server, client, reviewer-core
 	cd client && pnpm typecheck
 	cd reviewer-core && npm run typecheck
 
-lint: ## ESLint the TypeScript packages
+lint: ## ESLint both TypeScript packages
 	cd client && pnpm exec eslint .
+	cd server && pnpm exec eslint .
 
 lint-arch: ## Check the onion-architecture boundaries (server)
 	cd server && pnpm exec depcruise src

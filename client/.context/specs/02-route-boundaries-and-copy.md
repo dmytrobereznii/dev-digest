@@ -121,12 +121,12 @@ removing them destroys course material.
   `CreateAgentModal` shape, colocated under the component that owns the delete.
   That also makes the delete path testable, which is the real win.
 
-While in `pulls/[number]/page.tsx`, two one-liners:
+While in `pulls/[number]/page.tsx`, one one-liner:
 
-- `line 72` — `React.useMemo(() => runs.flatMap(...), [reviews])` reads `runs`
-  and declares `[reviews]`. Equivalent today; fix the array. (Spec
-  [`04-enforcement-lane`](../../../.context/specs/04-enforcement-lane.md) makes
-  this class fail the build.)
+- ~~`line 72` — `React.useMemo(() => runs.flatMap(...), [reviews])` reads
+  `runs` and declares `[reviews]`.~~ **Done.** The enforcement lane fixed it
+  when `react-hooks/exhaustive-deps` first ran; `make lint` now fails the build
+  on this class.
 - the page has **no `styles.ts`** — its inline `style={{ padding: "28px 32px" }}` objects (`line 101`,
   `line 129`) belong in one at the route rung, per
   `frontend-architecture` § Styling.

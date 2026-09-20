@@ -1,8 +1,12 @@
 # frontend-architecture — checking compliance
 
-**There is no linter in `client/`** — no ESLint or Biome config exists, so
-every rule in [`SKILL.md`](SKILL.md) is convention plus review. These greps are
-the fallback. Run them from `client/src`.
+**`client/eslint.config.mjs` covers part of this** — `eslint-config-next`
+plus the hook-dependency, native-dialog and `@/`-alias rules. Run it with
+`make lint` (baseline **0 errors, 52 warnings**; the warnings are the
+deep-relative-import debt in *Known exceptions*). Everything the linter cannot
+express — data-fetching placement, barrel shape, the `"use client"` rung — is
+still convention plus review, and these greps are the fallback. Run them from
+`client/src`.
 
 ```sh
 # a component calling the network directly (baseline 0; \b excludes refetch())

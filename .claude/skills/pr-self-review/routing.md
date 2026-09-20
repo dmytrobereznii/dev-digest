@@ -66,8 +66,8 @@ git diff "$BASE" | grep -nE '^\+.*(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|API_
 
 ## Client convention greps
 
-From `frontend-architecture` § Enforcement — there is no linter in `client/`.
-Run from `client/src`:
+From `frontend-architecture` § Enforcement — what `client/eslint.config.mjs`
+cannot express. Run `make lint` first; then these, from `client/src`:
 
 ```sh
 grep -rn --include='*.tsx' 'fetch(' app components | grep -v '/lib/'   # 0 expected

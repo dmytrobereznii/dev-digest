@@ -12,6 +12,40 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Decisions
 
+### 2026-09-20 — The enforcement lane is deterministic-only; `pr-self-review` stays local
+
+**What:** Two separate gates, deliberately not merged. The deterministic half
+— `pnpm exec eslint .` in both TypeScript packages and `pnpm exec depcruise src`
+in `server/` — runs locally via `make lint` / `make lint-arch` **and** in
+`client.yml` / `server-unit.yml`. The model-driven half, the `pr-self-review`
+skill, gets **no CI workflow and no branch protection**: it runs locally,
+pre-`gh pr`, behind a hook. Anything needing judgment belongs to the second and
+must not be re-expressed as a CI step.
+
+Two rules keep the lane honest, and both are load-bearing:
+
+- **A lint rule is `error` only where the whole tree already satisfies it.**
+  Everything else ships at `warn` against a stated baseline, so the first green
+  build means something. Current baselines: client **0 errors / 52 warnings**
+  (deep-relative-import debt), server **0 / 0**, `depcruise` **0 errors / 15
+  warnings** (the `no-circular` debt).
+- **One source of truth per boundary.** `.dependency-cruiser.cjs` owns the
+  onion rings; `server/eslint.config.mjs` is deliberately thin and does not
+  restate them. That is also why `eslint-plugin-boundaries` stays rejected even
+  now that the server has a linter.
+
+**Why:** This decision has been orphaned twice — it was recorded in
+`.context/specs/03-pr-self-review-skill.md`, restated in
+`.context/specs/04-enforcement-lane.md`, and both were deleted on merge per
+`CLAUDE.md`. It lives here now because the obvious "improvement" to either gate
+is to fold it into the other, and nothing in the code says why not.
+
+**Rejected:** A CI workflow for `pr-self-review` (it needs a model, and a
+non-deterministic required check is worse than no check); duplicating the ring
+rules into ESLint (two sources of truth for one boundary).
+**Evidence:** `server/eslint.config.mjs`, `client/eslint.config.mjs`,
+`server/.dependency-cruiser.cjs`, `Makefile` → `lint` / `lint-arch`.
+
 ### 2026-09-16 — Lesson features are built from scratch, never recovered from history
 
 **What:** Every README lesson feature (L01–L08) is implemented from the

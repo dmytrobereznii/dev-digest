@@ -65,6 +65,11 @@ jobs:
 
       - run: pnpm typecheck
 
+      # ESLint. Type-aware (no-floating-promises points at tsconfig.json), so
+      # it runs here beside typecheck rather than in the test job. The config
+      # is deliberately thin — architectural rules belong to depcruise below.
+      - run: pnpm exec eslint .
+
       # The onion-architecture boundaries, as encoded in .dependency-cruiser.cjs.
       # Baseline is 0 errors / 15 warnings (the accepted debt in that skill's
       # Known exceptions table); depcruise exits non-zero on errors only, so a
@@ -99,7 +104,7 @@ jobs:
         working-directory: reviewer-core
         run: npm ci
 
-      # Inlined rather than `pnpm test:unit`: server/package.json is
-      # skip-worktree (a local variant), so the committed package.json may
-      # not carry the split scripts. Run vitest directly.
+      # Inlined rather than `pnpm test:unit`: package.json carries no split
+      # scripts, so every lane is spelled out with `pnpm exec` (see TESTING.md
+      # § Conventions). Run vitest directly.
       - run: pnpm exec vitest run --exclude '**/*.it.test.ts'
