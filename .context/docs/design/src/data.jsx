@@ -208,12 +208,12 @@ const PR_LIST = [
 
 // ---- skills ----
 const SKILLS = [
-  { id: "s1", name: "pr-quality-rubric", description: "Rubric for evaluating overall PR quality across correctness, tests, and clarity.", type: "rubric", source: "manual", enabled: true },
-  { id: "s2", name: "no-then-chains", description: "House rule: always use async/await instead of .then() chains.", type: "convention", source: "extracted", enabled: true, evidence_files: ["src/api/users.ts", "src/lib/redis.ts"] },
-  { id: "s3", name: "secret-leakage-gate", description: "Detects sk_live, service_role, and NEXT_PUBLIC_ secret patterns in diffs.", type: "security", source: "community", enabled: true },
-  { id: "s4", name: "lethal-trifecta", description: "Flags PRs combining private data access, untrusted input, and an exfil path.", type: "security", source: "community", enabled: true },
-  { id: "s5", name: "phantom-api-gate", description: "Detects imports of functions/modules that don't exist in the resolved deps.", type: "security", source: "imported_url", enabled: false },
-  { id: "s6", name: "test-coverage-nudge", description: "Suggests tests when new branches lack assertions.", type: "custom", source: "manual", enabled: true },
+  { id: "s1", name: "pr-quality-rubric", description: "Rubric for evaluating overall PR quality across correctness, tests, and clarity.", type: "rubric", source: "manual", enabled: true, order: 1, version: 5 },
+  { id: "s2", name: "no-then-chains", description: "House rule: always use async/await instead of .then() chains.", type: "convention", source: "extracted", enabled: true, order: 2, version: 2, evidence_files: ["src/api/users.ts", "src/lib/redis.ts"] },
+  { id: "s3", name: "secret-leakage-gate", description: "Detects sk_live, service_role, and NEXT_PUBLIC_ secret patterns in diffs.", type: "security", source: "community", enabled: true, order: 3, version: 4 },
+  { id: "s4", name: "lethal-trifecta", description: "Flags PRs combining private data access, untrusted input, and an exfil path.", type: "security", source: "community", enabled: true, order: 4, version: 3 },
+  { id: "s5", name: "phantom-api-gate", description: "Detects imports of functions/modules that don't exist in the resolved deps.", type: "security", source: "imported_url", enabled: false, order: 5, version: 1 },
+  { id: "s6", name: "test-coverage-nudge", description: "Suggests tests when new branches lack assertions.", type: "custom", source: "manual", enabled: true, order: 6, version: 2 },
 ];
 
 const SKILL_BODY = `# PR Quality Rubric
@@ -237,6 +237,137 @@ findings, not 50.
 ## Scope
 - Does the diff stay within the stated intent?
 - Flag out-of-scope changes separately rather than blocking.`;
+
+// per-skill detail: body, type, source, and usage stats — drives the skill editor
+const SKILL_DETAIL = {
+  s1: {
+    usedBy: ["Security Reviewer", "Performance Reviewer", "Custom Mentor"], pull: 0.71, accept: 0.74, findings30d: 96, evals: { pass: 17, total: 20 },
+    version: 5, versions: [
+      { v: 5, date: "2026-05-30", note: "Tightened scope rule; cap at 5 high-signal findings", current: true },
+      { v: 4, date: "2026-05-09", note: "Added Tests dimension" },
+      { v: 3, date: "2026-04-18", note: "Reworded Correctness checks" },
+      { v: 2, date: "2026-03-22", note: "Added Security dimension" },
+      { v: 1, date: "2026-03-02", note: "Initial rubric" },
+    ],
+    body: SKILL_BODY,
+  },
+  s2: {
+    usedBy: ["Performance Reviewer"], pull: 0.34, accept: 0.61, findings30d: 18, evals: { pass: 4, total: 5 },
+    version: 2, versions: [
+      { v: 2, date: "2026-04-30", note: "Added exceptions for bootstrap promises", current: true },
+      { v: 1, date: "2026-01-22", note: "Extracted from codebase scan" },
+    ],
+    body: `# No .then() chains
+
+House convention extracted from the codebase. Prefer \`async/await\` over
+\`.then()\` promise chains for readability and correct error propagation.
+
+## Rule
+Flag any new \`.then(\` / \`.catch(\` chain in application code (not tests).
+
+## Good
+\`\`\`ts
+const user = await db.users.find(id);
+const posts = await db.posts.findMany({ userId });
+\`\`\`
+
+## Avoid
+\`\`\`ts
+db.users.find(id).then(user => db.posts.findMany(...)).then(...)
+\`\`\`
+
+## Exceptions
+- \`.then()\` on a top-level bootstrap promise is fine.
+- Library code that must stay framework-agnostic.`,
+  },
+  s3: {
+    usedBy: ["Security Reviewer"], pull: 0.92, accept: 0.88, findings30d: 41, evals: { pass: 6, total: 6 },
+    version: 4, versions: [
+      { v: 4, date: "2026-05-28", note: "Added NEXT_PUBLIC_ pattern + fixture-file guard", current: true },
+      { v: 3, date: "2026-04-12", note: "Added Supabase service_role pattern" },
+      { v: 2, date: "2026-02-28", note: "Lowered false positives on .example files" },
+      { v: 1, date: "2026-02-10", note: "Imported from secdev/agent-skills" },
+    ],
+    body: `# Secret Leakage Gate
+
+Detect committed secrets in the diff. This is a **blocking** check — any match
+is a CRITICAL finding.
+
+## Patterns
+- \`sk_live_\` / \`sk_test_\` — Stripe keys
+- \`service_role\` — Supabase service-role keys
+- \`NEXT_PUBLIC_\` env vars holding tokens
+- 40-char hex strings assigned to \`*_SECRET\`, \`*_TOKEN\`, \`*_KEY\`
+
+## On match
+1. Emit a CRITICAL finding at the exact \`file:line\`.
+2. Tell the author to rotate the key — assume it is already compromised.
+3. Recommend moving it to an environment variable.
+
+## False-positive guard
+Ignore values inside \`*.example\`, \`*.sample\`, and fixture files.`,
+  },
+  s4: {
+    usedBy: ["Security Reviewer"], pull: 0.88, accept: 0.83, findings30d: 12, evals: { pass: 5, total: 5 },
+    version: 3, versions: [
+      { v: 3, date: "2026-05-15", note: "Render three-circle overlap in output", current: true },
+      { v: 2, date: "2026-03-30", note: "Added per-leg line attribution" },
+      { v: 1, date: "2026-03-11", note: "Initial trifecta detector" },
+    ],
+    body: `# Lethal Trifecta
+
+Flag a PR when a single request flow combines **all three** of:
+
+1. **Private data access** — reads secrets, tokens, or another user's data
+2. **Untrusted input** — attacker-controllable request fields
+3. **Exfil path** — an outbound \`fetch\`, email, or log derived from that input
+
+## Output
+When all three legs are present, emit a CRITICAL finding and name which line
+satisfies each leg. Render the three-circle overlap so the reviewer sees the
+combination, not just the parts.
+
+## Mitigations to suggest
+- Allow-list outbound destinations.
+- Strip credentials before any request derived from user input.`,
+  },
+  s5: {
+    usedBy: [], pull: 0.0, accept: 0.0, findings30d: 0, evals: { pass: 0, total: 4 },
+    version: 1, versions: [
+      { v: 1, date: "2026-05-20", note: "Draft — resolver not yet wired", current: true },
+    ],
+    body: `# Phantom API Gate
+
+Detect imports of functions or modules that don't exist in the resolved
+dependency tree — a common hallucination pattern in AI-authored PRs.
+
+## Method
+1. Parse all new \`import\` / \`require\` statements in the diff.
+2. Resolve each against \`package.json\` + the repo's own modules.
+3. Flag any symbol that cannot be resolved.
+
+## Status
+Disabled — needs the resolver wired to the workspace index first.`,
+  },
+  s6: {
+    usedBy: ["Performance Reviewer", "Security Reviewer"], pull: 0.22, accept: 0.69, findings30d: 27, evals: { pass: 3, total: 4 },
+    version: 2, versions: [
+      { v: 2, date: "2026-05-04", note: "Emit one-line test skeleton in suggestion", current: true },
+      { v: 1, date: "2026-04-08", note: "Initial coverage nudge" },
+    ],
+    body: `# Test Coverage Nudge
+
+Suggest a test when a new code branch lands without assertions covering it.
+
+## Heuristic
+- New \`if\` / \`switch\` / \`catch\` branch in app code…
+- …with no corresponding change under \`test/\` or \`*.test.ts\`.
+
+## Output
+A SUGGESTION (never blocking) pointing at the uncovered branch with a one-line
+test skeleton the author can drop in.`,
+  },
+};
 
 const CONVENTIONS = [
   { id: "c1", rule: "Always use async/await instead of .then() chains", evidence_path: "src/api/users.ts:23-31", evidence_snippet: "const user = await db.users.find(id);\nconst posts = await db.posts.findMany({ userId });", confidence: 0.91, accepted: false },
@@ -323,5 +454,5 @@ const PERSONA_CONFLICTS = [
 
 Object.assign(window, {
   REPO, PR, VERDICT, INTENT, RISKS, BLAST, FINDINGS, DIFF, HISTORY, CODE_SNIPPETS,
-  PR_LIST, SKILLS, SKILL_BODY, CONVENTIONS, LEARNINGS, EVAL, MEMORY, PERSONAS, PERSONA_CONFLICTS,
+  PR_LIST, SKILLS, SKILL_BODY, SKILL_DETAIL, CONVENTIONS, LEARNINGS, EVAL, MEMORY, PERSONAS, PERSONA_CONFLICTS,
 });

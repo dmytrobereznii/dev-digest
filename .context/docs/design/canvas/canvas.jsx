@@ -95,6 +95,27 @@ function Root() {
           </DCArtboard>
         </DCSection>
 
+        <DCSection id="skills-lab" title="Skills Lab — Skills" subtitle="List of all skills + per-skill editor (mirrors the Agent editor)">
+          <DCArtboard id="skill-config" label="Skill Editor · Config (name · type · body)" width={1280} height={920} style={bg}>
+            <window.ScreenSkillsLab tab="Config" h={920} />
+          </DCArtboard>
+          <DCArtboard id="skill-preview" label="Skill Editor · Preview" width={1280} height={860} style={bg}>
+            <window.ScreenSkillsLab tab="Preview" h={860} />
+          </DCArtboard>
+          <DCArtboard id="skill-evals" label="Skill Editor · Evals" width={1280} height={860} style={bg}>
+            <window.ScreenSkillsLab tab="Evals" h={860} />
+          </DCArtboard>
+          <DCArtboard id="skill-stats" label="Skill Editor · Stats" width={1280} height={860} style={bg}>
+            <window.ScreenSkillsLab tab="Stats" h={860} />
+          </DCArtboard>
+          <DCArtboard id="skill-versions" label="Skill Editor · Versions (body snapshots)" width={1280} height={860} style={bg}>
+            <window.ScreenSkillsLab tab="Versions" h={860} />
+          </DCArtboard>
+          <DCArtboard id="skill-community" label="Skills · Community search drawer" width={1280} height={920} style={bg}>
+            <window.ScreenSkillsLab tab="Config" searchOpen={true} h={920} />
+          </DCArtboard>
+        </DCSection>
+
         <DCSection id="multiagent" title="Multi-Agent Review — N4" subtitle="Dynamic columns = enabled agents (try the Agents tweak)">
           <DCArtboard id="ma-cols" label="Columns" width={1440} height={1120} style={bg}>
             <window.ScreenMultiAgent view="columns" agentCount={t.agentCount} h={1120} />
@@ -134,6 +155,9 @@ function Root() {
           </DCArtboard>
           <DCArtboard id="conventions" label="Conventions (N7)" width={1280} height={860} style={bg}>
             <window.ScreenConventions h={860} />
+          </DCArtboard>
+          <DCArtboard id="conv-create" label="Conventions · Create skill (merged from accepted)" width={1280} height={860} style={bg}>
+            <window.ScreenConventions h={860} createOpen={true} />
           </DCArtboard>
           <DCArtboard id="conformance" label="Conformance Report (N8)" width={1280} height={760} style={bg}>
             <window.ScreenConformance h={760} />

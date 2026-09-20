@@ -1,8 +1,8 @@
 {
-  "source": "DevDigest_design.html",
-  "sourceBytes": 1799366,
-  "sourceMd5": "c135ea73e466fda754a24550206c0b04",
-  "extractedAt": "2026-09-16",
+  "source": "designs_with_skills.html",
+  "sourceBytes": 1809188,
+  "sourceMd5": "06bfb6e3bb3d5a79b2034e72c4a6de5a",
+  "extractedAt": "2026-09-20",
   "generated": [
     {
       "file": "src/icons.jsx",
@@ -32,7 +32,7 @@
       "file": "src/data.jsx",
       "desc": "realistic mock data for DevDigest screens",
       "order": 7,
-      "bytes": 23309
+      "bytes": 28682
     },
     {
       "file": "src/data2.jsx",
@@ -92,7 +92,7 @@
       "file": "src/screen_skills.jsx",
       "desc": "Skills Lab (list + editor + eval panel) and Eval Dashboard",
       "order": 17,
-      "bytes": 17953
+      "bytes": 32814
     },
     {
       "file": "src/screen_onboarding.jsx",
@@ -158,7 +158,7 @@
       "file": "src/screen_conv_conf.jsx",
       "desc": "N7 Conventions extractor + N8 Conformance Report",
       "order": 28,
-      "bytes": 9182
+      "bytes": 14664
     },
     {
       "file": "canvas/tweaks-panel.jsx",
@@ -176,87 +176,87 @@
       "file": "canvas/canvas.jsx",
       "desc": "artboard composition: sections, artboards, post-its",
       "order": 999,
-      "bytes": 11248
+      "bytes": 12861
     }
   ],
   "skipped": [
     {
-      "id": "4a25decb-805e-442d-bcde-527e1a64652f",
+      "id": "a21c4b2d-91a3-42f1-8844-44ae582dc5a9",
       "why": "vendor bundle (React/Babel)",
       "bytes": 109931
     },
     {
-      "id": "18880276-7a60-434b-ace4-f032954f7ade",
+      "id": "20c20183-0a9b-4ba3-b567-47b8c73e0ac9",
       "why": "vendor bundle (React/Babel)",
       "bytes": 1080205
     },
     {
-      "id": "c54159f0-7982-4984-b6f6-0cab4546471e",
+      "id": "a6041119-69cc-4248-80f8-c9ff200ffe2d",
       "why": "vendor bundle (React/Babel)",
       "bytes": 3137752
     },
     {
-      "id": "0c03ea17-376b-4959-a589-6beb29c751be",
+      "id": "ebba4829-1929-406b-9dbf-3dd63429ec37",
       "why": "font",
       "bytes": 34460
     },
     {
-      "id": "88f23287-3a43-464f-a0ad-ad29ff4a06ac",
+      "id": "41c48682-e60b-4e04-8780-c9850f8cc73f",
       "why": "font",
       "bytes": 24992
     },
     {
-      "id": "2321ab7a-d17b-4a3c-b55e-ab6ae1ae4539",
+      "id": "d99e0cc8-9717-4738-8a71-9ad718f0c80d",
       "why": "font",
       "bytes": 15032
     },
     {
-      "id": "06ea96ee-c040-4d48-b301-8a8f0fc707c4",
+      "id": "a5fda478-eac2-4af6-b4f9-98219dfe6503",
       "why": "font",
       "bytes": 25392
     },
     {
-      "id": "466b5da1-145e-4933-9d43-2d9604728d1f",
+      "id": "21beaac7-88ca-47d9-a5d0-75b54a2268dd",
       "why": "font",
       "bytes": 13708
     },
     {
-      "id": "3734a607-49ca-4aac-a833-bdfe28e17e71",
+      "id": "0f2e197c-cc9f-4b8e-9656-38b6e1a87b89",
       "why": "font",
       "bytes": 113696
     },
     {
-      "id": "79e9b974-06a7-4dba-ad41-cd2a54f92a92",
+      "id": "d63bc9ef-e36d-4a63-a73e-1ff219251035",
       "why": "font",
       "bytes": 64576
     },
     {
-      "id": "22500ad5-58e0-492f-bcd5-91fce64d4b0f",
+      "id": "c74dc5a8-8f64-4c4c-94c6-93969e8d5c29",
       "why": "font",
       "bytes": 2220
     },
     {
-      "id": "517f43bb-fdf7-4b8f-a313-8de8e35ffbc6",
+      "id": "bf0c1f0a-0631-41f5-994f-4aac3761f3d7",
       "why": "font",
       "bytes": 11856
     },
     {
-      "id": "971e55c3-d2b2-4f24-bf57-dd002be623e9",
+      "id": "df951823-7184-4d49-84a0-035268ee309e",
       "why": "font",
       "bytes": 9068
     },
     {
-      "id": "4fe2f7b1-aa9f-41b6-8be3-0989c0a1ef97",
+      "id": "27d11aa8-96f3-4a09-8e25-d1392d518981",
       "why": "font",
       "bytes": 7832
     },
     {
-      "id": "c8b255b7-ff01-448c-ad6d-72b03381764d",
+      "id": "a794ce3d-ab89-41e1-9bdb-b032cd19954e",
       "why": "font",
       "bytes": 15464
     },
     {
-      "id": "0d82179b-b8c0-4c61-b317-6110f76ffb34",
+      "id": "c205c4d3-b6a6-4869-ab95-e893f5a7f528",
       "why": "font",
       "bytes": 41788
     }
