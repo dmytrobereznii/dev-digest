@@ -6,10 +6,12 @@
 "use client";
 
 import React from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Skeleton, ErrorState } from "@devdigest/ui";
+import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { ErrorState } from "@devdigest/ui";
 import { AppShell } from "../../../../../components/app-shell";
-import { RepoNotFound } from "@/components/repo-not-found";
+import { ConfirmDeleteRunModal } from "./_components/ConfirmDeleteRunModal";
+import { PrDetailSkeleton } from "./_components/PrDetailSkeleton";
 import { PrDetailHeader } from "./_components/PrDetailHeader";
 import { OverviewTab } from "./_components/OverviewTab";
 import { FindingsTab } from "./_components/FindingsTab";
@@ -22,8 +24,10 @@ import { useActiveRepo, useRepoNotFound } from "../../../../../lib/repo-context"
 import { ApiError } from "../../../../../lib/api";
 import { githubPrUrl } from "../../../../../lib/github-urls";
 import type { FindingRecord } from "@devdigest/shared";
+import { s as styles } from "./styles";
 
 export default function PRDetailPage() {
+  const t = useTranslations("prReview");
   const params = useParams<{ repoId: string; number: string }>();
   const search = useSearchParams();
   const router = useRouter();
@@ -57,6 +61,11 @@ export default function PRDetailPage() {
     if (prId) qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
   };
 
+  // The run awaiting confirmation (null = modal closed). Holding the id here
+  // rather than in FindingsTab keeps the mutation and the confirmation in the
+  // same place the delete is owned.
+  const [runPendingDelete, setRunPendingDelete] = React.useState<string | null>(null);
+
   const tab = search.get("tab") ?? "overview";
   const traceRunId = search.get("trace");
   const setParam = (key: string, val: string | null) => {
@@ -82,27 +91,18 @@ export default function PRDetailPage() {
   const repoFullName = activeRepo?.full_name ?? null;
   const crumb = [
     { label: repoName, mono: true, href: `/repos/${repoId}/pulls` },
-    { label: "Pull Requests", href: `/repos/${repoId}/pulls` },
+    { label: t("list.breadcrumb"), href: `/repos/${repoId}/pulls` },
     { label: `#${number}`, mono: true },
   ];
 
-  // Stale/unknown :repoId → friendly empty state instead of a 404 error.
-  if (repoNotFound) {
-    return (
-      <AppShell crumb={crumb}>
-        <RepoNotFound />
-      </AppShell>
-    );
-  }
+  // Stale/unknown :repoId → the route's 404 boundary (app/not-found.tsx), which
+  // renders the same RepoNotFound surface this page used to render by hand.
+  if (repoNotFound) notFound();
 
   if (isLoading) {
     return (
       <AppShell crumb={crumb}>
-        <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 16, maxWidth: 1080, margin: "0 auto" }}>
-          <Skeleton height={28} width={420} />
-          <Skeleton height={16} width={300} />
-          <Skeleton height={200} />
-        </div>
+        <PrDetailSkeleton />
       </AppShell>
     );
   }
@@ -112,8 +112,10 @@ export default function PRDetailPage() {
       <AppShell crumb={crumb}>
         <ErrorState
           fullScreen
-          title="Couldn't load this pull request"
-          body={error instanceof ApiError ? error.message : `PR #${number} could not be loaded.`}
+          title={t("detail.errorTitle")}
+          body={
+            error instanceof ApiError ? error.message : t("detail.errorBody", { number })
+          }
           onRetry={() => refetch()}
         />
       </AppShell>
@@ -133,7 +135,7 @@ export default function PRDetailPage() {
         onRunsStarted={() => invalidateActiveRuns()}
       />
 
-      <div style={{ padding: "24px 32px 44px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1080, margin: "0 auto" }}>
+      <div style={styles.content}>
         {tab === "overview" && <OverviewTab prBody={pr.body} />}
 
         {tab === "findings" && (
@@ -149,10 +151,7 @@ export default function PRDetailPage() {
             headSha={pr.head_sha}
             cancelMutation={cancel}
             onOpenTrace={(id) => setParam("trace", id)}
-            onDelete={(id) => {
-              if (window.confirm("Delete this run from history? (its logs are removed too)"))
-                deleteRun.mutate(id);
-            }}
+            onDelete={(id) => setRunPendingDelete(id)}
             onRunDone={() => {
               invalidateActiveRuns();
               invalidateRunHistory();
@@ -170,6 +169,17 @@ export default function PRDetailPage() {
           />
         )}
       </div>
+
+      {runPendingDelete && (
+        <ConfirmDeleteRunModal
+          pending={deleteRun.isPending}
+          onClose={() => setRunPendingDelete(null)}
+          onConfirm={() => {
+            deleteRun.mutate(runPendingDelete);
+            setRunPendingDelete(null);
+          }}
+        />
+      )}
 
       {prId && traceRunId && (
         <RunTraceDrawer

@@ -118,5 +118,16 @@
     "goToReview": "Jump to this run’s findings below",
     "openTrace": "Open run trace & logs",
     "deleteRun": "Delete run"
+  },
+  "detail": {
+    "errorTitle": "Couldn’t load this pull request",
+    "errorBody": "PR #{number} could not be loaded.",
+    "deleteRun": {
+      "title": "Delete this run?",
+      "subtitle": "This cannot be undone.",
+      "body": "The run leaves the history along with its logs, and the review it produced — including that review’s findings — is deleted with it.",
+      "confirm": "Delete run",
+      "cancel": "Cancel"
+    }
   }
 }
