@@ -97,7 +97,7 @@ component, and the next component that needs the same filter copies it.
 
 ---
 
-## 3. Deriving instead of storing
+## 3. What stays state, what calls a helper
 
 ### Good — `_components/FindingsPanel/FindingsPanel.tsx:33`
 
@@ -115,21 +115,6 @@ const shown = React.useMemo(
 Only `selected`, `hideLow` and `focusIdx` are state — the three things a user
 actually changes. Counts, the visible severities, the effective filter and the
 final list are all computed in render from those three plus props.
-
-### Bad — mirroring props into state
-
-```tsx
-const [shown, setShown] = React.useState(findings);
-React.useEffect(() => {
-  setShown(visibleFindings(findings, hideLow, selected));
-}, [findings, hideLow, selected]);
-```
-
-One extra render per change, and a window where `shown` disagrees with
-`findings`. The rule is in `react-best-practices`; the reason it belongs here
-too is that it decides whether `helpers.ts` exists at all.
-
----
 
 ## 4. A data hook
 

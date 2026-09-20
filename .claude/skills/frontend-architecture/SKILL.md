@@ -21,6 +21,12 @@ derive-don't-store and rendering cost belong to
 semantics and RSC prop rules to
 [`next-best-practices`](../next-best-practices/SKILL.md).
 
+This skill is not the whole pre-flight. Before building UI, the
+`design-reference` skill covers the artboards under `.context/docs/design/`,
+and an in-flight change gets a spec in `.context/specs/` per the project
+instructions. Neither is this skill's job; both are easy to skip if its
+checklist is treated as the whole list.
+
 **One override.** `react-best-practices` prescribes a container/presentational
 split. This skill forbids it as a file convention (see § Components); the
 pattern's author retracted it and hooks replaced it. On component structure,
@@ -40,15 +46,21 @@ _components/<Name>/  ──▶  route folder  ──▶  src/components · src/l
 consumer outlives the death of its first, and nothing ever deletes it. Wait
 until the duplication is concrete, then move.
 
+The ladder runs both ways. When a rung-2 component or helper is left with one
+consumer, push it back down beside that consumer. When it is left with none,
+delete it — a shared thing with no callers is the exact debt the rule exists to
+prevent.
+
 ## The rungs, as real directories
 
 | Rung | Lives in | Holds | Promote when |
 |---|---|---|---|
 | 0 — Component | `app/**/_components/<Name>/` | `<Name>.tsx` plus its own `constants.ts`, `helpers.ts`, `styles.ts`, `index.ts`, tests | a sibling component in the same route needs it |
 | 0 — Nested | `<Name>/_components/<Child>/` | a child only `<Name>` renders | a second component renders it |
-| 1 — Route | beside `page.tsx`, e.g. `app/repos/[repoId]/pulls/` | `constants.ts`, `helpers.ts`, `styles.ts` shared by that route's `_components` | a second route needs it |
+| 1 — Route | beside `page.tsx`, e.g. `app/repos/[repoId]/pulls/` | `constants.ts`, `helpers.ts`, `styles.ts` shared by that route's `_components` | a second route in the segment needs it |
+| 1 — Segment | `app/<segment>/_components/<Name>/` | a component shared by routes inside one segment, e.g. `AgentCard` used by `/agents` and `/agents/[id]` | a route outside the segment needs it |
 | 2 — App | `src/components/<kebab-name>/`, `src/lib/**` | cross-route components; the API client, query hooks, contexts | a second package needs it |
-| 3 — Vendored | `src/vendor/ui`, `src/vendor/shared` | design system, Zod contracts | — see § Types |
+| 3 — Vendored | `src/vendor/ui`, `src/vendor/shared` | design system, Zod contracts | — see § Styling and § Types |
 
 Rung 0 exists because `_components` is opted out of routing: a component can
 sit inside a route segment without becoming a URL.
@@ -62,7 +74,8 @@ sit inside a route segment without becoming a URL.
 4. Calls hooks? → a hook. § Hooks
 5. Talks to the API? → § Data
 6. A type that crosses the API? → § Types
-7. Style? → `styles.ts` at that rung, or the vendored kit if it is a primitive.
+7. Style? → `styles.ts` at that rung. § Styling
+8. User-visible copy? → a feature namespace under `messages/en/`. § Copy
 
 ## Components
 
@@ -102,6 +115,45 @@ sit inside a route segment without becoming a URL.
 - Pure helpers get their own `helpers.test.ts`. That is the point of extracting
   them.
 
+## Styling and the design system
+
+- **Tailwind is available but unused.** It is a dependency, and its utilities
+  do compile — `globals.css` imports the design system's `styles.css`, which
+  starts with `@import "tailwindcss"`. Yet no component uses a utility class.
+  Styling here is inline style objects in `styles.ts`, keyed off CSS variables.
+  Follow the repo, not `package.json`.
+- Reference theme variables (`var(--accent)`, `var(--text-muted)`,
+  `var(--border)`) rather than hard-coding colors, so both themes keep working.
+- `styles.ts` exports one `s` object of `CSSProperties`, at the rung that owns
+  the component.
+- Severity and category colors come from `SEV` and `CAT` in the design system.
+  Prefer the rendered `SeverityBadge` / `CategoryTag` over reading those maps.
+- **Promotion to `@devdigest/ui` is a different move from rung 2.** A component
+  earns a place there only when it is generic: no domain types, no data hooks,
+  no knowledge of a route. One that still knows about findings or runs belongs
+  in `src/components/`, however many routes use it.
+- Adding one means following
+  [`src/vendor/ui/README.md`](../../../client/src/vendor/ui/README.md) and
+  registering it in the gallery at `src/components/showcase`, which
+  `src/test/smoke.test.tsx` renders in both themes. There is no `/showcase`
+  route.
+
+## Copy and i18n
+
+- Every user-visible string goes through `next-intl`. Components call
+  `useTranslations("<namespace>")`; Server Components call
+  `getTranslations("<namespace>")`.
+- A namespace is a **user-facing surface**, not a unit of work:
+  `agents`, `prReview`, `settings`, `shell`. Keys are nested camelCase
+  (`panel.hideLowConfidence`).
+- Adding a control to an existing surface adds keys to that surface's file. A
+  filter on the agents list is `agents.json`, not a new namespace.
+- **A genuinely new surface adds its own file**, and the loader reads the
+  directory, so nothing needs registering and two surfaces never contend over
+  one file. Reach for `common.json` only for wording shared across surfaces.
+- There is a single locale and no locale routing. That is a reason to keep
+  strings out of components, not a reason to skip the namespace.
+
 ## State
 
 The decision tree, in order. Stop at the first line that fits:
@@ -110,11 +162,17 @@ The decision tree, in order. Stop at the first line that fits:
 2. Used only inside this component? → `useState` here.
 3. Used by one child? → keep it here, pass it down.
 4. Used by a sibling? → lift to the closest common parent.
-5. Should it survive a reload or be linkable? → the URL, as this app already
-   does with `?tab=` via `useSearchParams`.
-6. Comes from the API? → it is server cache, not state. It belongs to TanStack
+5. Should it be **linkable** — shareable, bookmarkable, part of where you
+   are? → the URL, as this app already does with `?tab=` via
+   `useSearchParams`.
+6. Should it merely **persist per viewer** — a preference nobody wants in a
+   pasted link? → `localStorage` behind a context in `src/lib/`, as
+   `theme.tsx` and `repo-context.tsx` do. Note the cost: server-rendered markup
+   cannot know the stored value, which is why `theme.tsx` needs the
+   before-paint script in `app/layout.tsx`. Prefer the URL when either fits.
+7. Comes from the API? → it is server cache, not state. It belongs to TanStack
    Query, and a query result is never copied into `useState`.
-7. Genuinely cross-cutting (theme, toasts, active repo)? → a small
+8. Genuinely cross-cutting (theme, toasts, active repo)? → a small
    domain-scoped context in `src/lib/`, with a hook that throws when used
    outside its provider.
 
@@ -139,6 +197,12 @@ Two rules fall out of it:
 
 ## Data and the API layer
 
+- **Check the data exists before planning any files.** A "client feature" is
+  often blocked on a server change. Confirm the field is on the contract in
+  `src/vendor/shared/contracts/` *and* that a route actually serves it — some
+  contracts describe endpoints no one has implemented yet. If it is missing,
+  the change spans both packages, and the server half belongs to
+  [`onion-architecture`](../onion-architecture/SKILL.md).
 - One transport: `src/lib/api.ts`. It normalizes failures to `ApiError` so the
   UI can branch on status. A component that calls `fetch` has skipped a rung.
 - This app is Next's **External HTTP APIs** shape, a separate Fastify service.
@@ -153,8 +217,12 @@ Two rules fall out of it:
 
 ## Types and contracts
 
-- Every shape crossing the API comes from `@devdigest/shared`. `src/lib/types.ts`
-  is for client-only types.
+- Every shape crossing the API comes from `@devdigest/shared`. Import it from
+  there directly in new code.
+- `src/lib/types.ts` is **not** a place for new types — it is a re-export hub
+  that forwards contract types from `@devdigest/shared` plus a few client view
+  models. Both doors are in live use; prefer the direct import, and only add
+  here when a contract genuinely has no home yet.
 - Contracts are Zod schemas with the type inferred from the schema, one
   declaration rather than two.
 - `@devdigest/shared` is **vendored twice** and the copies have already
@@ -195,13 +263,12 @@ Two rules fall out of it:
 - **Use the `@/` alias** in place of `../../../../lib/hooks`. A new alias goes
   in both `client/tsconfig.json` and `client/vitest.config.ts` — miss one and
   tests break while the app still builds.
-- Two kinds of barrel exist here and they are **not one decision**:
-  - A one-line forwarder for a single component folder
-    (`export { X, X as default } from "./X"`) is cheap and keeps imports
-    readable. Keep it.
-  - An **aggregating** barrel re-exporting many modules (`src/lib/hooks/index.ts`)
-    pulls all of them in synchronously and invites `module → index → module`
-    cycles. Add no more; import `@/lib/hooks/<domain>` directly.
+- Two kinds of barrel exist here and they are **not one decision**. A one-line
+  forwarder for a single component folder
+  (`export { X, X as default } from "./X"`) is cheap — keep it. An
+  **aggregating** barrel re-exporting many modules (`src/lib/hooks/index.ts`)
+  loads all of them synchronously and invites `module → index → module` cycles
+  — add no more, and import `@/lib/hooks/<domain>` directly.
 - `export * from "./X"` and `export { default } from "./X"` in one file is a
   build error under the App Router: `the name 'default' is exported multiple
   times`.
@@ -220,9 +287,9 @@ Two rules fall out of it:
 
 ## Known exceptions — accepted debt, 2026-09-20
 
-These predate the skill and are listed so an agent recognises them as known
-rather than rediscovering them mid-task. Leave them alone unless the task is
-that code.
+Known deviations, listed so they are recognised rather than rediscovered. Leave
+them unless the task is that code, and mark a row fixed rather than deleting
+it. **This list shrinks; it never grows.**
 
 | Where | What | Target shape |
 |---|---|---|
@@ -230,14 +297,20 @@ that code.
 | Deep relative imports outnumber `@/` imports | The alias is configured but underused | Use `@/` in new code; convert files you already touch |
 | `src/lib/hooks/index.ts` | Aggregating barrel | Import `@/lib/hooks/<domain>` directly in new code; the barrel stays for existing callers |
 | `src/components/{app-shell,showcase,page-shell}/index.ts` | `export *` over a single module each, harmless today | Leave, and add no `export { default }` line to them |
+| `app/repos/[repoId]/pulls/_components/FilterBar/` | No `styles.ts`; it imports `s` from the route rung, though nothing else uses those keys | New components own their styles at their own rung. Leave this one |
+| `messages/` is outside `src/` | `@/*` maps to `./src/*`, so a test importing its namespace JSON is stuck with a deep relative path | Accept the relative path there; the alias rule covers `src/` only |
 
 ## Checklist — adding a feature to a route
 
 Reference implementation: `app/agents/` — server `page.tsx` → colocated
 `_components/AgentsListView/` (view, `constants.ts`, `helpers.ts`, `styles.ts`,
-`index.ts`, nested `_components/CreateAgentModal/`).
+`index.ts`, nested `_components/CreateAgentModal/`), beside
+`_components/AgentCard/`, which is the segment rung: both `/agents` and
+`/agents/[id]` render it.
 
+- [ ] The data already exists on the contract and a route serves it
 - [ ] Every § *Where does this code go?* question answered for the new code
+- [ ] Copy in `messages/en/<namespace>.json`, reached via `useTranslations`
 - [ ] `helpers.test.ts` for the pure helpers, `<Name>.test.tsx` for the component
 - [ ] `"use client"` only at the subtree entry; the page stays a shell if it can
 - [ ] `@/` imports, and no new aggregating barrel
