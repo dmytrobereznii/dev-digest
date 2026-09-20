@@ -19,8 +19,7 @@ out. This skill re-checks it.
 
 Diff → skills map, with the exact commands:
 [`routing.md`](routing.md). Report and verdict shapes:
-[`template.md`](template.md). Plan of record:
-[`.context/specs/03-pr-self-review-skill.md`](../../../.context/specs/03-pr-self-review-skill.md).
+[`template.md`](template.md).
 
 **Scope is conformance** — rings, rungs, naming, contracts, owned zones. Not
 bugs: `/code-review` owns those. Say so and suggest it for a large diff rather

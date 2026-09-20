@@ -24,8 +24,7 @@ Paths are under `src/app/repos/[repoId]/pulls/`.
   count what is below them: a pill equals the number of cards of that severity
   whenever "hide low confidence" is off.
 - **Pills show only severities present**, and the filter is single-select:
-  click narrows to one level, clicking it again clears. Spec:
-  [`01-severity-filter.md`](../specs/01-severity-filter.md).
+  click narrows to one level, clicking it again clears.
 - **No LLM on any of these paths.** Every number is grouped from persisted
   findings, in SQL (list) or in the component (everything else).
 - **One formatter for money**: `formatUsd` in `@devdigest/ui` — `null` → `—`,
