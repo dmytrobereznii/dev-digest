@@ -65,6 +65,12 @@ jobs:
 
       - run: pnpm typecheck
 
+      # The onion-architecture boundaries, as encoded in .dependency-cruiser.cjs.
+      # Baseline is 0 errors / 15 warnings (the accepted debt in that skill's
+      # Known exceptions table); depcruise exits non-zero on errors only, so a
+      # failure here is a NEW boundary violation.
+      - run: pnpm exec depcruise src
+
   unit:
     name: tests
     runs-on: ubuntu-latest

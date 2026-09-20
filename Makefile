@@ -4,7 +4,7 @@
 # npm in reviewer-core/ and e2e/. The fan-out targets below encode that.
 
 .DEFAULT_GOAL := help
-.PHONY: help dev db stop test typecheck e2e
+.PHONY: help dev db stop test typecheck lint lint-arch e2e
 
 help: ## Show this help
 	@grep -hE '^[a-z0-9-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -28,6 +28,12 @@ typecheck: ## Type-check server, client, reviewer-core
 	cd server && pnpm typecheck
 	cd client && pnpm typecheck
 	cd reviewer-core && npm run typecheck
+
+lint: ## ESLint the TypeScript packages
+	cd client && pnpm exec eslint .
+
+lint-arch: ## Check the onion-architecture boundaries (server)
+	cd server && pnpm exec depcruise src
 
 e2e: ## Hermetic browser e2e on isolated ports (ephemeral Postgres)
 	./scripts/e2e.sh
