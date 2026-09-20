@@ -13,6 +13,7 @@ export const s = {
   w320: { width: 320 } satisfies CSSProperties,
   w360: { width: 360 } satisfies CSSProperties,
   w420: { width: 420 } satisfies CSSProperties,
+  w520: { width: 520 } satisfies CSSProperties,
   w460: { width: 460 } satisfies CSSProperties,
   cardTitle: { fontWeight: 600 } satisfies CSSProperties,
   cardBody: { color: "var(--text-secondary)", fontSize: 14, marginTop: 5 } satisfies CSSProperties,

@@ -8,6 +8,7 @@ import type {
 } from '@devdigest/shared';
 import { Review as ReviewSchema } from '@devdigest/shared';
 import { assemblePrompt } from '../prompt.js';
+import type { PromptSkill } from '../prompt.js';
 import { groundFindings, groundingSummary } from '../grounding.js';
 import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
 
@@ -52,8 +53,12 @@ export interface ReviewInput {
   llm: LLMProvider;
   /** 'auto' (default) picks single-pass unless the diff is large + multi-file. */
   strategy?: ReviewStrategy;
-  /** Resolved skill bodies (NOT slugs). */
-  skills?: string[];
+  /**
+   * Resolved skills (NOT slugs) — name + body + trust, where trust comes from
+   * the skill's provenance in the caller's store. Untrusted bodies are
+   * delimiter-wrapped by assemblePrompt. Empty/undefined → section omitted.
+   */
+  skills?: PromptSkill[];
   /** Curated memory items. */
   memory?: string[];
   /** Project-context spec chunks (untrusted; delimiter-wrapped downstream). */

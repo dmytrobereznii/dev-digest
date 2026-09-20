@@ -31,6 +31,7 @@
     "config": {
       "model": "Model",
       "provider": "Provider",
+      "skillsLoaded": "Skills loaded",
       "memoryPulled": "Memory pulled",
       "specsRead": "Specs read",
       "items": "{count, plural, one {# item} other {# items}}",
@@ -50,6 +51,8 @@
       "specs": "Project context (dynamic)",
       "callers": "Callers of changed symbols — repo-intel (dynamic)",
       "user": "User / diff (dynamic)",
+      "tokens": "~{count, number} tokens",
+      "tokensTitle": "Estimated from this block's length. The run's real token usage is in Stats.",
       "copy": "Copy",
       "fullscreen": "Open fullscreen",
       "search": "Search in this block…",

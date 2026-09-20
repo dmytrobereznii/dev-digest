@@ -80,6 +80,15 @@ rules into ESLint (two sources of truth for one boundary).
 **Evidence:** `server/eslint.config.mjs`, `client/eslint.config.mjs`,
 `server/.dependency-cruiser.cjs`, `Makefile` → `lint` / `lint-arch`.
 
+**Updated 2026-09-20 (L02 skills):** the `depcruise` baseline is now **0 errors
+/ 16 warnings**. `modules/skills/helpers.ts ↔ modules/skills/repository.ts`
+reproduces the `agents` cycle the rule's own comment already grandfathers
+(helpers maps the row the repository re-exports; the repository imports
+`isBodyChange` from helpers). Removing it by importing `SkillRow` from
+`db/rows.ts` instead trips `persistence-in-service` — 16 either way, so the
+agents-identical shape was kept. A new module mirroring `agents/` will add a
+17th; that is expected, not a regression.
+
 ### 2026-09-16 — Lesson features are built from scratch, never recovered from history
 
 **What:** Every README lesson feature (L01–L08) is implemented from the

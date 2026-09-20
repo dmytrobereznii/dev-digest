@@ -171,6 +171,30 @@ describe('AI contracts parse fixtures', () => {
     expect(trace.stats.cost_usd).toBe(0.06);
   });
 
+  it('RunTrace persisted BEFORE config.skills existed still parses (the .default([]) guard)', () => {
+    // Every trace in `run_traces` written before L02 has a config with no
+    // `skills` key. Without the default, opening that run's trace drawer would
+    // fail validation at read time — so this pins the back-compat, not the
+    // field.
+    const legacy = {
+      config: { agent: 'Security Reviewer', version: '1', provider: 'openrouter', model: 'gpt-4.1', pr: 482, source: 'local' },
+      stats: { duration_ms: 8200, tokens_in: 14820, tokens_out: 1240, cost_usd: 0.014, findings: 2, grounding: '2/2 passed' },
+      prompt_assembly: { system: 's', skills: null, memory: null, specs: null, user: 'u' },
+      tool_calls: [],
+      raw_output: '',
+      memory_pulled: [],
+      specs_read: [],
+      log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
+    };
+    const trace = RunTrace.parse(legacy);
+    expect(trace.config.skills).toEqual([]);
+    // And a trace written after the change round-trips its names.
+    expect(
+      RunTrace.parse({ ...legacy, config: { ...legacy.config, skills: ['pr-quality-rubric'] } })
+        .config.skills,
+    ).toEqual(['pr-quality-rubric']);
+  });
+
   it('RunSummary carries a null cost for an unpriced model', () => {
     const run = RunSummary.parse({
       run_id: 'r1',

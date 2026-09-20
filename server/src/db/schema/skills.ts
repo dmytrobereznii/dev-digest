@@ -28,6 +28,9 @@ export const skillVersions = pgTable(
       .references(() => skills.id, { onDelete: 'cascade' }),
     version: integer('version').notNull(),
     body: text('body').notNull(),
+    /** Optional one-line note typed on save ("Tightened scope rule"), shown in
+        the Versions tab. Nullable: a blank note renders as an em-dash. */
+    note: text('note'),
     createdAt: now(),
   },
   (t) => ({ pk: primaryKey({ columns: [t.skillId, t.version] }) }),

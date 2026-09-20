@@ -78,6 +78,9 @@ export const RunTrace = z.object({
     model: z.string(),
     pr: z.number().int().nullish(),
     source: z.enum(['local', 'ci']).default('local'),
+    /** Names of the skills that reached the prompt (linked AND enabled).
+        `.default([])` keeps traces persisted before skills existed parseable. */
+    skills: z.array(z.string()).default([]),
   }),
   stats: RunStats,
   prompt_assembly: PromptAssembly,

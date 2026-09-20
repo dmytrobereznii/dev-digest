@@ -14,6 +14,7 @@ import {
   USERS_PATCH,
 } from './seed-diffs.js';
 import { DEMO_PRS, seedDemoPr } from './seed-prs/index.js';
+import { SEED_SKILLS, SEED_SKILL_AGENTS, LESSON_AGENT_MODEL } from './seed-skills.js';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -47,8 +48,12 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  * its own block above, sample review included, because the e2e flows pin its
  * exact values.
  *
- * Course lessons populate the other tables (skills, conventions, memory, eval,
- * …) once their features are built — they start empty here.
+ * Then L02's Skills Lab fixtures (`./seed-skills.ts`): four skills — one of
+ * them third-party and disabled, one with two versions — plus the two lesson
+ * agents that link them.
+ *
+ * Course lessons populate the other tables (conventions, memory, eval, …) once
+ * their features are built — they start empty here.
  */
 
 export const DEFAULT_WORKSPACE_NAME = 'default';
@@ -261,6 +266,80 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       .from(t.agents)
       .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
     if (!existing) await db.insert(t.agents).values(a);
+  }
+
+  // ---- L02: the Skills Lab fixtures + the two lesson agents ----
+  // Idempotent like everything above: a skill or agent is written once, by
+  // name. An existing row is left alone — the point of the seed is a usable
+  // first boot, not overwriting whatever the user has since edited.
+  const skillIdByName = new Map<string, string>();
+  for (const sk of SEED_SKILLS) {
+    let [row] = await db
+      .select()
+      .from(t.skills)
+      .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.name, sk.name)));
+    if (!row) {
+      const live = sk.versions[sk.versions.length - 1]!;
+      [row] = await db
+        .insert(t.skills)
+        .values({
+          workspaceId,
+          name: sk.name,
+          description: sk.description,
+          type: sk.type,
+          source: sk.source,
+          body: live.body,
+          enabled: sk.enabled,
+          version: sk.versions.length,
+        })
+        .returning();
+      // History, oldest first — v1 … vN, where vN is the live body. Seeding
+      // more than one version is what makes the Versions tab non-trivial on
+      // first boot.
+      await db.insert(t.skillVersions).values(
+        sk.versions.map((v, i) => ({
+          skillId: row!.id,
+          version: i + 1,
+          body: v.body,
+          note: v.note,
+        })),
+      );
+    }
+    skillIdByName.set(sk.name, row!.id);
+  }
+
+  // Both lesson agents override DEFAULT_MODEL — see LESSON_AGENT_MODEL's note.
+  for (const a of SEED_SKILL_AGENTS) {
+    let [agent] = await db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
+    if (!agent) {
+      [agent] = await db
+        .insert(t.agents)
+        .values({
+          workspaceId,
+          name: a.name,
+          description: a.description,
+          provider: DEFAULT_PROVIDER,
+          model: LESSON_AGENT_MODEL,
+          systemPrompt: a.systemPrompt,
+          enabled: true,
+          version: 1,
+          createdBy: userId,
+        })
+        .returning();
+    }
+    // Links are upserted by (agentId, skillId) so the seed can re-run; `order`
+    // is the array index, which is the order the bodies reach the prompt.
+    for (const [order, skillName] of a.skills.entries()) {
+      const skillId = skillIdByName.get(skillName);
+      if (!skillId) continue;
+      await db
+        .insert(t.agentSkills)
+        .values({ agentId: agent!.id, skillId, order })
+        .onConflictDoNothing();
+    }
   }
 
   // ---- the run behind the sample review ----

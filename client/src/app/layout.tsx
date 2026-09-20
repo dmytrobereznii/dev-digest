@@ -26,6 +26,7 @@ const USED_NAMESPACES = [
   "runs",
   "settings",
   "shell",
+  "skills",
 ] as const;
 
 /** Three lines rather than a `lodash/pick` dependency for three lines. */

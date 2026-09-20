@@ -184,6 +184,28 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // L02 — linked skills. Two gates (spec D6): a body reaches the prompt iff
+      // the skill is LINKED to this agent AND globally `enabled`. A linked-but-
+      // disabled skill contributes nothing and leaves no trace of itself.
+      // `trusted` is decided here, from provenance — a third-party body is
+      // rendered as DATA inside <untrusted> by assemblePrompt.
+      const linkedSkills = await this.agents.linkedSkills(agent.id);
+      const skills = linkedSkills
+        .filter((l) => l.skill.enabled)
+        .map((l) => ({
+          name: l.skill.name,
+          body: l.skill.body,
+          trusted: l.skill.source === 'manual',
+        }));
+      if (linkedSkills.length > 0) {
+        const chars = skills.reduce((n, sk) => n + sk.body.length, 0);
+        const skipped = linkedSkills.length - skills.length;
+        runLog.info(
+          `Loaded ${skills.length} skills (${Math.round(chars / 4).toLocaleString('en-US')} tokens)` +
+            (skipped > 0 ? `; ${skipped} linked but disabled` : ''),
+        );
+      }
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -201,6 +223,9 @@ export class ReviewRunExecutor {
         ...(callersDigest ? { callers: callersDigest } : {}),
         // T3 — repo skeleton, same omit-when-empty contract.
         ...(repoMap ? { repoMap } : {}),
+        // L02 — linked+enabled skills, same omit-when-empty contract: an agent
+        // with no skills produces a byte-identical prompt to the pre-L02 one.
+        ...(skills.length ? { skills } : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -262,6 +287,7 @@ export class ReviewRunExecutor {
           model: agent.model,
           pr: pull.number,
           source: 'local',
+          skills: skills.map((sk) => sk.name),
         },
         stats: {
           duration_ms: durationMs,
@@ -424,6 +450,9 @@ export class ReviewRunExecutor {
         model: agent.model,
         pr: pull.number,
         source: 'local',
+        // A run that failed before (or during) assembly loaded no skills —
+        // same reason `prompt_assembly.skills` below stays null.
+        skills: [],
       },
       stats: {
         duration_ms: durationMs,

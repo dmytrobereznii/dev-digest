@@ -36,6 +36,7 @@ import {
   SelectInput,
   Textarea,
   Checkbox,
+  CodeEditor,
   Sparkline,
   LineChart,
   Donut,
@@ -46,7 +47,7 @@ import {
   AutoTriggerStatus,
 } from "@devdigest/ui";
 import { s } from "./styles";
-import { SEVERITIES, CATEGORIES, MODEL_OPTIONS } from "./constants";
+import { SEVERITIES, CATEGORIES, MODEL_OPTIONS, SAMPLE_SKILL_BODY } from "./constants";
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -63,6 +64,7 @@ export function Gallery() {
   const [tab, setTab] = React.useState("a");
   const [text, setText] = React.useState("");
   const [sel, setSel] = React.useState("gpt-4.1");
+  const [code, setCode] = React.useState(SAMPLE_SKILL_BODY);
   const [drawer, setDrawer] = React.useState(false);
   const [modal, setModal] = React.useState(false);
 
@@ -176,6 +178,17 @@ export function Gallery() {
           </FormField>
         </div>
         <Checkbox checked={check} onChange={setCheck} label="On new PR" />
+      </Group>
+
+      <Group title="Code editor (line-numbered Markdown input)">
+        <div style={s.w520}>
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            filename="pr-quality-rubric.md"
+            dirty={code !== SAMPLE_SKILL_BODY}
+          />
+        </div>
       </Group>
 
       <Group title="Tabs / Dropdown / Overlays">
