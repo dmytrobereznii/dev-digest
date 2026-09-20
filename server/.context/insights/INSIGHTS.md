@@ -22,4 +22,12 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Recurring Errors & Fixes
 
+- **2026-09-20** — A `dependency-cruiser` rule whose `to.path` anchors on the
+  package name (`^openai`, `^node_modules/drizzle-orm`) silently matches
+  nothing under pnpm: the resolved path is
+  `node_modules/.pnpm/openai@4.104.0_zod@3.25.76/node_modules/openai/index.js`.
+  The rule reports zero violations and looks green. Write `node_modules/openai`
+  with no `^`, and validate every new rule by planting a temporary violation.
+  `server/.dependency-cruiser.cjs`
+
 ## Open Questions
