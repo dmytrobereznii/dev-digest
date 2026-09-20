@@ -18,6 +18,14 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Codebase Patterns
 
+- **2026-09-20** — `wait --url tab=config` is NOT enough before clicking a tab:
+  every editor route renders a `Skeleton` until its TanStack Query resolves,
+  and `--url` matches the moment the URL changes, so the tab row does not exist
+  yet and `find role button --name <Tab>` exits non-zero. Put
+  `wait --load networkidle` between them. Same root cause as the client's
+  `loading.tsx` insight — nothing here fetches server-side.
+  `e2e/specs/08-skills.flow.json`
+
 ## Tool & Library Notes
 
 ## Recurring Errors & Fixes
