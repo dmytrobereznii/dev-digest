@@ -16,37 +16,170 @@ const SKILL_SOURCE = {
   community: { icon: "Globe", label: "Community" }, imported_url: { icon: "Link", label: "Imported" },
 };
 
-function SkillListItem({ s, active, onClick }) {
+function SkillCard({ s, active, onClick }) {
   const t = SKILL_TYPE[s.type], src = SKILL_SOURCE[s.source];
   const [en, setEn] = React.useState(s.enabled);
-  return React.createElement("div", {
-    onClick, style: { padding: "10px 12px", borderRadius: 7, cursor: "pointer", border: "1px solid " + (active ? "var(--border-strong)" : "transparent"),
-      background: active ? "var(--bg-hover)" : "transparent", opacity: en ? 1 : 0.55, marginBottom: 2 },
-  },
+  const d = (window.SKILL_DETAIL || {})[s.id];
+  return React.createElement("div", { onClick,
+    style: { padding: 13, borderRadius: 8, cursor: "pointer", border: "1px solid " + (active ? "var(--border-strong)" : "var(--border)"),
+      background: active ? "var(--bg-hover)" : "var(--bg-elevated)", opacity: en ? 1 : 0.6, marginBottom: 8 } },
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+      React.createElement("div", { style: { width: 26, height: 26, borderRadius: 7, background: t.c + "1f", color: t.c, display: "grid", placeItems: "center", flexShrink: 0 } }, React.createElement(window.Icon.Sparkles, { size: 14 })),
       React.createElement("span", { className: "mono", style: { fontSize: 12.5, fontWeight: 600, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, s.name),
-      React.createElement("div", { onClick: (e) => { e.stopPropagation(); setEn(!en); } }, React.createElement(window.Toggle, { on: en, onChange: setEn, size: 13 }))),
-    React.createElement("div", { style: { fontSize: 11.5, color: "var(--text-muted)", marginTop: 4, lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, s.description),
-    React.createElement("div", { style: { display: "flex", gap: 6, marginTop: 7, alignItems: "center" } },
-      React.createElement("span", { style: { fontSize: 10.5, fontWeight: 600, color: t.c, background: t.c + "1a", padding: "1px 6px", borderRadius: 4 } }, t.label),
+      React.createElement("div", { onClick: (e) => { e.stopPropagation(); setEn(!en); } }, React.createElement(window.Toggle, { on: en, onChange: setEn, size: 14 }))),
+    React.createElement("div", { style: { fontSize: 12, color: "var(--text-muted)", margin: "7px 0", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, s.description),
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
+      React.createElement("span", { style: { fontSize: 10.5, fontWeight: 600, color: t.c, background: t.c + "1a", padding: "1px 7px", borderRadius: 4 } }, t.label),
       React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, color: "var(--text-muted)" } },
-        React.createElement(window.Icon[src.icon], { size: 11 }), src.label)));
+        React.createElement(window.Icon[src.icon], { size: 11 }), src.label)),
+    d && d.usedBy.length > 0 && React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 9, paddingTop: 9, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)" } },
+      React.createElement("span", { className: "tnum" }, d.usedBy.length + (d.usedBy.length === 1 ? " agent" : " agents")),
+      React.createElement("span", { className: "tnum" }, Math.round(d.pull * 100) + "% pull"),
+      React.createElement("span", { className: "tnum", style: { color: d.accept >= 0.6 ? "var(--ok)" : "var(--warn)" } }, Math.round(d.accept * 100) + "% accept")));
 }
 
-function CodeEditor({ code }) {
+function CodeEditor({ code, filename }) {
   const lines = code.split("\n");
-  return React.createElement("div", { style: { flex: 1, overflow: "hidden", background: "var(--bg-surface)", display: "flex", flexDirection: "column" } },
+  const tokens = Math.round(code.length / 4);
+  return React.createElement("div", { style: { border: "1px solid var(--border-strong)", borderRadius: 8, overflow: "hidden", background: "var(--bg-surface)", display: "flex", flexDirection: "column", height: 460 } },
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderBottom: "1px solid var(--border)" } },
       React.createElement(window.Icon.FileText, { size: 14, style: { color: "var(--text-muted)" } }),
-      React.createElement("span", { className: "mono", style: { fontSize: 12.5, fontWeight: 600 } }, "pr-quality-rubric.md"),
+      React.createElement("span", { className: "mono", style: { fontSize: 12.5, fontWeight: 600 } }, filename),
       React.createElement(window.Badge, { color: "var(--text-muted)" }, "unsaved"),
-      React.createElement("div", { style: { marginLeft: "auto", display: "flex", gap: 6 } },
-        React.createElement(window.Button, { kind: "ghost", size: "sm", icon: "Eye" }, "Preview"),
-        React.createElement(window.Button, { kind: "secondary", size: "sm", icon: "Check" }, "Save"))),
+      React.createElement("span", { className: "mono", style: { marginLeft: "auto", fontSize: 11, color: "var(--text-muted)" } }, tokens.toLocaleString() + " tokens")),
     React.createElement("div", { style: { flex: 1, overflow: "auto", padding: "10px 0" } },
       lines.map((ln, i) => React.createElement("div", { key: i, style: { display: "flex", fontSize: 12.5, lineHeight: "21px" } },
         React.createElement("span", { className: "mono tnum", style: { width: 40, textAlign: "right", paddingRight: 14, color: "var(--text-muted)", userSelect: "none", flexShrink: 0 } }, i + 1),
-        React.createElement("span", { className: "mono", style: { whiteSpace: "pre-wrap", color: ln.startsWith("#") ? "var(--accent-text)" : ln.startsWith("-") ? "var(--text-secondary)" : "var(--text-primary)", fontWeight: ln.startsWith("#") ? 600 : 400 } }, ln || " ")))));
+        React.createElement("span", { className: "mono", style: { whiteSpace: "pre-wrap", color: ln.startsWith("#") ? "var(--accent-text)" : ln.startsWith("-") || ln.match(/^\d+\./) ? "var(--text-secondary)" : "var(--text-primary)", fontWeight: ln.startsWith("#") ? 600 : 400 } }, ln || " ")))));
+}
+
+// lightweight markdown renderer: headings, lists, fenced code, paragraphs
+function MarkdownPreview({ md }) {
+  const lines = md.split("\n");
+  const out = []; let i = 0; let key = 0;
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (ln.startsWith("```")) {
+      const buf = []; i++;
+      while (i < lines.length && !lines[i].startsWith("```")) { buf.push(lines[i]); i++; }
+      i++;
+      out.push(React.createElement("pre", { key: key++, className: "mono", style: { margin: "10px 0", padding: "12px 14px", fontSize: 12, lineHeight: 1.6, background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, overflowX: "auto", color: "var(--text-primary)" } }, buf.join("\n")));
+      continue;
+    }
+    if (/^#{1,3}\s/.test(ln)) {
+      const lvl = ln.match(/^#+/)[0].length; const txt = ln.replace(/^#+\s/, "");
+      out.push(React.createElement(lvl === 1 ? "h1" : lvl === 2 ? "h2" : "h3", { key: key++, style: { fontSize: lvl === 1 ? 20 : lvl === 2 ? 15.5 : 13.5, fontWeight: 700, letterSpacing: "-0.01em", margin: lvl === 1 ? "4px 0 10px" : "18px 0 8px", color: "var(--text-primary)" } }, window.mdLite(txt)));
+      i++; continue;
+    }
+    if (/^[-*]\s/.test(ln) || /^\d+\.\s/.test(ln)) {
+      const items = []; const ordered = /^\d+\.\s/.test(ln);
+      while (i < lines.length && (/^[-*]\s/.test(lines[i]) || /^\d+\.\s/.test(lines[i]))) {
+        items.push(lines[i].replace(/^([-*]|\d+\.)\s/, "")); i++;
+      }
+      out.push(React.createElement(ordered ? "ol" : "ul", { key: key++, style: { margin: "6px 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 4 } },
+        items.map((it, k) => React.createElement("li", { key: k, style: { fontSize: 13, lineHeight: 1.55, color: "var(--text-secondary)" } }, window.mdLite(it)))));
+      continue;
+    }
+    if (ln.trim() === "") { i++; continue; }
+    out.push(React.createElement("p", { key: key++, style: { fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)", margin: "8px 0" } }, window.mdLite(ln)));
+    i++;
+  }
+  return React.createElement("div", { style: { maxWidth: 680, padding: "4px 2px" } }, out);
+}
+
+/* ---- skill editor tabs (mirror the agent editor) ---- */
+
+function SkillConfigTab({ s, d }) {
+  return React.createElement("div", { style: { maxWidth: 760 } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 18 } },
+      React.createElement("h2", { style: { fontSize: 16, fontWeight: 700 } }, "Configuration"),
+      React.createElement(window.Badge, { color: "var(--text-secondary)", icon: "GitCommit" }, "v" + (d.version || s.version)),
+      React.createElement("label", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-secondary)" } }, "Enabled", React.createElement(window.Toggle, { on: s.enabled, onChange: () => {}, size: 16 }))),
+    React.createElement(window.FormField, { label: "Name", required: true }, React.createElement(window.TextInput, { value: s.name, mono: true })),
+    React.createElement(window.FormField, { label: "Description" }, React.createElement(window.TextInput, { value: s.description })),
+    React.createElement(window.FormField, { label: "Type" }, React.createElement(window.SelectInput, { value: s.type, options: ["rubric", "convention", "security", "custom"] })),
+    React.createElement(window.FormField, { label: "Skill body", required: true, hint: "The only text sent to the model. Editing the body is the entire skill — everything else is metadata." },
+      React.createElement(CodeEditor, { code: d.body, filename: s.name + ".md" })),
+    React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+      React.createElement(window.Button, { kind: "primary", icon: "Check" }, "Save skill"),
+      React.createElement(window.Button, { kind: "ghost" }, "Cancel"),
+      React.createElement("span", { style: { marginLeft: "auto", fontSize: 11.5, color: "var(--text-muted)", alignSelf: "center" } }, "Saving snapshots the body as ", React.createElement("b", { style: { color: "var(--text-secondary)" } }, "v" + ((d.version || s.version) + 1)))),
+    React.createElement("div", { style: { marginTop: 24, paddingTop: 18, borderTop: "1px solid var(--border)" } },
+      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
+        React.createElement("div", { style: { flex: 1 } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "var(--crit)" } }, "Delete skill"),
+          React.createElement("div", { style: { fontSize: 12, color: "var(--text-muted)", marginTop: 2 } }, "Removes it from all agents. This can't be undone.")),
+        React.createElement(window.Button, { kind: "danger", size: "sm", icon: "Trash" }, "Delete"))));
+}
+
+function SkillPreviewTab({ s, d }) {
+  return React.createElement("div", { style: { maxWidth: 720 } },
+    React.createElement("h2", { style: { fontSize: 16, fontWeight: 700, marginBottom: 4 } }, "Preview"),
+    React.createElement("p", { style: { fontSize: 12.5, color: "var(--text-muted)", marginBottom: 14 } }, "Rendered as the reviewing agent receives it."),
+    React.createElement(window.Card, null, React.createElement(MarkdownPreview, { md: d.body })));
+}
+
+function SkillEvalsTab({ d, onOpenCase }) {
+  const cases = window.EVAL_CASES.slice(0, Math.max(3, d.evals.total));
+  return React.createElement("div", { style: { maxWidth: 720 } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } },
+      React.createElement("h2", { style: { fontSize: 16, fontWeight: 700 } }, "Eval cases"),
+      React.createElement(window.Badge, { color: d.evals.pass === d.evals.total ? "var(--ok)" : "var(--warn)", bg: d.evals.pass === d.evals.total ? "var(--ok-bg)" : "var(--warn-bg)" }, d.evals.pass + " / " + d.evals.total + " passing"),
+      React.createElement("div", { style: { marginLeft: "auto", display: "flex", gap: 8 } },
+        React.createElement(window.Button, { kind: "secondary", size: "sm", icon: "Play" }, "Run all evals"),
+        React.createElement(window.Button, { kind: "primary", size: "sm", icon: "Plus", onClick: onOpenCase }, "New eval case"))),
+    d.evals.total === 0
+      ? React.createElement(window.EmptyState, { icon: "FlaskConical", title: "No eval cases yet", body: "Add a case to test this skill against a known diff and expected findings.", cta: "New eval case", onCta: onOpenCase })
+      : window.EVAL_CASES.slice(0, d.evals.total).map((ec) => React.createElement(window.EvalCaseRow, { key: ec.id, ec, onClick: onOpenCase })));
+}
+
+function SkillStatsTab({ d }) {
+  if (!d.usedBy.length) return React.createElement(window.EmptyState, { icon: "BarChart", title: "No usage yet", body: "This skill isn't enabled on any agent. Add it to an agent to start collecting stats." });
+  return React.createElement("div", null,
+    React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 20 } },
+      React.createElement(SkillStat, { label: "USED BY", value: d.usedBy.length, suffix: d.usedBy.length === 1 ? " agent" : " agents" }),
+      React.createElement(SkillStat, { label: "PULL FREQUENCY", value: Math.round(d.pull * 100), suffix: "%" }),
+      React.createElement(SkillStat, { label: "ACCEPT RATE", value: Math.round(d.accept * 100), suffix: "%", arc: Math.round(d.accept * 100) }),
+      React.createElement(SkillStat, { label: "FINDINGS (30D)", value: d.findings30d })),
+    React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } },
+      React.createElement(window.Card, null, React.createElement(window.SectionLabel, { icon: "Cpu" }, "Agents using this skill"),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+          d.usedBy.map((a, i) => React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-elevated)" } },
+            React.createElement("div", { style: { width: 22, height: 22, borderRadius: 6, background: "var(--accent-bg)", color: "var(--accent)", display: "grid", placeItems: "center" } }, React.createElement(window.Icon.Cpu, { size: 12 })),
+            React.createElement("span", { style: { fontSize: 12.5, fontWeight: 600, flex: 1 } }, a),
+            React.createElement(window.MonoLink, null, "Open"))))),
+      React.createElement(window.Card, null, React.createElement(window.SectionLabel, { icon: "Tag" }, "Findings by category"),
+        React.createElement("div", { style: { display: "grid", placeItems: "center", paddingTop: 6 } },
+          React.createElement(window.Donut, { segments: [{ label: "security", value: 52, color: "var(--crit)" }, { label: "bug", value: 20, color: "var(--warn)" }, { label: "perf", value: 16, color: "#8b5cf6" }, { label: "style", value: 12, color: "var(--accent)" }], size: 120 })))));
+}
+
+function SkillStat({ label, value, suffix, arc }) {
+  return React.createElement("div", { style: { flex: 1, padding: 15, borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg-elevated)" } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } },
+      React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.03em" } }, label),
+      arc != null && React.createElement(window.CircularScore, { score: arc, size: 32, stroke: 3.5 })),
+    React.createElement("div", { style: { marginTop: 10 } },
+      React.createElement("span", { className: "tnum", style: { fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" } }, value, suffix && React.createElement("span", { style: { fontSize: 15, color: "var(--text-muted)" } }, suffix))));
+}
+
+function SkillVersionsTab({ s, d }) {
+  const versions = d.versions || [{ v: s.version || 1, date: "—", note: "Current", current: true }];
+  return React.createElement("div", { style: { maxWidth: 720 } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: 16, fontWeight: 700 } }, "Version history"),
+      React.createElement(window.Badge, { color: "var(--text-secondary)" }, versions.length + " versions")),
+    React.createElement("p", { style: { fontSize: 12.5, color: "var(--text-muted)", marginBottom: 16 } }, "Every save snapshots the body so eval runs stay reproducible against the exact text they scored."),
+    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+      versions.map((ver, i) => React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 8, border: "1px solid " + (ver.current ? "var(--border-strong)" : "var(--border)"), background: "var(--bg-elevated)" } },
+        React.createElement("span", { className: "mono", style: { fontSize: 12.5, fontWeight: 700, color: ver.current ? "var(--accent-text)" : "var(--text-secondary)", background: ver.current ? "var(--accent-bg)" : "var(--bg-hover)", padding: "3px 9px", borderRadius: 6, flexShrink: 0 } }, "v" + ver.v),
+        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: "var(--text-primary)" } }, ver.note),
+          React.createElement("div", { style: { fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 } }, ver.date)),
+        ver.current
+          ? React.createElement(window.Badge, { color: "var(--ok)", bg: "var(--ok-bg)", dot: true }, "Current")
+          : React.createElement("div", { style: { display: "flex", gap: 6 } },
+              React.createElement(window.Button, { kind: "ghost", size: "sm", icon: "Eye" }, "Diff"),
+              React.createElement(window.Button, { kind: "secondary", size: "sm", icon: "History" }, "Restore"))))));
 }
 
 function EvalPanel() {
@@ -97,9 +230,13 @@ function SkillSearchPanel({ onClose }) {
           React.createElement("div", { style: { marginLeft: "auto" } }, React.createElement(window.Button, { kind: "secondary", size: "sm", icon: "Plus" }, "Import")))))));
 }
 
-function ScreenSkillsLab({ h = 760, searchOpen }) {
+function ScreenSkillsLab({ h = 860, searchOpen, tab = "Config", onOpenCase }) {
   const [sel, setSel] = React.useState("s1");
+  const [t, setT] = React.useState(tab);
   const [drawer, setDrawer] = React.useState(!!searchOpen);
+  React.useEffect(() => setT(tab), [tab]);
+  const s = window.SKILLS.find((x) => x.id === sel);
+  const d = window.SKILL_DETAIL[sel];
   return React.createElement(window.AppFrame, { active: "skills", h, crumb: [{ label: "Skills Lab" }, { label: "Skills" }] },
     drawer && React.createElement(SkillSearchPanel, { onClose: () => setDrawer(false) }),
     React.createElement("div", { style: { display: "flex", height: h - 52 } },
@@ -119,12 +256,24 @@ function ScreenSkillsLab({ h = 760, searchOpen }) {
               ] })),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--bg-primary)", color: "var(--text-muted)", fontSize: 12 } },
             React.createElement(window.Icon.Search, { size: 13 }), "Search skills…")),
-        React.createElement("div", { style: { flex: 1, overflow: "auto", padding: "0 8px 8px" } },
-          window.SKILLS.map((s) => React.createElement(SkillListItem, { key: s.id, s, active: sel === s.id, onClick: () => setSel(s.id) })))),
-      // center: editor
-      React.createElement(CodeEditor, { code: window.SKILL_BODY }),
-      // right: eval
-      React.createElement(EvalPanel)));
+        React.createElement("div", { style: { flex: 1, overflow: "auto", padding: "0 10px 10px" } },
+          window.SKILLS.map((sk) => React.createElement(SkillCard, { key: sk.id, s: sk, active: sel === sk.id, onClick: () => setSel(sk.id) })))),
+      // center: tabbed editor (mirrors the agent editor)
+      React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "14px 24px 0" } },
+          React.createElement("div", { style: { width: 26, height: 26, borderRadius: 7, background: SKILL_TYPE[s.type].c + "1f", color: SKILL_TYPE[s.type].c, display: "grid", placeItems: "center" } }, React.createElement(window.Icon.Sparkles, { size: 15 })),
+          React.createElement("h1", { className: "mono", style: { fontSize: 16, fontWeight: 700 } }, s.name),
+          React.createElement("span", { style: { fontSize: 10.5, fontWeight: 600, color: SKILL_TYPE[s.type].c, background: SKILL_TYPE[s.type].c + "1a", padding: "2px 8px", borderRadius: 5 } }, SKILL_TYPE[s.type].label),
+          React.createElement(window.Badge, { color: "var(--text-secondary)", icon: "GitCommit" }, "v" + (d.version || s.version)),
+          React.createElement("div", { style: { marginLeft: "auto", display: "flex", gap: 8 } },
+            React.createElement(window.Button, { kind: "secondary", size: "sm", icon: "Play" }, "Run on evals"))),
+        React.createElement("div", { style: { marginTop: 12 } }, React.createElement(window.Tabs, { tabs: ["Config", "Preview", "Evals", "Stats", "Versions"], value: t, onChange: setT })),
+        React.createElement("div", { style: { flex: 1, overflow: "auto", padding: 24 } },
+          t === "Config" && React.createElement(SkillConfigTab, { s, d }),
+          t === "Preview" && React.createElement(SkillPreviewTab, { s, d }),
+          t === "Evals" && React.createElement(SkillEvalsTab, { d, onOpenCase }),
+          t === "Stats" && React.createElement(SkillStatsTab, { d }),
+          t === "Versions" && React.createElement(SkillVersionsTab, { s, d })))));
 }
 
 /* ---- Eval Dashboard ---- */
@@ -174,4 +323,4 @@ function ScreenEval({ h = 880 }) {
           React.createElement("span", { className: "mono tnum", style: { color: "var(--text-secondary)" } }, "$" + r.cost.toFixed(2))))))); 
 }
 
-Object.assign(window, { ScreenSkillsLab, ScreenEval });
+Object.assign(window, { ScreenSkillsLab, ScreenEval, CodeEditor });
