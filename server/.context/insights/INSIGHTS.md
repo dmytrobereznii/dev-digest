@@ -51,6 +51,25 @@ The `pr_id`-only history query takes the same index with
 
 ## Codebase Patterns
 
+- **2026-09-20** — `app.ts`'s `isResponseSerializationError` branch is LIVE as
+  of the response-contract work; before it, no route declared a response schema
+  so the branch could not fire. Proved by planting a field the handler does not
+  return: the route returns `500 {"error":{"code":"internal_error"}}` and the
+  raw object is logged, not sent. A route that suddenly 500s with that body is
+  a contract violation, not a crash — read the log line above it.
+  `server/src/app.ts`
+
+- **2026-09-20** — `ReviewDto` / `ReviewDtoFinding` in
+  `modules/reviews/helpers.ts` are now type ALIASES of the shared
+  `ReviewRecord` / `FindingRecord`. They used to be hand-written duplicates and
+  had already drifted: `verdict` was widened to `string | null`, so a row
+  holding any string type-checked. `reviews.verdict` is still free-form `text`
+  in the DB, so `reviewToDto` casts — the `response:` schema on
+  `GET /pulls/:id/reviews` is what actually enforces the three `Verdict` values
+  now. Do not re-introduce a local copy of a shape `vendor/shared` already
+  describes.
+  `server/src/modules/reviews/helpers.ts`
+
 - **2026-09-20** — `pull_requests.status` holds GitHub's MERGE state
   (`open` / `merged` / `closed`); the review status the PR list shows is
   DERIVED by `deriveReviewStatus` from `lastReviewedSha` vs `headSha` plus

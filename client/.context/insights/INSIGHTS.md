@@ -18,6 +18,14 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Codebase Patterns
 
+- **2026-09-20** — The client's vendored `contracts/knowledge.ts` does **not**
+  export `AgentVersion`; the server's copy does. This is part of the documented
+  five-file drift baseline (`diff -r client/src/vendor/shared
+  server/src/vendor/shared`) and is deliberately NOT reconciled — nothing in
+  the web app calls `/agents/:id/versions`. If you write a cross-copy contract
+  check, exclude it, or the check fails on accepted debt rather than on a real
+  regression.
+
 ## Tool & Library Notes
 
 ## Recurring Errors & Fixes

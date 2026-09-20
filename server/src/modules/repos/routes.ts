@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { RepoInput } from '@devdigest/shared';
+import { z } from 'zod';
+import { Repo, RepoInput } from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
-import { IdParams } from '../_shared/schemas.js';
+import { ApiErrors, IdParams, NotFound } from '../_shared/schemas.js';
 import { RepoService } from './service.js';
 
 /**
@@ -23,26 +24,58 @@ export default async function reposRoutes(appBase: FastifyInstance) {
   // Register the clone job handler once.
   service.registerCloneJobHandler();
 
-  app.post('/repos', { schema: { body: RepoInput } }, async (req, reply) => {
-    const { workspaceId, userId } = await getContext(app.container, req);
-    const { repo, created } = await service.add(workspaceId, userId, req.body.url);
-    reply.status(created ? 201 : 200);
-    return repo;
-  });
+  app.post(
+    '/repos',
+    // 200 and 201 carry the same body — the code distinguishes "already
+    // imported" from "newly added" (the add is idempotent on the repo URL).
+    { schema: { body: RepoInput, response: { 200: Repo, 201: Repo, ...ApiErrors } } },
+    async (req, reply) => {
+      const { workspaceId, userId } = await getContext(app.container, req);
+      const { repo, created } = await service.add(workspaceId, userId, req.body.url);
+      reply.status(created ? 201 : 200);
+      return repo;
+    },
+  );
 
-  app.get('/repos', async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    return service.list(workspaceId);
-  });
+  app.get(
+    '/repos',
+    { schema: { response: { 200: z.array(Repo), ...ApiErrors } } },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      return service.list(workspaceId);
+    },
+  );
 
-  app.post('/repos/:id/refresh', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    return service.refresh(workspaceId, req.params.id);
-  });
+  app.post(
+    '/repos/:id/refresh',
+    {
+      schema: {
+        params: IdParams,
+        response: {
+          200: z.object({ status: z.literal('refreshing') }),
+          ...ApiErrors,
+          ...NotFound,
+        },
+      },
+    },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      return service.refresh(workspaceId, req.params.id);
+    },
+  );
 
-  app.delete('/repos/:id', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    await service.remove(workspaceId, req.params.id);
-    return { deleted: req.params.id };
-  });
+  app.delete(
+    '/repos/:id',
+    {
+      schema: {
+        params: IdParams,
+        response: { 200: z.object({ deleted: z.string() }), ...ApiErrors, ...NotFound },
+      },
+    },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      await service.remove(workspaceId, req.params.id);
+      return { deleted: req.params.id };
+    },
+  );
 }

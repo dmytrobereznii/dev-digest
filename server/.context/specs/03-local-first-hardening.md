@@ -102,12 +102,12 @@ point of extracting it as a pure function.
 
 ### 3. While in there
 
-`app.ts`'s catch-all error branch returns `e.message ?? 'Internal error'` to
-the client. Covered by
-[`05-response-contracts`](../../../.context/specs/05-response-contracts.md) §
-*the error-handler fallback*; mentioned here because it is the same class of
-leak and the two changes touch adjacent lines. Do it in whichever lands first
-and drop it from the other.
+~~`app.ts`'s catch-all error branch returns `e.message ?? 'Internal error'` to
+the client.~~ **Done** — it landed with the response-contract work, which got
+there first. The leak is scoped to 5xx: an unrecognised 5xx returns a generic
+string in production and keeps the detail in development, while a 4xx from a
+plugin (rate-limit, body-too-large) passes its message through either way,
+because that message was meant for the client.
 
 ## Verification
 

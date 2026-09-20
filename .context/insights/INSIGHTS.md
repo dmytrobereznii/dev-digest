@@ -12,6 +12,40 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Decisions
 
+### 2026-09-20 — Response contracts: `response:` on every route, parse only in `api.ts`
+
+**What:** Every Fastify route declares a `response:` schema built from a
+`vendor/shared` contract, spreading the shared `ApiErrors` (422/500) and, where
+the route resolves a row by id, `NotFound` (404) from
+`modules/_shared/schemas.ts`. Codes NOT listed fall through to Fastify's default
+serializer on purpose — `@fastify/rate-limit`'s 429 and `/health/ready`'s 503 do
+not belong on all 37 routes.
+
+**The one exception is `GET /runs/:id/events`**, and it cannot be fixed:
+`reply.sse()` hijacks the reply and streams `text/event-stream` frames, so
+there is no single JSON body to serialize. Anyone auditing "36 of 37" should
+stop there rather than trying to close the gap.
+
+On the client, `apiFetch(path, init?, schema?)` parses when a schema is passed
+and parsing happens **only** there — it is the single transport, so a component
+never sees an unvalidated body. A parse failure throws `ApiError` with status
+**0** and code `contract_mismatch`; status 0 is what puts it in the same bucket
+as a network failure, which `QueryCache.onError` in `lib/providers.tsx` already
+toasts. Any other status would render as a silent `undefined` in a component.
+
+**Why:** Once the server declares response schemas, the only bug left for the
+client parse to catch is the two vendored copies of `@devdigest/shared` having
+drifted — narrow, but real, and the two-copy rule guarantees it recurs.
+
+**Rejected:** Parsing in components or hooks (two places to forget); declaring
+429/503 on every route (noise, and the rate-limit body is not our envelope);
+making the client parse mandatory (it is opt-in per call, adopted hook by hook).
+
+**Evidence:** `server/src/modules/_shared/schemas.ts` (`ApiErrors`, `NotFound`,
+`OkResponse`), `client/src/lib/api.ts`, `client/src/lib/hooks/reviews.ts`.
+Verified by parsing 66 live payloads from every seeded row with the CLIENT's
+vendored contracts: 0 drift failures.
+
 ### 2026-09-20 — The enforcement lane is deterministic-only; `pr-self-review` stays local
 
 **What:** Two separate gates, deliberately not merged. The deterministic half
