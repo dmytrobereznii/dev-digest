@@ -30,3 +30,21 @@ out waiting for PR #482. `make e2e`'s fresh stack is the safe way to run them.
 The sample review predates `agent_runs`, so the seed attaches its run in a
 separate block that only fires when `reviews.run_id` is null. A DB seeded
 before L01 gains the run on the next `pnpm db:seed`; it does not need a reset.
+
+## The other demo PRs do not touch this contract
+
+Since `server/src/db/seed-prs/`, the seed also writes PRs **#479**, **#486** and
+**#474** on the same repo. They were chosen not to collide with anything above:
+
+- they ship **unreviewed** — no review, findings, run or cost — so nothing they
+  add can shadow `$0.014`, `2 findings`, `request changes`, or the seeded
+  finding title. Only #482 has a review on a fresh DB;
+- no title duplicates a value in the table, and `find text` matches exactly;
+- they stay on `acme/payments-api`, so the first-repo rule still holds. **A new
+  fixture must never introduce a second repo** — that is what breaks 02/04/05;
+- all three derive `needs_review`, so they sit beside #482 under the list's
+  default filter rather than displacing it.
+
+A fixture that *does* carry a seeded review has to be re-checked against this
+table before it lands, because a second review on the list changes what the
+Findings and Cost columns show.

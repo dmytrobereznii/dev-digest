@@ -13,6 +13,7 @@ import {
   CONFIG_PATCH,
   USERS_PATCH,
 } from './seed-diffs.js';
+import { DEMO_PRS, seedDemoPr } from './seed-prs/index.js';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -39,6 +40,12 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  * demo repo (acme/payments-api), PR #482 with files/commits, a sample review
  * with a few findings, and the three built-in agents (General + Security +
  * Performance), all on the default openrouter/deepseek-v4-flash provider+model.
+ *
+ * Then the demo PRs from `./seed-prs/` (#479, #486, #474), which widen the
+ * fixture set across size and quality. Unlike #482 they ship UNREVIEWED — the
+ * review surface is filled by running a real agent against them. #482 keeps
+ * its own block above, sample review included, because the e2e flows pin its
+ * exact values.
  *
  * Course lessons populate the other tables (skills, conventions, memory, eval,
  * …) once their features are built — they start empty here.
@@ -329,6 +336,25 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
       },
     });
+  }
+
+  // ---- the rest of the demo PRs ----
+  // Declarative fixtures under ./seed-prs/, written by one generic seeder.
+  // Runs last so the built-in agents exist to attribute their runs to.
+  const agentRows = await db
+    .select({ id: t.agents.id, name: t.agents.name })
+    .from(t.agents)
+    .where(eq(t.agents.workspaceId, workspaceId));
+  const agentIdByName = new Map(agentRows.map((a) => [a.name, a.id]));
+
+  for (const fixture of DEMO_PRS) {
+    await seedDemoPr(db, {
+      workspaceId,
+      repoId,
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+      agentIdByName,
+    }, fixture);
   }
 
   return { workspaceId, userId };
