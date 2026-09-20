@@ -220,6 +220,59 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
+  it('deleting a run cascades to its review, its findings and its trace', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Cascade', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    const body = (
+      await app.inject({
+        method: 'POST',
+        url: `/pulls/${pr.id}/review`,
+        payload: { agentId: agent.id },
+      })
+    ).json();
+    const runId: string = body.runs[0].run_id;
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+
+    const [review] = await pg.handle.db.select().from(t.reviews).where(eq(t.reviews.runId, runId));
+    expect(review).toBeDefined();
+    const reviewId = review!.id;
+    const before = await pg.handle.db
+      .select()
+      .from(t.findings)
+      .where(eq(t.findings.reviewId, reviewId));
+    expect(before.length).toBeGreaterThan(0);
+
+    const del = await app.inject({ method: 'DELETE', url: `/runs/${runId}` });
+    expect(del.statusCode).toBe(200);
+    expect(del.json()).toEqual({ ok: true });
+
+    // The database does this, not the repository: reviews.run_id references
+    // agent_runs ON DELETE CASCADE, and findings already cascaded from reviews.
+    // deleteAgentRun issues exactly one DELETE, against agent_runs.
+    expect(
+      await pg.handle.db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.reviews).where(eq(t.reviews.id, reviewId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.findings).where(eq(t.findings.reviewId, reviewId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId)),
+    ).toHaveLength(0);
+
+    await app.close();
+  });
+
   it('dual-provider structured output: anthropic provider returns the same Review shape', async () => {
     const app = await appWith(REVIEW_FIXTURE, 'anthropic');
     const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);

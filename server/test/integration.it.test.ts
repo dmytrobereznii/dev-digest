@@ -144,7 +144,12 @@ d('Testcontainers: DB-backed routes via app.inject', () => {
     // assuming a clean slate; `other` is a PR with no runs at all.
     const target = pulls[0]!;
     const baseline: number = target.cost_usd ?? 0;
-    const other = pulls.find((p: { id: string; cost_usd: number | null }) => p.cost_usd == null);
+    // `!== target.id`: the list query has no ORDER BY, so pulls[0] may itself
+    // be one of the run-less seeded PRs. Without this, `other` resolves to
+    // `target` and the two assertions below contradict each other.
+    const other = pulls.find(
+      (p: { id: string; cost_usd: number | null }) => p.id !== target.id && p.cost_usd == null,
+    );
 
     const [{ id: workspaceId }] = await pg.handle.db.select().from(t.workspaces);
     await pg.handle.db.insert(t.agentRuns).values([

@@ -12,6 +12,39 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Decisions
 
+### 2026-09-20 — One composite index on `agent_runs`, not two; and what was deliberately left out
+
+**What:** `agent_runs` carries exactly one new index,
+`agent_runs_pr_status_idx (pr_id, status)`. The separately-proposed
+`agent_runs_pr_idx (pr_id)` was **measured and dropped as redundant** — as the
+leftmost prefix, the composite already serves the `pr_id`-only run-history
+query. Do not add it back without a plan that shows otherwise.
+
+Three things were considered and deliberately not done, each for a reason that
+is not visible in the schema:
+
+- **No CHECK constraint on `status` / `verdict`.** Drizzle's
+  `text(..., { enum: [...] })` is types-only and reaches no constraint into the
+  database — a real gap, but it carries its own backfill question and bundling
+  it would have hidden this migration's risk.
+- **No partial index** (`WHERE status = 'running'`) for the 4 s poll. It only
+  pays once the table is large; the composite is the proportionate first move.
+- **No change to the polling intervals** (`reviews.ts` 4000 ms,
+  `repo-intel.ts` 1500 ms). Indexing is the fix; slowing the poll would be
+  hiding it.
+
+**Why:** Measured on a local Postgres, seeded + 50k synthetic runs in a
+rolled-back transaction. At the seeded size (27 runs) the planner correctly
+still picks a Seq Scan — a single heap page beats an index lookup — so the
+seeded EXPLAIN proves nothing either way. **Any future index claim on these
+tables has to be measured at realistic scale or it is not evidence.**
+
+**Evidence:** before → `Seq Scan on agent_runs, Rows Removed by Filter: 27`;
+after, at 50k rows → `Index Scan using agent_runs_pr_status_idx`,
+`Index Cond: ((pr_id = …) AND (status = 'running'))`, `Buffers: shared hit=2`.
+The `pr_id`-only history query takes the same index with
+`Index Cond: (pr_id = …)` — which is what retired `agent_runs_pr_idx`.
+
 ## What Works
 
 ## What Doesn't Work
