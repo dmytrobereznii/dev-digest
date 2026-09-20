@@ -12,6 +12,47 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Decisions
 
+### 2026-09-20 — The API binds to loopback, and credentials are redacted at capture
+
+**What:** `API_HOST` defaults to `127.0.0.1`. The API has **no authentication**
+— `LocalNoAuthProvider` hands every request the seeded user — and behind that
+port sit routes that write provider API keys to disk
+(`POST /settings/test-connection`), report which keys are set, clone arbitrary
+URLs onto the host, and spend the owner's LLM credits. `0.0.0.0` published all
+of that to every device on the network. `helmet`, the CORS allowlist, the rate
+limit and the 1 MB body cap are all correct and none of them is an access
+control.
+
+Separately, `redactUrlCredentials` (`platform/redact.ts`) strips URL userinfo
+from a failed job's message **where it is captured** — `platform/jobs.ts`,
+before the `jobs.error` write — not where it is displayed. `jobs.error` is read
+back by the polling UI and is in every database dump, so redacting at the
+display end would leave the token in the database, which is the part that
+persists. The helper lives in `platform/`, not beside `withGitHubToken` in
+`modules/repos/helpers.ts`, because `jobs.ts` is ring 3 and may not import
+outward.
+
+**Why:** `docker-compose.yml` runs only Postgres; the API runs on the host by
+design, so nothing legitimately needs to reach it from off-box. **Verified, not
+assumed** — before: the LAN IP answered `200`; after:
+`lsof` reports `TCP 127.0.0.1:3001 (LISTEN)`, `127.0.0.1` and `localhost` both
+answer `200`, and the LAN IP is refused. `API_HOST=0.0.0.0` restores the old
+behaviour and says so in the boot log.
+
+**e2e is unaffected, and this was checked rather than assumed.** Both
+`scripts/e2e.sh` and `e2e-web.yml` start the API as a plain host process and
+probe it at `http://localhost:<port>` from the same host. If either ever moves
+the API into a container this breaks, and the failure is a bare connection
+refused with no hint about the cause.
+
+**Rejected:** Adding authentication (`LocalNoAuthProvider` is a deliberate MVP
+choice with an `AuthProvider` port ready behind it — auth is a product
+decision, not a hardening one); encrypting `~/.devdigest/secrets.json` (already
+mode 0600; encrypting needs a key, which needs somewhere to live, which is the
+same problem again); changing how the PAT reaches git (embedding it in the
+clone URL is standard — the fix belongs on the error path, not the happy path);
+CSRF protection (no cookies, no ambient credentials).
+
 ### 2026-09-20 — One composite index on `agent_runs`, not two; and what was deliberately left out
 
 **What:** `agent_runs` carries exactly one new index,

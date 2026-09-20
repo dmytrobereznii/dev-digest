@@ -27,6 +27,14 @@ const EnvSchema = z.object({
   // unindexed repo degrades gracefully. Per-agent override: agents.repo_intel.
   REPO_INTEL_ENABLED: z.string().optional(),
   API_PORT: z.coerce.number().int().default(3001),
+  // Loopback by default. The API has NO authentication — LocalNoAuthProvider
+  // hands every request the seeded user — and behind it sit routes that write
+  // provider API keys to disk, report which keys are set, and clone arbitrary
+  // URLs onto the host. `0.0.0.0` would publish all of that to every device on
+  // the network. This is a local studio: docker-compose runs only Postgres and
+  // the API runs on the host, so nothing needs to reach it from outside.
+  // Set API_HOST=0.0.0.0 to opt back in, deliberately.
+  API_HOST: z.string().default('127.0.0.1'),
   WEB_PORT: z.coerce.number().int().default(3000),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -41,6 +49,8 @@ const EnvSchema = z.object({
 export type AppConfig = {
   databaseUrl: string;
   apiPort: number;
+  /** Interface the API binds to. Loopback by default — see API_HOST above. */
+  apiHost: string;
   webPort: number;
   /** Absolute path where repos are cloned (~/.devdigest/workspace by default). */
   cloneDir: string;
@@ -69,6 +79,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     databaseUrl: parsed.DATABASE_URL,
     apiPort: parsed.API_PORT,
+    apiHost: parsed.API_HOST,
     webPort: parsed.WEB_PORT,
     cloneDir,
     secretsPath: join(homedir(), '.devdigest', 'secrets.json'),

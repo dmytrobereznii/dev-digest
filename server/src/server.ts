@@ -29,8 +29,11 @@ async function main() {
   }
 
   try {
-    await app.listen({ port: config.apiPort, host: '0.0.0.0' });
-    app.log.info(`DevDigest API listening on http://localhost:${config.apiPort}`);
+    await app.listen({ port: config.apiPort, host: config.apiHost });
+    app.log.info(
+      `DevDigest API listening on http://${config.apiHost}:${config.apiPort}` +
+        (config.apiHost === '127.0.0.1' ? '' : ' — reachable from the network (API_HOST)'),
+    );
   } catch (err) {
     app.log.error(err);
     process.exit(1);
