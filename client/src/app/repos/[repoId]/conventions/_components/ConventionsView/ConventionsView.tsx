@@ -4,8 +4,8 @@
    Three body states, and which one shows turns on the SCAN, not on the
    candidate list (spec D4):
 
-   - no scan row at all → the `e-conv` empty state, rendered instead of the
-     whole body: no header, no toolbar, one "Run extraction" call to action;
+   - no scan row at all → the `e-conv` empty state, under the page header so
+     the two scan buttons stay reachable; no toolbar and no cards;
    - a scan that grounded nothing → header and subtitle KEPT, so "last scan 2m
      ago" stays true, with the candidate count at zero beneath it. The artboard
      draws no state for this, and falling back to the empty state would claim
@@ -13,7 +13,13 @@
      stop;
    - candidates → the toolbar and the cards.
 
-   Re-scan is synchronous (D7): there is no job and nothing to poll, so the
+   Run Scan and ReScan are two DISTINCT buttons, both always on the page, each
+   enabled in exactly one of those states: before the first scan only Run Scan
+   works, after it only ReScan does. One control relabelled between states
+   would read as a single button and hide that the two actions differ — the
+   first builds the candidate list, the second replaces it.
+
+   Both are synchronous (D7): there is no job and nothing to poll, so the
    button goes to "Scanning…" and comes back with a list. */
 "use client";
 
@@ -28,6 +34,7 @@ import {
   useExtractConventions,
   useSetAllConventionStatus,
   useSetConventionStatus,
+  useUpdateConvention,
 } from "@/lib/hooks/conventions";
 import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
 import { ConventionCard } from "./_components/ConventionCard";
@@ -46,6 +53,7 @@ export function ConventionsView() {
   const extract = useExtractConventions();
   const setStatus = useSetConventionStatus();
   const setAll = useSetAllConventionStatus();
+  const updateCandidate = useUpdateConvention();
   const [creating, setCreating] = React.useState(false);
 
   // Stale/unknown :repoId → the route's 404 boundary, as /pulls does. A
@@ -69,6 +77,32 @@ export function ConventionsView() {
     : null;
 
   const runExtraction = () => extract.mutate(repoId);
+
+  /* The pair, rendered identically in both branches: `scanned` is what flips
+     which one is live. Disabled rather than hidden, so the page always shows
+     that a re-run is a different action from a first run. */
+  const scanButtons = (scanned: boolean) => (
+    <div style={s.scanButtons}>
+      <Button
+        kind={scanned ? "ghost" : "primary"}
+        size="sm"
+        icon="Play"
+        onClick={runExtraction}
+        disabled={scanned || extract.isPending}
+      >
+        {!scanned && extract.isPending ? t("page.scanning") : t("page.runScan")}
+      </Button>
+      <Button
+        kind="secondary"
+        size="sm"
+        icon="RefreshCw"
+        onClick={runExtraction}
+        disabled={!scanned || extract.isPending}
+      >
+        {scanned && extract.isPending ? t("page.scanning") : t("page.rescan")}
+      </Button>
+    </div>
+  );
 
   /* Kept alongside the route's loading.tsx on purpose: this is a client
      component fetching through TanStack Query, so the server-side Suspense
@@ -102,21 +136,32 @@ export function ConventionsView() {
   if (!data?.scan) {
     return (
       <AppShell crumb={crumb}>
-        {extractError && (
-          <div style={s.emptyNotice}>
+        <div style={s.page}>
+          <div style={s.header}>
+            <div style={s.headerText}>
+              <h1 style={s.h1}>
+                {t("page.headingPrefix")}
+                <span className="mono" style={s.repoName}>
+                  {repoName}
+                </span>
+              </h1>
+              <p style={s.subtitle}>{t("page.neverScanned")}</p>
+            </div>
+            {scanButtons(false)}
+          </div>
+
+          {extractError && (
             <div style={s.notice} role="alert">
               {extractError}
             </div>
-          </div>
-        )}
-        <EmptyState
-          icon="ListChecks"
-          title={t("page.empty.title")}
-          body={t("page.empty.body")}
-          cta={t("page.empty.cta")}
-          onCta={runExtraction}
-          ctaLoading={extract.isPending}
-        />
+          )}
+
+          <EmptyState
+            icon="ListChecks"
+            title={t("page.empty.title")}
+            body={t("page.empty.body")}
+          />
+        </div>
       </AppShell>
     );
   }
@@ -151,15 +196,7 @@ export function ConventionsView() {
               })}
             </p>
           </div>
-          <Button
-            kind="secondary"
-            size="sm"
-            icon="RefreshCw"
-            onClick={runExtraction}
-            disabled={extract.isPending}
-          >
-            {extract.isPending ? t("page.scanning") : t("page.rescan")}
-          </Button>
+          {scanButtons(true)}
         </div>
 
         {extractError && (
@@ -207,7 +244,9 @@ export function ConventionsView() {
                 key={c.id}
                 c={c}
                 pending={setStatus.isPending && setStatus.variables?.id === c.id}
+                saving={updateCandidate.isPending && updateCandidate.variables?.id === c.id}
                 onSetStatus={(id, status) => setStatus.mutate({ repoId, id, status })}
+                onEdit={(id, patch) => updateCandidate.mutate({ repoId, id, ...patch })}
               />
             ))}
           </>

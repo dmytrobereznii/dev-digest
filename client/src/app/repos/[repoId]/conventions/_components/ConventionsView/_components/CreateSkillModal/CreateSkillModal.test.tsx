@@ -24,6 +24,7 @@ afterEach(() => {
 const ACCEPTED: ConventionCandidate[] = [
   {
     id: "c1",
+    category: "error-handling",
     rule: "Always use async/await instead of .then() chains",
     evidence_path: "src/api/users.ts:23-31",
     evidence_snippet: "const user = await db.users.find(id);",
@@ -33,6 +34,7 @@ const ACCEPTED: ConventionCandidate[] = [
   },
   {
     id: "c3",
+    category: "error-handling",
     rule: "Redis access goes through src/lib/redis.ts singleton",
     evidence_path: "src/lib/redis.ts:1-9",
     evidence_snippet: "export const redis = new Redis(config.redisUrl);",

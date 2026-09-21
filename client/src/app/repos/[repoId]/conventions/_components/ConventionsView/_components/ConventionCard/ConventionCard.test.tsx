@@ -9,6 +9,7 @@ afterEach(cleanup);
 
 const C: ConventionCandidate = {
   id: "c1",
+  category: "error-handling",
   rule: "Always use async/await instead of .then() chains",
   evidence_path: "src/api/users.ts:23-31",
   evidence_snippet: "const user = await db.users.find(id);",
@@ -19,12 +20,13 @@ const C: ConventionCandidate = {
 
 function renderCard(c: ConventionCandidate = C) {
   const onSetStatus = vi.fn();
+  const onEdit = vi.fn();
   render(
     <NextIntlClientProvider locale="en" messages={{ conventions: messages }}>
-      <ConventionCard c={c} onSetStatus={onSetStatus} />
+      <ConventionCard c={c} onSetStatus={onSetStatus} onEdit={onEdit} />
     </NextIntlClientProvider>,
   );
-  return onSetStatus;
+  return { onSetStatus, onEdit };
 }
 
 /**
@@ -47,7 +49,7 @@ describe("ConventionCard", () => {
   });
 
   it("accepts with the candidate's id", () => {
-    const onSetStatus = renderCard();
+    const { onSetStatus } = renderCard();
     fireEvent.click(screen.getByRole("button", { name: "Accept" }));
     expect(onSetStatus).toHaveBeenCalledWith("c1", "accepted");
   });
@@ -55,13 +57,13 @@ describe("ConventionCard", () => {
   /* D2: Accept toggles, Reject is terminal — so an accepted card's primary
      button hands back `pending`, and Reject is `rejected` either way. */
   it("toggles an accepted card back to pending", () => {
-    const onSetStatus = renderCard({ ...C, accepted: true, status: "accepted" });
+    const { onSetStatus } = renderCard({ ...C, accepted: true, status: "accepted" });
     fireEvent.click(screen.getByRole("button", { name: "Accepted" }));
     expect(onSetStatus).toHaveBeenCalledWith("c1", "pending");
   });
 
   it("rejects with `rejected`", () => {
-    const onSetStatus = renderCard();
+    const { onSetStatus } = renderCard();
     fireEvent.click(screen.getByRole("button", { name: "Reject" }));
     expect(onSetStatus).toHaveBeenCalledWith("c1", "rejected");
   });
@@ -75,5 +77,58 @@ describe("ConventionCard", () => {
 
     renderCard({ ...C, confidence: 0.78 });
     expect(barFill("78%")).toHaveStyle({ background: "var(--warn)" });
+  });
+
+  it("labels the rule with the category the model filed it under", () => {
+    renderCard();
+    expect(screen.getByText("error handling")).toBeInTheDocument();
+
+    // A row extracted before the column existed simply has no label.
+    cleanup();
+    renderCard({ ...C, category: null });
+    expect(screen.queryByText("error handling")).not.toBeInTheDocument();
+  });
+
+  /* Criteria 47/49: Edit is the third button and it edits IN PLACE — the rule
+     becomes a field on the same card, with no navigation and no modal. */
+  it("edits the rule and the category inline, and saves the pair", () => {
+    const { onEdit } = renderCard();
+
+    // Read-only until Edit is pressed.
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const field = screen.getByRole("textbox", { name: "Rule" });
+    expect(field).toHaveValue(C.rule);
+    // The evidence stays put and stays read-only while the rule is edited.
+    expect(screen.getByText("src/api/users.ts:23-31")).toBeInTheDocument();
+    expect(screen.getByText(C.evidence_snippet)).toBeInTheDocument();
+
+    fireEvent.change(field, { target: { value: "Use async/await, never .then() chains" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Category" }), {
+      target: { value: "structure" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onEdit).toHaveBeenCalledWith("c1", {
+      rule: "Use async/await, never .then() chains",
+      category: "structure",
+    });
+  });
+
+  it("discards an edit on Cancel and does not re-open with the stale text", () => {
+    const { onEdit } = renderCard();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Rule" }), {
+      target: { value: "typed then abandoned" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(screen.getByText(C.rule)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Rule" })).toHaveValue(C.rule);
   });
 });

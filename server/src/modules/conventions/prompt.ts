@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ConventionCategory } from '@devdigest/shared';
 import type { ChatMessage } from '@devdigest/shared';
 import { wrapUntrusted } from '../../platform/prompt.js';
 import { renderPrompt } from '../../platform/prompts.js';
@@ -33,6 +34,13 @@ import {
  * it at parse time gets the model a repair attempt instead of a silent discard.
  */
 export const ExtractedCandidate = z.object({
+  /**
+   * Required, and a closed set: a free-text category drifts between scans
+   * ("naming" / "Naming" / "file naming") and cannot be grouped or coloured.
+   * `other` is in the enum so the model always has a legal answer and never
+   * has to force a rule into the wrong bucket to satisfy the schema.
+   */
+  category: ConventionCategory,
   rule: z.string().min(1),
   /** `path` or `path:start-end`, relative to the repo root. */
   evidence_path: z.string().min(1),

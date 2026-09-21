@@ -10,6 +10,7 @@ export const s = {
     marginBottom: 18,
   } satisfies CSSProperties,
   headerText: { flex: 1 } satisfies CSSProperties,
+  scanButtons: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 } satisfies CSSProperties,
   h1: { fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" } satisfies CSSProperties,
   repoName: { color: "var(--accent-text)" } satisfies CSSProperties,
   subtitle: { fontSize: 13, color: "var(--text-secondary)", marginTop: 3 } satisfies CSSProperties,
@@ -30,9 +31,6 @@ export const s = {
      the header and this one line is how "last scan 2m ago" survives, instead of
      an empty state that would claim the repo was never scanned. */
   zeroCount: { fontSize: 13, color: "var(--text-muted)" } satisfies CSSProperties,
-  /* The empty state is rendered INSTEAD of the page body, so a failed
-     extraction needs its own padded slot above it. */
-  emptyNotice: { padding: "20px 28px 0", maxWidth: 880, margin: "0 auto" } satisfies CSSProperties,
   skeletonStack: { display: "flex", flexDirection: "column", gap: 12 } satisfies CSSProperties,
   notice: {
     marginBottom: 16,

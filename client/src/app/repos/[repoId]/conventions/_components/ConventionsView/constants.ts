@@ -1,5 +1,5 @@
 /** Constants for the Conventions extractor page and its cards. */
-import type { SkillType } from "@devdigest/shared";
+import type { ConventionCategory, SkillType } from "@devdigest/shared";
 
 /**
  * Confidence at or above which the card's bar turns green; below it, amber.
@@ -24,15 +24,26 @@ export const CARD_ACTIONS_WIDTH = 150;
 /** Modal width (px) for the merge modal — the artboard's. */
 export const MODAL_WIDTH = 760;
 
-/**
- * The four skill types, written out as a literal rather than read off the Zod
- * `SkillType` enum: a VALUE import from @devdigest/shared type-checks and
- * unit-tests green while `next build` fails with
- * `Module not found: Can't resolve './contracts/knowledge.js'` (client
- * INSIGHTS.md). The `satisfies` keeps this list honest against the contract at
- * compile time.
- */
-export const SKILL_TYPE_VALUES = ["rubric", "convention", "security", "custom"] as const satisfies readonly SkillType[];
-
 /** An extracted skill IS a convention skill; the select opens on it. */
 export const DEFAULT_SKILL_TYPE: SkillType = "convention";
+
+/**
+ * The `ConventionCategory` values, written out as a local literal.
+ *
+ * Deliberately NOT read off the Zod enum in `@devdigest/shared`: a *value*
+ * import from there type-checks and unit-tests green while `next build` fails
+ * with `Module not found: Can't resolve './contracts/knowledge.js'` (client
+ * INSIGHTS.md). Everything imported from `@devdigest/shared` on this page is a
+ * type. Keep in step with `ConventionCategory`; the `category.*` message keys
+ * are the labels.
+ */
+export const CONVENTION_CATEGORY_VALUES: readonly ConventionCategory[] = [
+  "naming",
+  "structure",
+  "error-handling",
+  "typing",
+  "imports",
+  "testing",
+  "tooling",
+  "other",
+];

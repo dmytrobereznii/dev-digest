@@ -5,9 +5,20 @@ import type { ConventionCandidate } from "@devdigest/shared";
 import messages from "@/../messages/en/conventions.json";
 
 /* `state` is mutated per test, so the mocked hooks read it lazily. */
-const state: { candidates: ConventionCandidate[] } = { candidates: [] };
+const SCAN = {
+  id: "s1",
+  sample_count: 84,
+  model: "anthropic/claude-haiku-4.5",
+  created_at: new Date().toISOString(),
+};
+const state: { candidates: ConventionCandidate[]; scan: typeof SCAN | null } = {
+  candidates: [],
+  scan: SCAN,
+};
 const setAllMutate = vi.fn();
 const setStatusMutate = vi.fn();
+const extractMutate = vi.fn();
+const updateMutate = vi.fn();
 
 /* AppShell is stubbed: it pulls the whole @devdigest/ui shell, the command
    palette and the repo switcher, none of which this test is about. */
@@ -24,17 +35,20 @@ vi.mock("@/lib/repo-context", () => ({
 }));
 vi.mock("@/lib/hooks/conventions", () => ({
   useConventions: () => ({
-    data: {
-      scan: { id: "s1", sample_count: 84, model: "anthropic/claude-haiku-4.5", created_at: new Date().toISOString() },
-      candidates: state.candidates,
-    },
+    data: { scan: state.scan, candidates: state.candidates },
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
   }),
-  useExtractConventions: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
+  useExtractConventions: () => ({
+    mutate: extractMutate,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
   useSetConventionStatus: () => ({ mutate: setStatusMutate, isPending: false, variables: undefined }),
   useSetAllConventionStatus: () => ({ mutate: setAllMutate, isPending: false }),
+  useUpdateConvention: () => ({ mutate: updateMutate, isPending: false, variables: undefined }),
 }));
 
 import { ConventionsView } from "./ConventionsView";
@@ -42,6 +56,7 @@ import { ConventionsView } from "./ConventionsView";
 function candidate(id: string, accepted: boolean): ConventionCandidate {
   return {
     id,
+    category: "naming",
     rule: `Rule ${id}`,
     evidence_path: `src/${id}.ts:1-3`,
     evidence_snippet: `const ${id} = 1;`,
@@ -61,6 +76,7 @@ function renderView() {
 
 beforeEach(() => {
   state.candidates = [];
+  state.scan = SCAN;
 });
 afterEach(() => {
   cleanup();
@@ -99,6 +115,28 @@ describe("ConventionsView", () => {
     expect(screen.queryByRole("button", { name: "Accept all" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Deselect all" }));
     expect(setAllMutate).toHaveBeenCalledWith({ repoId: "r1", status: "pending" });
+  });
+
+  /* Criterion 45 — Run Scan and ReScan are two separate controls, both always
+     present, each live in exactly one state. */
+  it("offers Run Scan before the first scan and ReScan after it", () => {
+    state.scan = null;
+    renderView();
+
+    expect(screen.getByRole("button", { name: "Run Scan" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "ReScan" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Run Scan" }));
+    expect(extractMutate).toHaveBeenCalledWith("r1");
+
+    cleanup();
+    extractMutate.mockClear();
+    state.scan = SCAN;
+    renderView();
+
+    expect(screen.getByRole("button", { name: "Run Scan" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "ReScan" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "ReScan" }));
+    expect(extractMutate).toHaveBeenCalledWith("r1");
   });
 
   /* D4 — a scan that grounded nothing keeps its header, so "last scan" stays

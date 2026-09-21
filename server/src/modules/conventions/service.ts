@@ -1,6 +1,6 @@
 import type {
   ConventionCandidate,
-  ConventionStatus,
+  ConventionCategory,
   Skill,
   SkillType,
 } from '@devdigest/shared';
@@ -8,7 +8,12 @@ import type { Container } from '../../platform/container.js';
 import { ValidationError } from '../../platform/errors.js';
 import { resolveFeatureModel } from '../settings/feature-models.js';
 import { toSkillDto } from '../skills/service.js';
-import type { BulkStatus, ConventionsRepository, RepoBasics } from './repository.js';
+import type {
+  BulkStatus,
+  ConventionsRepository,
+  PatchCandidate,
+  RepoBasics,
+} from './repository.js';
 import {
   dedupeKey,
   groundCandidate,
@@ -153,7 +158,13 @@ export class ConventionsService {
     const settled = await this.repo.listSettled(workspaceId, repoId);
     const seen = new Set(settled.map((row) => dedupeKey(row.rule)));
 
-    const survivors: { rule: string; evidencePath: string; evidenceSnippet: string; confidence: number }[] = [];
+    const survivors: {
+      category: ConventionCategory;
+      rule: string;
+      evidencePath: string;
+      evidenceSnippet: string;
+      confidence: number;
+    }[] = [];
     let ungrounded = 0;
     let duplicates = 0;
     for (const raw of result.data.conventions) {
@@ -171,6 +182,7 @@ export class ConventionsService {
       }
       seen.add(key);
       survivors.push({
+        category: grounded.category,
         rule: grounded.rule,
         evidencePath: grounded.evidence_path,
         evidenceSnippet: grounded.evidence_snippet,
@@ -206,17 +218,23 @@ export class ConventionsService {
   }
 
   /**
-   * Triage one candidate. `status` is the ONLY patchable field: the rule and its
-   * evidence are the gate's output, and a hand-edited rule would carry a
-   * confidence and a snippet that no longer describe it. Editing happens on the
-   * merged body in the modal, which is the design's only editing surface.
+   * Patch one candidate: its triage state (Accept / Reject) and/or its wording
+   * (inline Edit on the card).
+   *
+   * The EVIDENCE stays read-only, and that line is the whole design. A snippet
+   * was matched character-by-character against the file the model was shown;
+   * letting it be retyped would put a quote on the card that appears nowhere in
+   * the repo. Rewording the rule the evidence supports is a different act, and
+   * a safe one — the snippet still proves the same thing.
+   *
+   * `confidence` is likewise untouched: it is the model's, not the reader's.
    */
-  async setStatus(
+  async patch(
     workspaceId: string,
     id: string,
-    status: ConventionStatus,
+    patch: PatchCandidate,
   ): Promise<ConventionCandidate | undefined> {
-    const row = await this.repo.setStatus(workspaceId, id, status);
+    const row = await this.repo.patch(workspaceId, id, patch);
     return row ? toCandidateDto(row) : undefined;
   }
 

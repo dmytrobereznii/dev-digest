@@ -12,7 +12,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { ConventionCandidate, ConventionStatus, Skill, SkillType } from "@devdigest/shared";
+import type {
+  ConventionCandidate,
+  ConventionCategory,
+  ConventionStatus,
+  Skill,
+  SkillType,
+} from "@devdigest/shared";
 
 /**
  * One scan of a repo — what the page's subtitle ("Detected from N sample files
@@ -69,10 +75,8 @@ export function useExtractConventions() {
 }
 
 /**
- * Triage one candidate. `status` is the only patchable field — the rule,
- * evidence and confidence are the gate's output, and a hand-edited rule would
- * carry a snippet that no longer describes it. `repoId` is not in the URL; it
- * travels with the variables so the list query can be invalidated.
+ * Triage one candidate. `repoId` is not in the URL; it travels with the
+ * variables so the list query can be invalidated.
  */
 export function useSetConventionStatus() {
   const qc = useQueryClient();
@@ -95,6 +99,38 @@ export function useSetConventionStatus() {
  * be one keystroke away from throwing the whole list away.
  */
 export type BulkConventionStatus = Extract<ConventionStatus, "pending" | "accepted">;
+
+/**
+ * Inline Edit on a card: reword the rule, or re-file it under another category.
+ *
+ * The EVIDENCE is not editable and the server will not take it. A snippet was
+ * matched character-by-character against the file the model was shown, so a
+ * retyped one would put a quote on the card that appears nowhere in the repo.
+ * Rewording the rule the snippet supports is a different, safe act, and the
+ * triage state is left exactly where it was — renaming must not un-accept.
+ */
+export function useUpdateConvention() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      rule,
+      category,
+    }: {
+      repoId: string;
+      id: string;
+      rule?: string;
+      category?: ConventionCategory;
+    }) =>
+      api.put<ConventionCandidate>(`/conventions/${id}`, {
+        ...(rule !== undefined ? { rule } : {}),
+        ...(category !== undefined ? { category } : {}),
+      }),
+    onSuccess: (_d, { repoId }) => {
+      qc.invalidateQueries({ queryKey: ["conventions", repoId] });
+    },
+  });
+}
 
 export function useSetAllConventionStatus() {
   const qc = useQueryClient();

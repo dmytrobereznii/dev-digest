@@ -388,7 +388,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   }
   for (const c of SEED_CONVENTIONS) {
     const [existing] = await db
-      .select({ id: t.conventions.id })
+      .select({ id: t.conventions.id, category: t.conventions.category })
       .from(t.conventions)
       .where(
         and(
@@ -397,10 +397,24 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
           eq(t.conventions.rule, c.rule),
         ),
       );
-    if (existing) continue;
+    if (existing) {
+      // Backfill only. A row seeded before `category` existed keeps a NULL
+      // there forever otherwise, because this loop's whole job is to not
+      // touch rows that are already here — and the demo then shows unlabelled
+      // cards on any database that predates the column. Triage state, evidence
+      // and confidence are deliberately NOT refreshed: those are the user's.
+      if (existing.category === null) {
+        await db
+          .update(t.conventions)
+          .set({ category: c.category })
+          .where(eq(t.conventions.id, existing.id));
+      }
+      continue;
+    }
     await db.insert(t.conventions).values({
       workspaceId,
       repoId,
+      category: c.category,
       rule: c.rule,
       evidencePath: c.evidencePath,
       evidenceSnippet: c.evidenceSnippet,

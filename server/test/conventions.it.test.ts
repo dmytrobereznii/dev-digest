@@ -76,6 +76,7 @@ const REDIS_RULE = 'Redis access goes through the src/lib/redis.ts singleton';
 const EXTRACTION = {
   conventions: [
     {
+      category: 'error-handling',
       rule: AWAIT_RULE,
       // A deliberately WRONG line range: the gate repairs it from where the text
       // actually is rather than dropping good evidence over arithmetic (D6).
@@ -84,12 +85,14 @@ const EXTRACTION = {
       confidence: 0.91,
     },
     {
+      category: 'imports',
       rule: REDIS_RULE,
       evidence_path: 'src/lib/redis.ts:4',
       evidence_snippet: 'export const redis = new Redis(config.redisUrl);',
       confidence: 0.78,
     },
     {
+      category: 'error-handling',
       rule: 'Every handler is wrapped in a circuit breaker',
       evidence_path: 'src/services/payments.ts:1-3',
       evidence_snippet: 'const breaker = new CircuitBreaker(handler);',
@@ -104,12 +107,14 @@ const RESCAN = {
     // The SAME two rules the first scan produced, re-phrased only in casing and
     // punctuation — `dedupeKey` must collapse them against the settled rows.
     {
+      category: 'error-handling',
       rule: 'always use `Async/Await` instead of raw promise chains!!',
       evidence_path: 'src/services/payments.ts:4',
       evidence_snippet: '  const charge = await gateway.capture(id);',
       confidence: 0.93,
     },
     {
+      category: 'imports',
       rule: 'REDIS access goes through the src/lib/redis.ts singleton.',
       evidence_path: 'src/lib/redis.ts:4',
       evidence_snippet: 'export const redis = new Redis(config.redisUrl);',
@@ -117,6 +122,7 @@ const RESCAN = {
     },
     // …and one genuinely new one, which is the only row that may be inserted.
     {
+      category: 'imports',
       rule: 'Import the logger rather than calling console directly',
       evidence_path: 'src/services/payments.ts:1',
       evidence_snippet: "import { logger } from '../lib/logger';",
@@ -156,6 +162,7 @@ const DIFF = `diff --git a/src/config.ts b/src/config.ts
 
 interface Candidate {
   id: string;
+  category: string | null;
   rule: string;
   evidence_path: string;
   evidence_snippet: string;
@@ -368,6 +375,73 @@ d('/conventions', () => {
       status: 'accepted',
       accepted: true,
     });
+
+    await app.close();
+  });
+
+  it('an inline edit rewords a rule without touching its triage, evidence or confidence', async () => {
+    const app = await makeApp();
+    const repo = await makeRepo();
+    const page = await extract(app, repo.id);
+    const target = page.candidates[0]!;
+
+    // Accept first: rewording an accepted rule must not quietly un-accept it,
+    // which is what writing `accepted` alongside every UPDATE would do.
+    await app.inject({
+      method: 'PUT',
+      url: `/conventions/${target.id}`,
+      payload: { status: 'accepted' },
+    });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/conventions/${target.id}`,
+      payload: { rule: 'Use async/await, never raw promise chains', category: 'structure' },
+    });
+    expect(res.statusCode).toBe(200);
+
+    const reread = await get(app, repo.id);
+    expect(reread.candidates.find((c) => c.id === target.id)).toMatchObject({
+      rule: 'Use async/await, never raw promise chains',
+      category: 'structure',
+      // Untouched by the edit — all three are the gate's output, not input.
+      status: 'accepted',
+      accepted: true,
+      evidence_path: target.evidence_path,
+      evidence_snippet: target.evidence_snippet,
+      confidence: target.confidence,
+    });
+
+    await app.close();
+  });
+
+  it('rejects a PUT that carries no patchable field, and one that edits the evidence', async () => {
+    const app = await makeApp();
+    const repo = await makeRepo();
+    const page = await extract(app, repo.id);
+    const target = page.candidates[0]!;
+
+    const empty = await app.inject({
+      method: 'PUT',
+      url: `/conventions/${target.id}`,
+      payload: {},
+    });
+    expect(empty.statusCode).toBe(422);
+
+    // The snippet was matched character-by-character against the sampled file.
+    // A client that could retype it could put a quote on the card that appears
+    // nowhere in the repo, so the field is not in the body schema at all.
+    const forged = await app.inject({
+      method: 'PUT',
+      url: `/conventions/${target.id}`,
+      payload: { evidence_snippet: 'const nothing = "this is not in the repo";' },
+    });
+    expect(forged.statusCode).toBe(422);
+
+    const reread = await get(app, repo.id);
+    expect(reread.candidates.find((c) => c.id === target.id)?.evidence_snippet).toBe(
+      target.evidence_snippet,
+    );
 
     await app.close();
   });

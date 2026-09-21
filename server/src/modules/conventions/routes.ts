@@ -1,7 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { ConventionCandidate, ConventionStatus, Skill, SkillType } from '@devdigest/shared';
+import {
+  ConventionCandidate,
+  ConventionCategory,
+  ConventionStatus,
+  Skill,
+  SkillType,
+} from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
 import { ApiErrors, IdParams, NotFound } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
@@ -11,7 +17,7 @@ import { ConventionsService } from './service.js';
  * Conventions module — the extractor surface that writes into the Skills Lab.
  *   GET  /repos/:id/conventions          → { scan, candidates }
  *   POST /repos/:id/conventions/extract  → the same shape, 200 (synchronous, D7)
- *   PUT  /conventions/:id                → one candidate's triage state
+ *   PUT  /conventions/:id                → one candidate's triage state / wording
  *   PUT  /repos/:id/conventions/status   → Accept all / Deselect all
  *   POST /repos/:id/conventions/skill    → the merged skill, 201 (D8)
  *
@@ -38,12 +44,26 @@ const ConventionsPage = z.object({
 });
 
 /**
- * `status` and nothing else. The rule, the evidence and the confidence are the
- * gate's output, not user input: a hand-edited rule would carry a snippet and a
- * confidence that no longer describe it. The modal's body editor is the design's
- * only editing surface.
+ * Triage state and/or wording. The card sends `status` from Accept/Reject and
+ * `rule`/`category` from inline Edit, so every field is optional — but at least
+ * one must be present, or the request is a no-op the caller should not have
+ * made.
+ *
+ * `evidence_path`, `evidence_snippet` and `confidence` are deliberately absent
+ * and stay server-owned. The snippet was matched character-by-character against
+ * the file the model was shown; a retyped one would put a quote on the card that
+ * appears nowhere in the repo, which is the single guarantee this module makes.
+ * Rewording the rule is safe — the evidence still proves the same thing.
  */
-const UpdateConventionBody = z.object({ status: ConventionStatus });
+const UpdateConventionBody = z
+  .object({
+    status: ConventionStatus.optional(),
+    rule: z.string().trim().min(1).max(300).optional(),
+    category: ConventionCategory.optional(),
+  })
+  .refine((b) => b.status !== undefined || b.rule !== undefined || b.category !== undefined, {
+    message: 'Provide at least one of status, rule or category.',
+  });
 
 /**
  * The toolbar's two states. `rejected` is deliberately NOT accepted here: reject
@@ -109,7 +129,7 @@ export default async function conventionsRoutes(appBase: FastifyInstance) {
     },
     async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const candidate = await service.setStatus(workspaceId, req.params.id, req.body.status);
+      const candidate = await service.patch(workspaceId, req.params.id, req.body);
       if (!candidate) throw new NotFoundError('Convention not found');
       return candidate;
     },

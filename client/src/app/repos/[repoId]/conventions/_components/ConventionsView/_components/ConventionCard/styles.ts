@@ -18,9 +18,27 @@ export const s = {
     }) satisfies CSSProperties,
   row: { display: "flex", gap: 14 } satisfies CSSProperties,
   main: { flex: 1, minWidth: 0 } satisfies CSSProperties,
+  ruleRow: { display: "flex", alignItems: "baseline", gap: 9 } satisfies CSSProperties,
   /* Italic is the artboard's: it marks the rule as the model's words rather
      than the product's. */
   rule: { fontSize: 14, fontWeight: 600, fontStyle: "italic", lineHeight: 1.4 } satisfies CSSProperties,
+  /* The category the model filed the rule under — neutral, so it reads as a
+     label on the rule rather than as another severity signal beside the
+     confidence bar. */
+  categoryPill: {
+    flexShrink: 0,
+    fontSize: 10.5,
+    fontWeight: 600,
+    letterSpacing: "0.02em",
+    textTransform: "uppercase",
+    color: "var(--text-secondary)",
+    background: "var(--bg-hover)",
+    padding: "2px 7px",
+    borderRadius: 4,
+  } satisfies CSSProperties,
+  /* Inline edit replaces the rule line in place — same slot, same card. */
+  editBox: { display: "flex", flexDirection: "column", gap: 8 } satisfies CSSProperties,
+  editCategory: { maxWidth: 220 } satisfies CSSProperties,
   evidence: {
     marginTop: 10,
     borderRadius: 7,

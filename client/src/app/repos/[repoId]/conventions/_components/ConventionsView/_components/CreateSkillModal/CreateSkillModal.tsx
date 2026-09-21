@@ -33,7 +33,8 @@ import {
 } from "@devdigest/ui";
 import type { ConventionCandidate, SkillType } from "@devdigest/shared";
 import { useCreateSkillFromConventions } from "@/lib/hooks/conventions";
-import { MODAL_WIDTH, SKILL_TYPE_VALUES } from "../../constants";
+import { SKILL_TYPE_VALUES } from "@/lib/skill-type";
+import { MODAL_WIDTH } from "../../constants";
 import { conventionsToDraft } from "./helpers";
 import { s } from "./styles";
 

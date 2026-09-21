@@ -27,6 +27,7 @@
  * 0.91 / 0.85 / 0.78 puts a value on each side of that boundary — and one
  * exactly on it — on first boot.
  */
+import type { ConventionCategory } from '@devdigest/shared';
 import { LESSON_AGENT_MODEL } from './seed-skills.js';
 
 /**
@@ -70,6 +71,8 @@ export const CONVENTION_SCAN_MODEL = LESSON_AGENT_MODEL;
 export const CONVENTION_SCAN_AGE_MS = 60 * 60 * 1000;
 
 export interface SeedConvention {
+  /** Which kind of house rule this is — the model's closed category set. */
+  category: ConventionCategory;
   /** The rule as the model phrased it. Rendered italic, and the natural key. */
   rule: string;
   /** `path:start-end` — the range the gate would have repaired, not invented. */
@@ -88,6 +91,7 @@ export interface SeedConvention {
  */
 export const SEED_CONVENTIONS: SeedConvention[] = [
   {
+    category: 'error-handling',
     rule: 'Always use async/await instead of .then() chains',
     evidencePath: 'src/api/users.ts:23-31',
     evidenceSnippet:
@@ -95,12 +99,14 @@ export const SEED_CONVENTIONS: SeedConvention[] = [
     confidence: 0.91,
   },
   {
+    category: 'imports',
     rule: 'Redis access goes through src/lib/redis.ts singleton',
     evidencePath: 'src/lib/redis.ts:1-9',
     evidenceSnippet: 'export const redis = new Redis(config.redisUrl);',
     confidence: 0.85,
   },
   {
+    category: 'typing',
     rule: 'All public route handlers return typed Result<T, ApiError>',
     evidencePath: 'src/api/public/index.ts:14-20',
     evidenceSnippet: 'function handler(): Result<Item[], ApiError> {\n  return ok(items);\n}',

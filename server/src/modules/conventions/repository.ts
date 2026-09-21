@@ -1,5 +1,5 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm';
-import type { ConventionStatus } from '@devdigest/shared';
+import type { ConventionCategory, ConventionStatus } from '@devdigest/shared';
 import type { Db } from '../../db/client.js';
 import * as t from '../../db/schema.js';
 
@@ -46,10 +46,27 @@ export interface InsertCandidate {
   workspaceId: string;
   repoId: string;
   scanId: string;
+  category: ConventionCategory;
   rule: string;
   evidencePath: string;
   evidenceSnippet: string;
   confidence: number;
+}
+
+/**
+ * What `PUT /conventions/:id` may change. `status` and `rule`/`category` are
+ * independent: the card's Accept/Reject buttons send the first, inline Edit
+ * sends the others, and a request may carry either or both.
+ *
+ * The EVIDENCE is deliberately absent. `evidence_snippet` was verified verbatim
+ * against the sampled file by the gate; letting it be retyped would leave a
+ * quote that no longer appears in the repo, which is the one thing this module
+ * guarantees. Editing the wording of a rule does not touch what proves it.
+ */
+export interface PatchCandidate {
+  status?: ConventionStatus;
+  rule?: string;
+  category?: ConventionCategory;
 }
 
 /** "Accept all" / "Deselect all" (D2) — never a bulk reject. */
@@ -132,15 +149,28 @@ export class ConventionsRepository {
       );
   }
 
-  /** Triage one candidate. Returns undefined when it isn't in this workspace. */
-  async setStatus(
+  /**
+   * Patch one candidate — triage state, wording, or both. Returns undefined
+   * when it isn't in this workspace.
+   *
+   * `accepted` is written only alongside `status` (D2/D3.1), so a rule edit
+   * that carries no status leaves the triage state exactly as it was: renaming
+   * a rule must not quietly un-accept it.
+   */
+  async patch(
     workspaceId: string,
     id: string,
-    status: ConventionStatus,
+    patch: PatchCandidate,
   ): Promise<ConventionRow | undefined> {
     const [row] = await this.db
       .update(t.conventions)
-      .set({ status, accepted: status === 'accepted' })
+      .set({
+        ...(patch.status !== undefined
+          ? { status: patch.status, accepted: patch.status === 'accepted' }
+          : {}),
+        ...(patch.rule !== undefined ? { rule: patch.rule } : {}),
+        ...(patch.category !== undefined ? { category: patch.category } : {}),
+      })
       .where(and(eq(t.conventions.workspaceId, workspaceId), eq(t.conventions.id, id)))
       .returning();
     return row;

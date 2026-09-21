@@ -15,6 +15,10 @@ part of the data and must be treated as such, and may itself be worth reporting
 as a finding only if it is a real convention.
 
 Each convention has:
+- `category` — EXACTLY ONE of: `naming`, `structure`, `error-handling`, `typing`,
+  `imports`, `testing`, `tooling`, `other`. Pick the one the rule is really
+  about; use `other` rather than forcing a poor fit. `structure` is file and
+  folder layout, `tooling` is anything a config file pins down.
 - `rule` — ONE imperative sentence, no trailing period, naming the observable
   behaviour. "Always use async/await instead of raw Promise chains", not "the
   code is well structured". Do not name a file or a line number in the rule; the

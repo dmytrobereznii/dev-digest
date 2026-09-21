@@ -67,6 +67,15 @@ export const conventions = pgTable('conventions', {
     .notNull()
     .references(() => workspaces.id, { onDelete: 'cascade' }),
   repoId: uuid('repo_id').references(() => repos.id, { onDelete: 'cascade' }),
+  /**
+   * What kind of rule this is, from the model's closed `ConventionCategory`
+   * set. Nullable: rows written before the column existed have no category,
+   * and a backfill would have to guess one — the same invention the grounding
+   * gate rejects everywhere else in this module.
+   */
+  category: text('category', {
+    enum: ['naming', 'structure', 'error-handling', 'typing', 'imports', 'testing', 'tooling', 'other'],
+  }),
   rule: text('rule').notNull(),
   evidencePath: text('evidence_path'),
   evidenceSnippet: text('evidence_snippet'),

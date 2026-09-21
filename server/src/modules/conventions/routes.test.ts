@@ -51,6 +51,7 @@ const candidateRow = (over: Partial<ConventionRow> = {}): ConventionRow => ({
   id: CANDIDATE_ID,
   workspaceId: WORKSPACE_ID,
   repoId: REPO_ID,
+  category: 'error-handling',
   rule: 'Always use `async/await` instead of raw Promise chains',
   evidencePath: 'src/services/payments.ts:4',
   evidenceSnippet: '  const charge = await gateway.capture(id);',
@@ -165,18 +166,21 @@ const git = () =>
 const EXTRACTION_FIXTURE = {
   conventions: [
     {
+      category: 'error-handling',
       rule: 'Always use `async/await` instead of raw Promise chains',
       evidence_path: 'src/services/payments.ts:118-140',
       evidence_snippet: '  const charge = await gateway.capture(id);',
       confidence: 0.91,
     },
     {
+      category: 'tooling',
       rule: 'Declare the package as an ES module',
       evidence_path: 'package.json',
       evidence_snippet: '  "type": "module"',
       confidence: 1.4,
     },
     {
+      category: 'other',
       rule: 'Never log a card number',
       evidence_path: 'src/services/payments.ts',
       evidence_snippet: '  logger.info({ card: redact(card) });',
@@ -208,6 +212,7 @@ describe('/conventions routes (stub DB)', () => {
       candidates: [
         {
           id: CANDIDATE_ID,
+          category: 'error-handling',
           rule: 'Always use `async/await` instead of raw Promise chains',
           evidence_path: 'src/services/payments.ts:4',
           evidence_snippet: '  const charge = await gateway.capture(id);',
@@ -260,6 +265,8 @@ describe('/conventions routes (stub DB)', () => {
       'Declare the package as an ES module',
     ]);
     expect(body.candidates[0].evidence_path).toBe('src/services/payments.ts:4');
+    // The gate carries the model's category through untouched.
+    expect(body.candidates[0].category).toBe('error-handling');
     expect(body.candidates[0].status).toBe('pending');
     expect(body.candidates[0].accepted).toBe(false);
     expect(body.candidates[1].confidence).toBe(1);
@@ -281,19 +288,63 @@ describe('/conventions routes (stub DB)', () => {
     await app.close();
   });
 
-  it('PUT /conventions/:id writes `accepted` together with `status`, and nothing else', async () => {
+  it('PUT /conventions/:id writes `accepted` together with `status`', async () => {
     const { db, updates } = stubDb({ conventions: [candidateRow()] });
     const app = await buildApp({ config, db, overrides: { auth } });
 
     const res = await app.inject({
       method: 'PUT',
       url: `/conventions/${CANDIDATE_ID}`,
-      // `rule` is not patchable: the zod body strips it rather than storing it.
-      payload: { status: 'accepted', rule: 'something the user typed' },
+      payload: { status: 'accepted' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ status: 'accepted', accepted: true });
+    // `accepted` is DERIVED and only ever written beside `status`.
     expect(updates).toEqual([{ status: 'accepted', accepted: true }]);
+    await app.close();
+  });
+
+  it('PUT /conventions/:id rewords a rule WITHOUT writing the triage columns', async () => {
+    const { db, updates } = stubDb({ conventions: [candidateRow()] });
+    const app = await buildApp({ config, db, overrides: { auth } });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/conventions/${CANDIDATE_ID}`,
+      payload: { rule: 'Use async/await, never raw promise chains', category: 'structure' },
+    });
+    expect(res.statusCode).toBe(200);
+    // No `status` / `accepted` in the UPDATE at all: renaming an accepted rule
+    // must not quietly un-accept it.
+    expect(updates).toEqual([
+      { rule: 'Use async/await, never raw promise chains', category: 'structure' },
+    ]);
+    await app.close();
+  });
+
+  it('PUT /conventions/:id refuses an empty patch and never takes the evidence', async () => {
+    const { db, updates } = stubDb({ conventions: [candidateRow()] });
+    const app = await buildApp({ config, db, overrides: { auth } });
+
+    expect(
+      (await app.inject({ method: 'PUT', url: `/conventions/${CANDIDATE_ID}`, payload: {} }))
+        .statusCode,
+    ).toBe(422);
+
+    // The snippet was matched character-by-character against the sampled file;
+    // a retyped one would be a quote that appears nowhere in the repo. It is
+    // not in the body schema, so this request carries no patchable field.
+    expect(
+      (
+        await app.inject({
+          method: 'PUT',
+          url: `/conventions/${CANDIDATE_ID}`,
+          payload: { evidence_snippet: 'const nothing = 1;', confidence: 1 },
+        })
+      ).statusCode,
+    ).toBe(422);
+
+    expect(updates).toEqual([]);
     await app.close();
   });
 

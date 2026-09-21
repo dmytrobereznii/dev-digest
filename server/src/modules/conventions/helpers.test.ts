@@ -96,6 +96,7 @@ describe('groundCandidate (D6)', () => {
   const files = new Map([['src/services/payments.ts', PAYMENTS]]);
 
   const candidate = (over: Partial<Parameters<typeof groundCandidate>[0]> = {}) => ({
+    category: 'error-handling' as const,
     rule: ASYNC_RULE,
     evidence_path: 'src/services/payments.ts:4',
     evidence_snippet: '  const charge = await gateway.capture(id);',
@@ -105,6 +106,7 @@ describe('groundCandidate (D6)', () => {
 
   it('keeps a candidate whose snippet is at the claimed line', () => {
     expect(groundCandidate(candidate(), files)).toEqual({
+      category: 'error-handling',
       rule: ASYNC_RULE,
       evidence_path: 'src/services/payments.ts:4',
       evidence_snippet: '  const charge = await gateway.capture(id);',

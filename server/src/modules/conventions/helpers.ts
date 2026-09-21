@@ -1,4 +1,8 @@
-import type { ConventionCandidate, ConventionStatus } from '@devdigest/shared';
+import type {
+  ConventionCandidate,
+  ConventionCategory,
+  ConventionStatus,
+} from '@devdigest/shared';
 import type { ConventionRow, ConventionScanRow } from './repository.js';
 import type { ExtractedCandidate } from './prompt.js';
 import { DEFAULT_CONFIDENCE } from './constants.js';
@@ -48,6 +52,7 @@ export function toScanDto(row: ConventionScanRow): ConventionScanDto {
 export function toCandidateDto(row: ConventionRow): ConventionCandidate {
   return {
     id: row.id,
+    category: row.category ?? null,
     rule: row.rule,
     evidence_path: row.evidencePath ?? '',
     evidence_snippet: row.evidenceSnippet ?? '',
@@ -193,6 +198,7 @@ function trimBlankEdges(snippet: string): string {
 
 /** A candidate that passed the gate, with its range repaired from the text. */
 export interface GroundedCandidate {
+  category: ConventionCategory;
   rule: string;
   evidence_path: string;
   evidence_snippet: string;
@@ -233,6 +239,7 @@ export function groundCandidate(
   if (!located) return null;
 
   return {
+    category: candidate.category,
     rule,
     evidence_path: formatEvidencePath(ref.path, located),
     evidence_snippet: trimBlankEdges(candidate.evidence_snippet),

@@ -154,8 +154,31 @@ export type CommunitySkill = z.infer<typeof CommunitySkill>;
 export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
 export type ConventionStatus = z.infer<typeof ConventionStatus>;
 
+/**
+ * What KIND of house rule this is. A closed set rather than free text: the
+ * model picks one, so two scans of the same repo group the same way and the
+ * card can colour the label. `other` is the honest escape hatch — a rule that
+ * does not fit is still a rule, and forcing it into `naming` would be worse.
+ *
+ * Nullable on the candidate: rows extracted before this field existed have no
+ * category, and backfilling one by guessing is exactly the invention the
+ * grounding gate exists to prevent.
+ */
+export const ConventionCategory = z.enum([
+  'naming',
+  'structure',
+  'error-handling',
+  'typing',
+  'imports',
+  'testing',
+  'tooling',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory.nullable(),
   rule: z.string(),
   evidence_path: z.string(),
   evidence_snippet: z.string(),
