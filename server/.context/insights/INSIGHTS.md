@@ -141,6 +141,17 @@ The `pr_id`-only history query takes the same index with
 
 ## Recurring Errors & Fixes
 
+- **2026-09-21** — The seed is idempotent by SKIPPING rows that already exist,
+  so a column added later never reaches demo data already in the database. The
+  conventions loop does `if (existing) continue`, and after
+  `conventions.category` landed every seeded card kept `category = NULL`
+  through any number of `pnpm db:seed` runs — the UI showed unlabelled cards
+  and nothing failed. The symptom is "a new column is NULL on demo rows only".
+  Give the existing-row branch an explicit backfill that writes ONLY the new
+  column and leaves triage state, evidence and anything the user may have
+  edited alone.
+  `server/src/db/seed.ts:389-410`
+
 - **2026-09-20** — `pnpm add` in `server/` can fail with
   `ERR_PNPM_UNEXPECTED_STORE`: `server/node_modules` is linked to
   `~/Library/pnpm/store/v11` while pnpm 10.34.5 wants `v10`. The only fix is

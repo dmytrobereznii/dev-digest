@@ -90,4 +90,15 @@ regression here. It only becomes right if the pages ever fetch on the server.
 
 ## Recurring Errors & Fixes
 
+- **2026-09-21** — A `messages/en/*.json` namespace is shared by every surface
+  in a feature, so adding keys to one can silently overwrite another surface's
+  copy. Writing a `preview` block for the new skill Preview TAB replaced the
+  existing `preview` namespace that the untrusted-source notice in `ConfigTab`
+  and the create modal both read; the give-away was a sibling test failing with
+  `It looks like undefined was passed instead of a matcher` from
+  `getByText(messages.preview.untrustedNotice)`. Merge into the existing block
+  rather than rewriting it, and grep `t("<ns>.` across `client/src` first. Same
+  family as the `onboarding.json` entry under Codebase Patterns.
+  `client/messages/en/skills.json`
+
 ## Open Questions
