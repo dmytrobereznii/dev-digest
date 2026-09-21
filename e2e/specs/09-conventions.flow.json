@@ -1,0 +1,33 @@
+{
+  "name": "Conventions page lists the seeded candidates and merges one into a draft skill",
+  "description": "Covers the L02 Conventions extractor on seeded data: the SKILLS LAB nav item opens the repo-scoped /repos/:repoId/conventions route for the active repo, the seeded convention_scans row drives the 'Detected from 84 sample files' subtitle, the three seeded candidates render with their evidence path and confidence percentage, accepting one moves the 'N of M accepted' counter, and Create skill opens the merge modal with the client-side draft body. The extraction itself is NEVER driven — there is no LLM and no key in this suite, and the demo repo has clonePath: null so the extract route would 422 anyway; seed-conventions.ts seeds the output for exactly that reason. The repo id is not hardcoded: the flow follows the home redirect to the first repo's PR list and then clicks the sidebar item, whose :repoId template resolveHref fills from the active repo — the same mechanism a user uses, and the only one the runner supports ({BASE} is the sole substitution). Note the `wait --load networkidle` after each navigation: every page here renders a skeleton until its TanStack Query resolves and `wait --url` matches the moment the URL changes (e2e/.context/insights/INSIGHTS.md). Accept is located as `role button --name Accept --exact`: the sidebar renders nav items as links so `role button` cannot match them, and `--exact` is what keeps it off 'Accept all' and 'Accepted', both of which a default case-insensitive substring match would also hit. Unlike the read-only flows above, this one WRITES — it accepts a candidate — so a re-run needs a re-seeded DB: use the hermetic runner (see e2e/README.md), which also guarantees the seeded demo repo is the first repo the home redirect lands on.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the seeded repo's PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list settles — the sidebar's :repoId href needs the active repo" },
+    { "cmd": ["find", "text", "Conventions", "click"], "label": "open Conventions from the SKILLS LAB nav group" },
+    { "cmd": ["wait", "--url", "/conventions"], "label": "repo-scoped conventions route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "conventions fetch settles — the page is a skeleton until its query resolves" },
+    { "cmd": ["wait", "--text", "Conventions in"], "label": "page header renders (\"Conventions in <repo>\")" },
+    { "cmd": ["wait", "--text", "Detected from 84 sample files"], "label": "the seeded convention_scans row drives the subtitle" },
+
+    { "cmd": ["wait", "--text", "Always use async/await instead of .then() chains"], "label": "seeded candidate 1 (0.91) is listed" },
+    { "cmd": ["wait", "--text", "Redis access goes through src/lib/redis.ts singleton"], "label": "seeded candidate 2 (0.85) is listed" },
+    { "cmd": ["wait", "--text", "All public route handlers return typed Result<T, ApiError>"], "label": "seeded candidate 3 (0.78) is listed" },
+    { "cmd": ["wait", "--text", "src/api/users.ts:23-31"], "label": "the evidence block shows the cited path and range" },
+    { "cmd": ["wait", "--text", "const user = await db.users.find(id);"], "label": "the evidence snippet renders verbatim" },
+    { "cmd": ["wait", "--text", "91%"], "label": "the confidence bar's rounded percentage renders" },
+    { "cmd": ["wait", "--text", "0 of 3 accepted"], "label": "all three seeded candidates start pending" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Accept", "--exact"], "label": "accept one candidate (--exact: 'Accept all' and 'Accepted' would both match a substring)" },
+    { "cmd": ["wait", "--text", "Accepted"], "label": "the card's Accept button flips to Accepted" },
+    { "cmd": ["wait", "--text", "1 of 3 accepted"], "label": "the counter moves — the status write round-tripped through the API" },
+
+    { "cmd": ["find", "role", "button", "click", "--name", "Create skill", "--exact"], "label": "open the merge modal, now that something is accepted" },
+    { "cmd": ["wait", "--text", "Create skill from conventions"], "label": "the modal is open" },
+    { "cmd": ["wait", "--text", "accepted convention"], "label": "the merge banner counts what it merged (substring: singular or plural)" },
+    { "cmd": ["wait", "--text", "Skill body"], "label": "the draft body is editable before saving" },
+    { "cmd": ["wait", "--text", "House conventions for"], "label": "the merged draft body rendered into the editor" },
+    { "cmd": ["wait", "--text", "added to Skills Lab"], "label": "the footer says where the skill will land (nothing is created — the flow stops here)" }
+  ]
+}
