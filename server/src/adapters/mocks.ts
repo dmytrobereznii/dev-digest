@@ -46,9 +46,16 @@ export interface MockLLMOptions {
   /** Fixture returned by completeStructured (validated against the schema). */
   structured?: unknown;
   /**
-   * Per-schemaName fixtures for multi-call flows (e.g. the conventions 2-step
-   * dialogue: 'ConventionFileSelection' then 'ConventionExtraction'). Looked up
-   * by req.schemaName; falls back to `structured` when no entry matches.
+   * Per-schemaName fixtures, looked up by `req.schemaName`; falls back to
+   * `structured` when no entry matches. Use it to pin ONE flow's fixture by name
+   * (conventions extraction sends `'ConventionExtraction'`) or to serve a test
+   * that drives more than one structured call.
+   *
+   * It used to document a two-step conventions dialogue
+   * ('ConventionFileSelection' then 'ConventionExtraction'). There is no such
+   * call: file selection is code — the fixed config list plus repo-intel's
+   * ranked top-N — so `'ConventionExtraction'` is the only schemaName that flow
+   * sends.
    */
   structuredBySchema?: Record<string, unknown>;
   completionText?: string;
