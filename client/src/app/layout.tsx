@@ -22,6 +22,7 @@ const USED_NAMESPACES = [
   "addRepo",
   "agents",
   "common",
+  "conventions",
   "prReview",
   "runs",
   "settings",

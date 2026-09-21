@@ -15,12 +15,43 @@
       "body": "Scan the repo to surface house-rules — naming, error handling, structure — each backed by evidence you can turn into a Skill.",
       "cta": "Run extraction"
     },
-    "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files"
+    "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files",
+    "sampleSubtitle": "Detected from {count, plural, one {# sample file} other {# sample files}} · last scan {when}",
+    "relative": {
+      "now": "just now",
+      "minutes": "{count}m ago",
+      "hours": "{count}h ago",
+      "days": "{count}d ago"
+    },
+    "acceptAll": "Accept all",
+    "deselectAll": "Deselect all",
+    "acceptedCount": "{accepted} of {total} accepted",
+    "createSkill": "Create skill",
+    "notCloned": "This repo has no clone on disk, so there is nothing to sample. Re-add it to clone and index it, then scan again."
   },
   "card": {
     "confidence": "Confidence",
     "accepted": "Accepted",
     "accepting": "Accepting…",
-    "acceptAsSkill": "Accept as Skill"
+    "acceptAsSkill": "Accept as Skill",
+    "accept": "Accept",
+    "reject": "Reject",
+    "copyEvidence": "Copy the evidence snippet"
+  },
+  "modal": {
+    "title": "Create skill from conventions",
+    "banner": "Merged from <b>{count, plural, one {# accepted convention} other {# accepted conventions}}</b> in <code>{repo}</code>. Everything below is editable before you save.",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description",
+    "typeLabel": "Type",
+    "enabledLabel": "Enabled",
+    "enabledHint": "Whether this block is added to agents' prompts.",
+    "bodyLabel": "Skill body",
+    "bodyHint": "The only text sent to the model. Merged from the accepted rules + evidence — edit freely.",
+    "footerNote": "Saved as <v>v1</v> · added to Skills Lab",
+    "cancel": "Cancel",
+    "submit": "Create skill",
+    "submitting": "Creating…",
+    "error": "Could not create the skill."
   }
 }

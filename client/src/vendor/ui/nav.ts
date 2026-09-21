@@ -25,14 +25,18 @@ export const NAV: NavGroup[] = [
       { key: "pulls", label: "Pull Requests", icon: "GitPullRequest", href: "/repos/:repoId/pulls", gKey: "p" },
     ],
   },
-  // Skills and Agents are their own section, per the design's `chrome.jsx` NAV —
-  // which is also why every breadcrumb on these routes reads "Skills Lab › …".
-  // Later lessons add Conventions and the Eval Dashboard to this same group.
+  // Skills, Agents and Conventions are their own section, per the design's
+  // `chrome.jsx` NAV — which is also why every breadcrumb on these routes reads
+  // "Skills Lab › …". A later lesson adds the Eval Dashboard to this same group.
   {
     section: "SKILLS LAB",
     items: [
       { key: "skills", label: "Skills", icon: "Sparkles", href: "/skills", gKey: "s" },
       { key: "agents", label: "Agents", icon: "Cpu", href: "/agents", gKey: "a" },
+      // Repo-scoped page, global sidebar entry: `resolveHref` fills :repoId from
+      // the active repo, exactly as `pulls` does. Order is the design's — after
+      // Agents, not before.
+      { key: "conventions", label: "Conventions", icon: "ListChecks", href: "/repos/:repoId/conventions", gKey: "c" },
     ],
   },
 ];
@@ -63,6 +67,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "g p", label: "Go to Pull Requests", group: "Navigation" },
   { keys: "g s", label: "Go to Skills", group: "Navigation" },
   { keys: "g a", label: "Go to Agents", group: "Navigation" },
+  { keys: "g c", label: "Go to Conventions", group: "Navigation" },
   { keys: "j / k", label: "Next / previous finding", group: "Findings" },
   { keys: "a", label: "Accept finding", group: "Findings" },
   { keys: "d", label: "Dismiss finding", group: "Findings" },
