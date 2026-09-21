@@ -15,6 +15,12 @@ import {
 } from './seed-diffs.js';
 import { DEMO_PRS, seedDemoPr } from './seed-prs/index.js';
 import { SEED_SKILLS, SEED_SKILL_AGENTS, LESSON_AGENT_MODEL } from './seed-skills.js';
+import {
+  SEED_CONVENTIONS,
+  CONVENTION_SCAN_SAMPLE_COUNT,
+  CONVENTION_SCAN_MODEL,
+  CONVENTION_SCAN_AGE_MS,
+} from './seed-conventions.js';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -52,8 +58,13 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  * them third-party and disabled, one with two versions — plus the two lesson
  * agents that link them.
  *
- * Course lessons populate the other tables (conventions, memory, eval, …) once
- * their features are built — they start empty here.
+ * Then L02's Conventions extractor output (`./seed-conventions.ts`): one
+ * `convention_scans` row for the demo repo and the three candidates it
+ * "found". Seeded because the demo repo has no clone to extract from — that
+ * file says why in full.
+ *
+ * Course lessons populate the remaining tables (memory, eval, …) once their
+ * features are built — they start empty here.
  */
 
 export const DEFAULT_WORKSPACE_NAME = 'default';
@@ -340,6 +351,66 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         .values({ agentId: agent!.id, skillId, order })
         .onConflictDoNothing();
     }
+  }
+
+  // ---- L02: the Conventions extractor's output (./seed-conventions.ts) ----
+  // The demo repo has `clonePath: null`, so the extract route refuses it with a
+  // 422 and nothing can produce these rows on a fresh install — the fixture
+  // file carries the full reasoning, including why they legitimately skip the
+  // evidence gate.
+  //
+  // Write-once, keyed on natural identity like every block above: one scan per
+  // repo, then one candidate per rule text. An existing row is left alone, so
+  // re-running the seed neither duplicates the scan nor re-opens a candidate
+  // the user has since accepted or rejected.
+  let [conventionScan] = await db
+    .select()
+    .from(t.conventionScans)
+    .where(
+      and(
+        eq(t.conventionScans.workspaceId, workspaceId),
+        eq(t.conventionScans.repoId, repoId),
+      ),
+    );
+  if (!conventionScan) {
+    [conventionScan] = await db
+      .insert(t.conventionScans)
+      .values({
+        workspaceId,
+        repoId,
+        sampleCount: CONVENTION_SCAN_SAMPLE_COUNT,
+        model: CONVENTION_SCAN_MODEL,
+        // Backdated an hour so the page's subtitle reads the design's "last scan
+        // 1h ago" instead of "just now" — see CONVENTION_SCAN_AGE_MS.
+        createdAt: new Date(Date.now() - CONVENTION_SCAN_AGE_MS),
+      })
+      .returning();
+  }
+  for (const c of SEED_CONVENTIONS) {
+    const [existing] = await db
+      .select({ id: t.conventions.id })
+      .from(t.conventions)
+      .where(
+        and(
+          eq(t.conventions.workspaceId, workspaceId),
+          eq(t.conventions.repoId, repoId),
+          eq(t.conventions.rule, c.rule),
+        ),
+      );
+    if (existing) continue;
+    await db.insert(t.conventions).values({
+      workspaceId,
+      repoId,
+      rule: c.rule,
+      evidencePath: c.evidencePath,
+      evidenceSnippet: c.evidenceSnippet,
+      confidence: c.confidence,
+      // Untriaged, and `accepted` is DERIVED from `status` — written here only
+      // because it never moves without it (spec D2).
+      status: 'pending',
+      accepted: false,
+      scanId: conventionScan!.id,
+    });
   }
 
   // ---- the run behind the sample review ----

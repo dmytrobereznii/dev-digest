@@ -2,6 +2,7 @@ import type { DemoPr } from './types.js';
 import { PR_474 } from './474-invoice-pipeline.js';
 import { PR_479 } from './479-token-expiry-utc.js';
 import { PR_486 } from './486-partner-webhooks.js';
+import { PR_491 } from './491-payout-status-cache.js';
 
 export type { DemoPr } from './types.js';
 export { seedDemoPr, type SeedPrContext } from './helpers.js';
@@ -21,11 +22,13 @@ export { seedDemoPr, type SeedPrContext } from './helpers.js';
  * change, a critically broken one, and a large refactor with minor issues), a
  * PR description past MAX_PR_DESCRIPTION_CHARS, one carrying a prompt-injection
  * attempt, and files with no patch — which the reviewer skips, so #474 is
- * reviewed on 4 of its 14 files.
+ * reviewed on 4 of its 14 files. #491 adds the axis none of the others have:
+ * a change that is CORRECT but breaks the repo's own house rules, so a run
+ * with a conventions-derived skill linked differs from one without.
  *
- * All three start as `needs_review`. Their `updatedAt` values differ, so the
+ * All four start as `needs_review`. Their `updatedAt` values differ, so the
  * first real run spreads them across the derived statuses: #474 (20 days old)
- * becomes `stale`, #479 and #486 become `reviewed` — and the default list
+ * becomes `stale`, #479, #486 and #491 become `reviewed` — and the default list
  * filter then hides them, which is the filter they exist to exercise.
  */
-export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_474];
+export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_491, PR_474];
