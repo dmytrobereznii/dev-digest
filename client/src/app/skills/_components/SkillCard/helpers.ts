@@ -1,11 +1,6 @@
-import type { Skill, SkillSource, SkillType } from "@devdigest/shared";
+import type { Skill, SkillSource } from "@devdigest/shared";
 import type { IconName } from "@devdigest/ui";
-import { FALLBACK_TYPE_COLOR, SKILL_SOURCE_ICON, SKILL_TYPE_COLOR } from "./constants";
-
-/** Pill / tile colour for a skill type. */
-export function typeColor(type: SkillType): string {
-  return SKILL_TYPE_COLOR[type] ?? FALLBACK_TYPE_COLOR;
-}
+import { SKILL_SOURCE_ICON } from "./constants";
 
 /** Icon shown beside the source label. */
 export function sourceIcon(source: SkillSource): IconName {

@@ -39,8 +39,4 @@ export const s = {
   dangerRow: { display: "flex", alignItems: "center", gap: 12 } satisfies CSSProperties,
   dangerTitle: { fontSize: 13, fontWeight: 600, color: "var(--crit)" } satisfies CSSProperties,
   dangerBody: { fontSize: 12, color: "var(--text-muted)", marginTop: 2 } satisfies CSSProperties,
-  confirmBody: { padding: "18px 24px", display: "flex", flexDirection: "column", gap: 10 } satisfies CSSProperties,
-  confirmText: { fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 } satisfies CSSProperties,
-  agentList: { display: "flex", flexWrap: "wrap", gap: 6 } satisfies CSSProperties,
-  confirmFooter: { display: "flex", alignItems: "center", gap: 8 } satisfies CSSProperties,
 } as const;

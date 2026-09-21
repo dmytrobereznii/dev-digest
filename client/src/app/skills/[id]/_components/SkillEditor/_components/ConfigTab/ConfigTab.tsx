@@ -15,22 +15,21 @@ import {
   CodeEditor,
   FormField,
   Icon,
-  Modal,
   SelectInput,
   TextInput,
   Toggle,
 } from "@devdigest/ui";
 import type { Skill, SkillType } from "@devdigest/shared";
-import { useDeleteSkill, useSkillAgents, useUpdateSkill } from "@/lib/hooks/skills";
-import { SKILL_TYPE_VALUES } from "../../constants";
-import { BODY_FILE_EXT, CONFIRM_MODAL_WIDTH, UNNAMED_FILE } from "./constants";
+import { useUpdateSkill } from "@/lib/hooks/skills";
+import { DeleteSkillModal } from "@/app/skills/_components/DeleteSkillModal";
+import { SKILL_TYPE_VALUES } from "@/lib/skill-type";
+import { BODY_FILE_EXT, UNNAMED_FILE } from "./constants";
 import { s } from "./styles";
 
 export function ConfigTab({ skill }: { skill: Skill }) {
   const t = useTranslations("skills");
   const router = useRouter();
   const update = useUpdateSkill();
-  const remove = useDeleteSkill();
 
   const [name, setName] = React.useState(skill.name);
   const [description, setDescription] = React.useState(skill.description);
@@ -57,8 +56,6 @@ export function ConfigTab({ skill }: { skill: Skill }) {
 
   // Only a body change versions the skill — mirrors the server's isBodyChange.
   const dirtyBody = body !== skill.body;
-  // The agents a delete would strip this skill from; fetched only when asked.
-  const { data: agents } = useSkillAgents(confirming ? skill.id : undefined);
 
   const typeOptions = SKILL_TYPE_VALUES.map((v) => ({ value: v, label: t(`listItem.type.${v}`) }));
   const trimmedNote = note.trim();
@@ -70,13 +67,6 @@ export function ConfigTab({ skill }: { skill: Skill }) {
       ...(trimmedNote ? { note: trimmedNote } : {}),
     });
 
-  const confirmDelete = () =>
-    remove.mutate(skill.id, {
-      onSuccess: () => {
-        setConfirming(false);
-        router.push("/skills");
-      },
-    });
 
   return (
     <div style={s.wrap}>
@@ -159,49 +149,11 @@ export function ConfigTab({ skill }: { skill: Skill }) {
       </div>
 
       {confirming && (
-        <Modal
-          width={CONFIRM_MODAL_WIDTH}
-          title={t("danger.confirmTitle", { name: skill.name })}
+        <DeleteSkillModal
+          skill={skill}
           onClose={() => setConfirming(false)}
-          footer={
-            <div style={s.confirmFooter}>
-              <Button kind="ghost" onClick={() => setConfirming(false)}>
-                {t("danger.cancel")}
-              </Button>
-              <div style={{ marginLeft: "auto" }}>
-                <Button
-                  kind="danger"
-                  icon="Trash"
-                  onClick={confirmDelete}
-                  disabled={remove.isPending}
-                >
-                  {remove.isPending ? t("danger.deleting") : t("danger.confirm")}
-                </Button>
-              </div>
-            </div>
-          }
-        >
-          <div style={s.confirmBody}>
-            <span style={s.confirmText}>{t("danger.body")}</span>
-            {/* Name the agents: a delete that silently strips a skill from
-                three agents is the surprise the copy warns about. */}
-            <span style={s.confirmText}>
-              {agents && agents.length > 0
-                ? t("danger.usedBy", { count: agents.length })
-                : t("danger.notUsed")}
-            </span>
-            {agents && agents.length > 0 && (
-              <div style={s.agentList}>
-                {agents.map((a) => (
-                  <Badge key={a.id} color="var(--text-secondary)" mono>
-                    {a.name}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {remove.isError && <span style={s.saveError}>{t("danger.deleteError")}</span>}
-          </div>
-        </Modal>
+          onDeleted={() => router.push("/skills")}
+        />
       )}
     </div>
   );

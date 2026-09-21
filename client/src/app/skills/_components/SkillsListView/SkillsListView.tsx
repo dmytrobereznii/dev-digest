@@ -81,6 +81,7 @@ export function SkillsListView() {
                 sk={sk}
                 onClick={() => router.push(`/skills/${sk.id}?tab=config`)}
                 onToggle={(enabled) => update.mutate({ id: sk.id, patch: { enabled } })}
+                deletable
               />
             ))}
           </div>
