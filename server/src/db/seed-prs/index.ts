@@ -3,6 +3,8 @@ import { PR_474 } from './474-invoice-pipeline.js';
 import { PR_479 } from './479-token-expiry-utc.js';
 import { PR_486 } from './486-partner-webhooks.js';
 import { PR_491 } from './491-payout-status-cache.js';
+import { PR_495 } from './495-refund-window.js';
+import { PR_497 } from './497-orders-list-shape.js';
 
 export type { DemoPr } from './types.js';
 export { seedDemoPr, type SeedPrContext } from './helpers.js';
@@ -26,9 +28,15 @@ export { seedDemoPr, type SeedPrContext } from './helpers.js';
  * a change that is CORRECT but breaks the repo's own house rules, so a run
  * with a conventions-derived skill linked differs from one without.
  *
- * All four start as `needs_review`. Their `updatedAt` values differ, so the
+ * #495 and #497 are the other two A/B pairs, one per lesson agent: #495 is
+ * correct code with thin tests (Test Quality Reviewer), #497 is correct code
+ * that breaks a published route's contract (API Contract Reviewer). Like #491
+ * they are deliberately free of ordinary bugs — a run that flags something for
+ * the wrong reason proves nothing about the skill.
+ *
+ * All six start as `needs_review`. Their `updatedAt` values differ, so the
  * first real run spreads them across the derived statuses: #474 (20 days old)
- * becomes `stale`, #479, #486 and #491 become `reviewed` — and the default list
- * filter then hides them, which is the filter they exist to exercise.
+ * becomes `stale`, the rest become `reviewed` — and the default list filter
+ * then hides them, which is the filter they exist to exercise.
  */
-export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_491, PR_474];
+export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_491, PR_495, PR_497, PR_474];
