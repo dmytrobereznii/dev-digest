@@ -32,7 +32,8 @@ import {
 } from "@devdigest/ui";
 import type { SkillType } from "@devdigest/shared";
 import { useCreateSkill } from "@/lib/hooks/skills";
-import { DEFAULT_SKILL_TYPE, FILENAME_FALLBACK, MODAL_WIDTH, SKILL_TYPE_VALUES } from "./constants";
+import { SKILL_TYPE_VALUES } from "@/lib/skill-type";
+import { DEFAULT_SKILL_TYPE, FILENAME_FALLBACK, MODAL_WIDTH } from "./constants";
 import { s } from "./styles";
 
 export function CreateSkillModal({ onClose }: { onClose: () => void }) {

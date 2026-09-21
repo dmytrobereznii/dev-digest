@@ -13,9 +13,11 @@ import { Badge, Button, ErrorState, Icon, Skeleton } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
 import { ApiError } from "@/lib/api";
 import { useSkill, useSkills, useUpdateSkill } from "@/lib/hooks/skills";
+import { skillTypeColor } from "@/lib/skill-type";
 import { SkillCard } from "../_components/SkillCard";
 import { SkillEditor } from "./_components/SkillEditor";
-import { SKILL_TYPE_COLOR, TABS } from "./_components/SkillEditor/constants";
+import { TABS } from "./_components/SkillEditor/constants";
+import { s } from "./styles";
 
 /** The route gates on exactly the tabs the editor ships (D7). */
 const VALID_TABS = TABS.map((tb) => tb.key);
@@ -58,31 +60,22 @@ export default function SkillEditorPage() {
     );
   }
 
-  const tint = skill ? SKILL_TYPE_COLOR[skill.type] : SKILL_TYPE_COLOR.custom;
+  const tint = skillTypeColor(skill?.type ?? "custom");
 
   return (
     <AppShell crumb={crumb}>
-      <div style={{ display: "flex", height: "calc(100vh - 52px)" }}>
+      <div style={s.frame}>
         {/* left: skill list */}
-        <div
-          style={{
-            width: 290,
-            flexShrink: 0,
-            borderRight: "1px solid var(--border)",
-            display: "flex",
-            flexDirection: "column",
-            background: "var(--bg-surface)",
-          }}
-        >
-          <div style={{ padding: "14px 14px 10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <h1 style={{ fontSize: 16, fontWeight: 700, flex: 1 }}>{t("page.heading")}</h1>
+        <div style={s.rail}>
+          <div style={s.railHead}>
+            <div style={s.railHeadRow}>
+              <h1 style={s.railTitle}>{t("page.heading")}</h1>
               <Button kind="ghost" size="sm" onClick={() => router.push("/skills")}>
                 {t("detail.back")}
               </Button>
             </div>
           </div>
-          <div style={{ flex: 1, overflow: "auto", padding: "0 10px 10px" }}>
+          <div style={s.railList}>
             {(skills ?? []).map((sk) => (
               <SkillCard
                 key={sk.id}
@@ -97,57 +90,25 @@ export default function SkillEditorPage() {
 
         {/* editor */}
         {isLoading || !skill ? (
-          <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={s.paneSkeleton}>
             <Skeleton height={24} width={240} />
             <Skeleton height={200} />
           </div>
         ) : (
-          <div
-            style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "14px 24px 0",
-                flexShrink: 0,
-              }}
-            >
-              <div
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 7,
-                  background: `${tint}1f`,
-                  color: tint,
-                  display: "grid",
-                  placeItems: "center",
-                  flexShrink: 0,
-                }}
-              >
+          <div style={s.pane}>
+            <div style={s.paneHead}>
+              <div style={s.iconBox(tint)}>
                 <Icon.Sparkles size={15} />
               </div>
-              <h1 className="mono" style={{ fontSize: 16, fontWeight: 700 }}>
+              <h1 className="mono" style={s.skillName}>
                 {skill.name}
               </h1>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  color: tint,
-                  background: `${tint}1a`,
-                  padding: "2px 8px",
-                  borderRadius: 5,
-                }}
-              >
-                {t(`listItem.type.${skill.type}`)}
-              </span>
+              <span style={s.typePill(tint)}>{t(`listItem.type.${skill.type}`)}</span>
               <Badge color="var(--text-secondary)" icon="GitCommit">
                 {t("config.version", { version: skill.version })}
               </Badge>
             </div>
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+            <div style={s.paneBody}>
               <SkillEditor skill={skill} tab={tab} onTab={setTab} />
             </div>
           </div>
