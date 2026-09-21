@@ -3,6 +3,18 @@
     "noDescription": "No description",
     "skillCount": "{count} skills"
   },
+  "danger": {
+    "action": "Delete",
+    "actionFor": "Delete {name}",
+    "confirmTitle": "Delete “{name}”?",
+    "body": "Removes the agent and its run history link. This can’t be undone.",
+    "unlinks": "Unlinks {count, plural, one {# skill} other {# skills}} — the skills themselves are kept.",
+    "noSkills": "No skills are linked to this agent.",
+    "confirm": "Delete agent",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "deleteError": "Could not delete this agent."
+  },
   "list": {
     "breadcrumbLab": "Skills Lab",
     "breadcrumb": "Agents",

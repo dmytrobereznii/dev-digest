@@ -1,12 +1,17 @@
-/* AgentCard — model chip, skills count, enabled toggle. Stats are an A5 mount;
-   we render the provider/model + skill count here. */
+/* AgentCard — model chip, skills count, enabled toggle, delete. Stats are an A5
+   mount; we render the provider/model + skill count here.
+
+   Delete is opt-in per caller (`deletable`): the list wants it, the editor's
+   left rail does not — a rail row deleting the agent you are editing would
+   pull the page out from under itself. `useDeleteAgent` invalidates the
+   `agents` query, so the tile disappears without a success callback here. */
 "use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon, Badge, Toggle } from "@devdigest/ui";
 import type { Agent } from "@devdigest/shared";
-import { useDeleteAgent } from "../../../../lib/hooks/agents";
+import { DeleteAgentModal } from "../DeleteAgentModal";
 import { modelColor } from "./helpers";
 import { s } from "./styles";
 
@@ -16,16 +21,19 @@ export function AgentCard({
   skillCount,
   onClick,
   onToggle,
+  deletable,
 }: {
   ag: Agent;
   active?: boolean;
   skillCount?: number;
   onClick?: () => void;
   onToggle?: (enabled: boolean) => void;
+  deletable?: boolean;
 }) {
   const t = useTranslations("agents");
-  const del = useDeleteAgent();
+  const [confirming, setConfirming] = React.useState(false);
   const color = modelColor(ag.model);
+
   return (
     <div onClick={onClick} style={s.card(!!active, ag.enabled)}>
       <div style={s.headerRow}>
@@ -38,25 +46,20 @@ export function AgentCard({
             <Toggle on={ag.enabled} onChange={onToggle} size={14} />
           </div>
         )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (window.confirm(`Delete agent "${ag.name}"? This cannot be undone.`)) del.mutate(ag.id);
-          }}
-          disabled={del.isPending}
-          title="Delete agent"
-          aria-label="Delete agent"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: del.isPending ? "not-allowed" : "pointer",
-            color: "var(--text-muted)",
-            display: "inline-flex",
-            padding: 4,
-          }}
-        >
-          <Icon.Trash size={14} style={del.isPending ? { animation: "ddspin 1s linear infinite" } : undefined} />
-        </button>
+        {deletable && (
+          <button
+            type="button"
+            title={t("danger.action")}
+            aria-label={t("danger.actionFor", { name: ag.name })}
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirming(true);
+            }}
+            style={s.deleteBtn}
+          >
+            <Icon.Trash size={14} />
+          </button>
+        )}
       </div>
       <div style={s.description}>{ag.description || t("card.noDescription")}</div>
       <div style={s.metaRow}>
@@ -69,6 +72,14 @@ export function AgentCard({
           </Badge>
         )}
       </div>
+
+      {/* Outside the card's onClick: a click inside the dialog must not
+          navigate to the agent behind it. */}
+      {confirming && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <DeleteAgentModal agent={ag} onClose={() => setConfirming(false)} />
+        </div>
+      )}
     </div>
   );
 }
