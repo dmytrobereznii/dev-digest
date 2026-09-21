@@ -6,7 +6,7 @@ import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
-import { taskLine } from './helpers.js';
+import { isTrustedSource, taskLine } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
@@ -187,15 +187,16 @@ export class ReviewRunExecutor {
       // L02 — linked skills. Two gates (spec D6): a body reaches the prompt iff
       // the skill is LINKED to this agent AND globally `enabled`. A linked-but-
       // disabled skill contributes nothing and leaves no trace of itself.
-      // `trusted` is decided here, from provenance — a third-party body is
-      // rendered as DATA inside <untrusted> by assemblePrompt.
+      // `trusted` is decided from provenance by `isTrustedSource` (L02 D9,
+      // which carries the reasoning) — a third-party body is rendered as DATA
+      // inside <untrusted> by assemblePrompt.
       const linkedSkills = await this.agents.linkedSkills(agent.id);
       const skills = linkedSkills
         .filter((l) => l.skill.enabled)
         .map((l) => ({
           name: l.skill.name,
           body: l.skill.body,
-          trusted: l.skill.source === 'manual',
+          trusted: isTrustedSource(l.skill.source),
         }));
       if (linkedSkills.length > 0) {
         const chars = skills.reduce((n, sk) => n + sk.body.length, 0);
