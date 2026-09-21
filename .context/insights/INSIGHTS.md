@@ -119,6 +119,26 @@ that way.
 
 ## Codebase Patterns
 
+- **2026-09-20** — The conventions→skill **merge format is transcribed in TWO
+  places and must stay byte-identical**: the design's `conventionsToDraft` +
+  `slugifyRule` (`.context/docs/design/src/screen_conv_conf.jsx:4`) and the
+  client's port at
+  `client/src/app/repos/[repoId]/conventions/_components/ConventionsView/_components/CreateSkillModal/helpers.ts`.
+  It belongs to the CLIENT because the modal opens on an editable draft and
+  `POST /repos/:id/conventions/skill` persists whatever body is submitted (L02
+  spec D8) — a server-side builder can never run without discarding the user's
+  edits. The L02 spec §3.4 nonetheless mandated a server `buildSkillDraft` as
+  "the one place the merge format is written down"; it was built, found to have
+  no reachable caller, and **deleted on 2026-09-20** along with `slugify` and
+  its slug constants. Do not reintroduce it — a third copy that looks
+  authoritative but never executes is how the format drifts.
+  Drift in the 19-word stop-word list, the 4-word slug limit, the trailing
+  period appended to each rule, or the `# <name>` preamble changes a saved
+  skill's body the moment it round-trips, and nothing type-checks the copies
+  against each other. Verified equal by executing both against the same
+  fixtures. Recorded here because the spec that required byte-exactness is
+  deleted on merge per `CLAUDE.md`.
+
 ## Tool & Library Notes
 
 ## Recurring Errors & Fixes

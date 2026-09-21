@@ -90,6 +90,24 @@ The `pr_id`-only history query takes the same index with
 
 ## What Doesn't Work
 
+- **2026-09-20** — **`pnpm build && pnpm start` in `server/` does not work, and
+  never has.** Two independent faults. (1) `tsconfig.json` type-checks against
+  `../reviewer-core/src`, so tsc's common root spans both packages and the emit
+  is `dist/server/src/server.js`, while `"start"` runs `node dist/server.js` —
+  a path that does not exist. (2) `build` is a bare `tsc`, which emits only
+  `.js`, so `src/prompts/*.md` never reaches the output; `platform/prompts.ts`'s
+  own header says a production build must copy them, and
+  `conventions.system.md` is the first template with a live caller, so
+  `renderPrompt` would ENOENT even once (1) is fixed.
+  It stays invisible because nothing builds this package: `scripts/dev.sh`,
+  `server-unit.yml` and `e2e-web.yml` all run the API under `tsx`, and the only
+  `pnpm build` in CI is the client's.
+  **Do NOT patch it with `cp -R src/prompts dist/prompts`** — that writes to
+  `dist/prompts` while the loader resolves `dist/server/src/prompts`, and leaves
+  `start` broken while making the build look fixed. A real fix is an
+  `outDir`/`rootDir` (or bundler) decision, not a copy step.
+  `server/package.json:8`
+
 ## Codebase Patterns
 
 - **2026-09-20** — `app.ts`'s `isResponseSerializationError` branch is LIVE as
@@ -141,6 +159,15 @@ The `pr_id`-only history query takes the same index with
   `newLines` = context + `+` lines, `oldLines` = context + `-` lines — rather
   than trusting the header you typed.
   `server/src/db/seed-prs/types.ts`
+  **2026-09-21 — recomputing by hand is not enough either.** Writing the #491
+  fixture the count was still wrong: a 26-line hunk headed `@@ -0,0 +1,25 @@`.
+  The check that catches it is runnable — rebuild the diff the way
+  `modules/reviews/diff-loader.ts` does (`diff --git` / `---` / `+++` / patch,
+  per file) and feed it to `parseUnifiedDiff`. What it reports IS what the diff
+  viewer and the grounding gate see, so check a fixture's declared
+  `additions`/`deletions` and any cited line against the parser's
+  `newStart … newStart + newLines - 1`, not against your own arithmetic.
+  `server/src/adapters/git/diff-parser.ts`
 
 - **2026-09-20** — A `dependency-cruiser` rule whose `to.path` anchors on the
   package name (`^openai`, `^node_modules/drizzle-orm`) silently matches
