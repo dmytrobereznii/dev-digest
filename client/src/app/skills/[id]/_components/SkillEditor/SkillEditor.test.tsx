@@ -42,14 +42,26 @@ function renderEditor(tab = "config") {
 }
 
 describe("SkillEditor", () => {
-  it("ships only the Config and Versions tabs (D7)", () => {
+  it("ships the Config, Preview and Versions tabs (D7)", () => {
     renderEditor();
     expect(screen.getByRole("button", { name: "Config" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Versions" })).toBeInTheDocument();
-    // Preview / Evals / Stats are deferred — absent, not disabled.
-    expect(screen.queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
+    // Evals / Stats are deferred to later lessons — absent, not disabled.
     expect(screen.queryByRole("button", { name: "Evals" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Stats" })).not.toBeInTheDocument();
+  });
+
+  it("Preview renders the body, it does not print the Markdown source", () => {
+    renderEditor("preview");
+
+    // `# Rubric` becomes a heading element — the whole point of the tab.
+    const heading = screen.getByRole("heading", { name: "Rubric" });
+    expect(heading.tagName).toBe("H1");
+    // The hashes themselves are gone; Config is where the source lives.
+    expect(screen.queryByText(/# Rubric/)).not.toBeInTheDocument();
+    // And it is read-only: no editor textarea on this tab.
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
   it("shows the next-version save hint only once the body is dirty", () => {
