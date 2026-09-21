@@ -5,6 +5,10 @@
    this tab adds no server surface. The filter is display-only — the payload is
    always the full ordered list.
 
+   Reordering is drag-and-drop on the grip handle, with ↑/↓ as the keyboard
+   path (see constants.ts). Only LINKED rows drag: an unlinked skill has no
+   position in the prompt to move.
+
    Linking deliberately does NOT bump the agent's version: `setSkills` skips
    `snapshotVersion`, so a reorder cannot mint an agent version per drop.
    `agent_versions` exists for eval reproducibility (L06), which has nothing to
@@ -16,13 +20,15 @@ import { useTranslations } from "next-intl";
 import { Badge, Icon, IconBtn, TextInput } from "@devdigest/ui";
 import type { Agent } from "@devdigest/shared";
 import { useAgentSkills, useSetAgentSkills, useSkills } from "@/lib/hooks/skills";
-import { SKILL_TYPE_COLOR } from "./constants";
-import { matchesFilter, moveLink, orderSkills, toggleLink } from "./helpers";
+import { skillTypeColor } from "@/lib/skill-type";
+import { matchesFilter, moveLink, orderSkills, reorderLink, toggleLink } from "./helpers";
 import { s } from "./styles";
 
 export function SkillsTab({ agent }: { agent: Agent }) {
   const t = useTranslations("agents");
   const [filter, setFilter] = React.useState("");
+  const [dragId, setDragId] = React.useState<string | null>(null);
+  const [overId, setOverId] = React.useState<string | null>(null);
 
   const { data: skills } = useSkills();
   const { data: links } = useAgentSkills(agent.id);
@@ -33,6 +39,20 @@ export function SkillsTab({ agent }: { agent: Agent }) {
   const visible = rows.filter((r) => matchesFilter(r.skill, filter));
 
   const commit = (skillIds: string[]) => setSkills.mutate({ agentId: agent.id, skillIds });
+
+  const endDrag = () => {
+    setDragId(null);
+    setOverId(null);
+  };
+
+  const drop = (targetId: string) => {
+    if (!dragId) return;
+    const next = reorderLink(linkedIds, dragId, targetId);
+    // `reorderLink` returns the same array for a no-op drop (onto itself, or
+    // onto an unlinked row) — don't POST an unchanged set.
+    if (next !== linkedIds) commit(next);
+    endDrag();
+  };
 
   return (
     <div style={s.wrap}>
@@ -54,11 +74,39 @@ export function SkillsTab({ agent }: { agent: Agent }) {
       <div style={s.list}>
         {visible.map((r) => {
           const at = linkedIds.indexOf(r.skill.id);
-          const color = SKILL_TYPE_COLOR[r.skill.type];
+          const color = skillTypeColor(r.skill.type);
           return (
-            <div key={r.skill.id} style={s.row(r.linked)}>
-              {/* Visual affordance only — reordering is the ↑/↓ buttons. */}
-              <Icon.Menu size={14} style={s.handle} aria-hidden />
+            <div
+              key={r.skill.id}
+              draggable={r.linked}
+              aria-grabbed={r.linked ? dragId === r.skill.id : undefined}
+              onDragStart={(e) => {
+                setDragId(r.skill.id);
+                // Firefox ignores a drag with no payload set.
+                e.dataTransfer.setData("text/plain", r.skill.id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                if (!dragId || !r.linked) return;
+                // Without preventDefault the browser refuses the drop outright.
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setOverId(r.skill.id);
+              }}
+              onDragLeave={() => setOverId((cur) => (cur === r.skill.id ? null : cur))}
+              onDrop={(e) => {
+                e.preventDefault();
+                drop(r.skill.id);
+              }}
+              onDragEnd={endDrag}
+              style={s.row(r.linked, dragId === r.skill.id, overId === r.skill.id)}
+            >
+              <Icon.Menu
+                size={14}
+                style={s.handle(r.linked)}
+                aria-hidden
+                data-testid={`grip-${r.skill.id}`}
+              />
               <button
                 type="button"
                 role="checkbox"

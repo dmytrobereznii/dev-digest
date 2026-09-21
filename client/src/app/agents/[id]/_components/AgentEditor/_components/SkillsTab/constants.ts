@@ -1,26 +1,15 @@
-import type { SkillType } from "@devdigest/shared";
-
-/**
- * Type tint for the row pill, transcribed from `screen_agents.jsx`'s inline
- * map (the same four colours `screen_skills.jsx` uses).
- *
- * Written as a local literal rather than derived from the `SkillType` Zod enum:
- * a *value* import from `@devdigest/shared` passes typecheck and vitest while
- * breaking `next build` (client INSIGHTS.md).
- */
-export const SKILL_TYPE_COLOR: Record<SkillType, string> = {
-  rubric: "#3b82f6",
-  convention: "#10b981",
-  security: "#ef4444",
-  custom: "#999999",
-};
-
 /** Width of the filter box in the tab header. */
 export const FILTER_WIDTH = 220;
 
 /*
- * Reorder affordances: dragging is the artboard's affordance, ↑/↓ buttons are
- * what ship — ordering is the feature, and six rows do not justify a
- * drag-and-drop dependency. The `cursor: grab` handle stays as the visual cue.
- * Their accessible names come from `agents.skills.moveUp` / `moveDown`.
+ * Reorder affordances: a linked row is draggable by its grip handle, using the
+ * native HTML5 drag events — no drag-and-drop dependency for six rows. The ↑/↓
+ * buttons stay beside it as the KEYBOARD path: `draggable` is mouse-only and
+ * reachable by no assistive technology, so removing them would make ordering
+ * impossible without a pointer. Their accessible names come from
+ * `agents.skills.moveUp` / `moveDown`.
+ *
+ * Only LINKED rows are draggable. An unlinked skill has no position in the
+ * prompt to move, so `reorderLink` treats a drop on one as a no-op too — the
+ * rule is enforced in the data, not only by not setting the attribute.
  */

@@ -89,4 +89,39 @@ describe("Agent editor — Skills tab", () => {
     fireEvent.click(screen.getByRole("button", { name: messages.skills.moveDown }));
     expect(mutate).toHaveBeenCalledWith({ agentId: "ag1", skillIds: ["s1", "s3"] });
   });
+
+  /* Criterion 31: only LINKED rows can be dragged. The attribute is the
+     browser-facing half of the rule; `reorderLink` is the other half. */
+  it("marks only the linked rows draggable", () => {
+    renderTab();
+    const rowOf = (id: string) => screen.getByTestId(`grip-${id}`).parentElement!;
+    expect(rowOf("s3")).toHaveAttribute("draggable", "true"); // linked
+    expect(rowOf("s1")).toHaveAttribute("draggable", "true"); // linked
+    expect(rowOf("s2")).toHaveAttribute("draggable", "false"); // not linked
+  });
+
+  it("reorders by dropping one linked row onto another", () => {
+    renderTab();
+    const rowOf = (id: string) => screen.getByTestId(`grip-${id}`).parentElement!;
+    const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };
+
+    // Drag `pr-quality-rubric` (s1, order 1) onto `test-coverage-nudge` (s3,
+    // order 0) — it should land first.
+    fireEvent.dragStart(rowOf("s1"), { dataTransfer });
+    fireEvent.dragOver(rowOf("s3"), { dataTransfer });
+    fireEvent.drop(rowOf("s3"), { dataTransfer });
+
+    expect(mutate).toHaveBeenCalledWith({ agentId: "ag1", skillIds: ["s1", "s3"] });
+  });
+
+  it("does not POST when a linked row is dropped on an unlinked one", () => {
+    renderTab();
+    const rowOf = (id: string) => screen.getByTestId(`grip-${id}`).parentElement!;
+    const dataTransfer = { setData: vi.fn(), effectAllowed: "", dropEffect: "" };
+
+    fireEvent.dragStart(rowOf("s3"), { dataTransfer });
+    fireEvent.drop(rowOf("s2"), { dataTransfer }); // s2 is unlinked
+
+    expect(mutate).not.toHaveBeenCalled();
+  });
 });

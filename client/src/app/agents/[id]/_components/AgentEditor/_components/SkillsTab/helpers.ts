@@ -38,6 +38,23 @@ export function moveLink(ids: string[], id: string, delta: number): string[] {
   return next;
 }
 
+/**
+ * Move `dragId` to `overId`'s position. Both must be linked; anything else —
+ * a drop on an unlinked row, on itself, or on a row that is not in the set —
+ * is a no-op returning the SAME array, which the caller uses to skip the POST.
+ *
+ * Deliberately keyed on ids rather than on the rendered indices: the filter box
+ * hides rows, so the visible index of a row is not its index in the link order.
+ */
+export function reorderLink(ids: string[], dragId: string, overId: string): string[] {
+  const from = ids.indexOf(dragId);
+  const to = ids.indexOf(overId);
+  if (from < 0 || to < 0 || from === to) return ids;
+  const next = [...ids];
+  next.splice(to, 0, ...next.splice(from, 1));
+  return next;
+}
+
 /** Filter is display-only — it never narrows what gets POSTed. */
 export function matchesFilter(skill: Skill, query: string): boolean {
   const q = query.trim().toLowerCase();
