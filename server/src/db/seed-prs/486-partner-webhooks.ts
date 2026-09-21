@@ -90,7 +90,7 @@ const CONFIG_PATCH = `@@ -10,5 +10,11 @@ const env = process.env;
    logLevel: env.LOG_LEVEL ?? 'info',
  };`;
 
-/** Mount the new router on the public surface. 5 additions, 2 deletions. */
+/** Mount the new router on the public surface. 6 additions, 2 deletions. */
 const PUBLIC_INDEX_PATCH = `@@ -1,8 +1,12 @@
  import { Router } from 'express';
  import webhooks from './webhooks';
@@ -107,7 +107,7 @@ const PUBLIC_INDEX_PATCH = `@@ -1,8 +1,12 @@
 +
  export default publicApi;`;
 
-/** Event persistence + replay. 64 additions, 5 deletions. */
+/** Event persistence + replay. 44 additions, 5 deletions. */
 const EVENTS_PATCH = `@@ -14,10 +14,49 @@ import { db } from '../db';
  import { partnerEvents } from '../db/schema';
  import { eq } from 'drizzle-orm';
@@ -191,7 +191,7 @@ export const PR_486: DemoPr = {
     { path: 'src/api/public/partners.ts', additions: 58, deletions: 0, patch: PARTNERS_PATCH },
     { path: 'src/services/partner-events.ts', additions: 44, deletions: 5, patch: EVENTS_PATCH },
     { path: 'src/config.ts', additions: 6, deletions: 0, patch: CONFIG_PATCH },
-    { path: 'src/api/public/index.ts', additions: 5, deletions: 2, patch: PUBLIC_INDEX_PATCH },
+    { path: 'src/api/public/index.ts', additions: 6, deletions: 2, patch: PUBLIC_INDEX_PATCH },
     // No patch: stands in for the files GitHub omits. The reviewer skips these.
     { path: 'src/types/partner.ts', additions: 26, deletions: 0, patch: null },
     { path: 'src/api/public/partners.test.ts', additions: 13, deletions: 8, patch: null },

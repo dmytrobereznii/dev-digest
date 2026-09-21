@@ -167,7 +167,15 @@ The `pr_id`-only history query takes the same index with
   viewer and the grounding gate see, so check a fixture's declared
   `additions`/`deletions` and any cited line against the parser's
   `newStart … newStart + newLines - 1`, not against your own arithmetic.
-  `server/src/adapters/git/diff-parser.ts`
+  **Fixed 2026-09-21 in `server/test/seed-fixtures.test.ts`** — that check is
+  now an assertion in the unit lane, so this entry is history, not a ritual.
+  It caught a defect already on the branch the moment it was written: #486
+  declared `additions: 5` on a file whose body adds 6, so the PR's `+153` did
+  not match its own files. Two prose counts in that fixture's comments were
+  stale as well. Both the arithmetic and the doc comments were reviewed by a
+  human and by CI and neither noticed. If you add a field to `DemoPr` that can
+  contradict the patch body, add it to that test in the same commit.
+  `server/test/seed-fixtures.test.ts`
 
 - **2026-09-20** — A `dependency-cruiser` rule whose `to.path` anchors on the
   package name (`^openai`, `^node_modules/drizzle-orm`) silently matches
