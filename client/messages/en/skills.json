@@ -86,7 +86,8 @@
       "community": "Community",
       "imported_url": "Imported"
     },
-    "agents": "{count, plural, one {# agent} other {# agents}}"
+    "agents": "{count, plural, one {# agent} other {# agents}}",
+    "version": "v{version}"
   },
   "preview": {
     "untrustedBadge": "untrusted source",
@@ -97,12 +98,17 @@
     "untrustedNotice": "This skill came from an untrusted source. Its body is stored as data (delimiter-wrapped) and must be vetted before it is enabled for an agent.",
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Saving a changed body creates a new immutable version.",
-    "version": "v{version}"
+    "version": "v{version}",
+    "heading": "Preview",
+    "blurb": "The skill body as the model receives it, rendered. Config holds the same text as Markdown source.",
+    "tokens": "~{count} tokens",
+    "empty": "This skill has no body yet."
   },
   "editor": {
     "tabs": {
       "config": "Config",
-      "versions": "Versions"
+      "versions": "Versions",
+      "preview": "Preview"
     }
   },
   "config": {
@@ -141,7 +147,8 @@
     "confirm": "Delete skill",
     "cancel": "Cancel",
     "deleting": "Deleting…",
-    "deleteError": "Could not delete this skill."
+    "deleteError": "Could not delete this skill.",
+    "actionFor": "Delete {name}"
   },
   "versions": {
     "heading": "Versions",
