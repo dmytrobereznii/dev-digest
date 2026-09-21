@@ -141,6 +141,19 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+/**
+ * One extracted house rule awaiting triage.
+ *
+ * `status` is the triage state and the only thing `PUT /conventions/:id`
+ * patches; `accepted` is DERIVED from it (`status === 'accepted'`) and written
+ * only by the repository, never independently — it stays because the card's
+ * left border and Accept button read it. A `rejected` row never appears in
+ * `GET /repos/:id/conventions`; the field is here so a test can assert a
+ * rejection stuck without reading the DB.
+ */
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
   rule: z.string(),
@@ -148,6 +161,7 @@ export const ConventionCandidate = z.object({
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
 
