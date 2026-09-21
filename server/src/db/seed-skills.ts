@@ -91,32 +91,155 @@ is a CRITICAL finding.
 Ignore values inside \`*.example\`, \`*.sample\`, and fixture files.`;
 
 /** Ours — the design has no equivalent. Pairs with the API Contract Reviewer. */
-const API_CONTRACT_GATE = `# API Contract Gate
+/*
+ * The API Contract Reviewer's four skills.
+ *
+ * One skill per concern rather than one combined gate: an agent's skills are
+ * linked and ordered individually, so four bodies can be toggled and reordered
+ * against a diff while one cannot. Each is DIRECTIVE (it tells the reviewer what
+ * to do, not what is true) and carries a good/bad pair, because a rule without a
+ * counter-example is the one the model reads as advice.
+ */
+
+const BREAKING_CHANGE = `# breaking-change
 
 A published HTTP contract is a promise. Flag any change in this diff that breaks
-it for an existing caller, even when the code still compiles.
+an existing caller, even when the code still compiles and the tests were updated
+alongside it. Updated tests are evidence the author knew, not that it is safe.
 
-## Breaking changes
-- A route removed, renamed, or moved to a different method or path.
+## Flag
+- A route removed, renamed, or moved to another method or path.
 - A request field that becomes required, changes type, or stops being accepted.
-- A response field removed, renamed, retyped, or made nullable.
-- A status code changed for an existing outcome (200 → 204, 404 → 400, …).
-- An enum value removed from a request or response.
+- A response field removed, renamed, or retyped.
+- An enum value removed from a request or a response.
+- A query parameter renamed, or its default changed.
 
-## Not breaking
-- A new optional request field with a server-side default.
-- A new response field added alongside the existing ones.
+## Do not flag
+- A new OPTIONAL request field with a server-side default.
+- A new response field added beside the existing ones.
 - Internal renames that never reach the wire.
 
-## House rules
-- API JSON fields are snake_case. A camelCase field on the wire is a finding.
-- Every route declares a response schema; removing one is a finding.
+## Good / bad
+
+Bad — the old name stops being accepted, so every existing client 400s:
+\`\`\`diff
+-  const state = req.query.state;
++  const status = req.query.status;
+\`\`\`
+
+Good — both are accepted, the old one is marked for removal:
+\`\`\`diff
+-  const state = req.query.state;
++  // \`state\` is deprecated, remove after 2026-06-01 (see deprecation-policy).
++  const status = req.query.status ?? req.query.state;
+\`\`\`
 
 ## Output
-Name the caller-visible symptom, not just the line: "a client sending
-\`{ agent_id }\` now gets 400" beats "field renamed". CRITICAL when an existing
-caller breaks with no migration path, WARNING when a deprecation window exists,
-SUGGESTION for naming and consistency.`;
+Name the caller-visible symptom, not the line: "a client sending \`{ state }\`
+now gets 400" beats "field renamed". CRITICAL when an existing caller breaks with
+no migration path, WARNING when a deprecation window exists.`;
+
+const RESPONSE_SCHEMA = `# response-schema
+
+Every route declares what it returns. Check that the response SHAPE in this diff
+still matches its declared schema, and that the schema still matches the repo's
+wire conventions.
+
+## Flag
+- A route that returns a body with no \`response:\` schema declared.
+- A handler returning a field the schema does not declare, or omitting one it does.
+- A camelCase field on the wire — API JSON fields are snake_case.
+- A status code changed for an existing outcome (200 → 204, 404 → 400).
+- A response that changes between an object and an array.
+
+## Do not flag
+- Internal camelCase in Drizzle or in service code; the rule is about the wire.
+- A 429 or 503 absent from a route's schema — those fall through on purpose.
+
+## Good / bad
+
+Bad — an empty result changes status, so \`await res.json()\` now throws:
+\`\`\`diff
++  if (orders.length === 0) return res.status(204).end();
+   return res.json({ orders, count: orders.length });
+\`\`\`
+
+Good — the shape is stable and the empty case stays representable:
+\`\`\`diff
+   return res.json({ orders, count: orders.length });
+\`\`\`
+
+## Output
+Quote the declared schema and the returned shape side by side. CRITICAL when a
+declared schema and the handler disagree, WARNING for a convention break.`;
+
+const SEMVER_DISCIPLINE = `# semver-discipline
+
+A breaking change is allowed. Shipping one without saying so is not. Check that
+the VERSION signal in this diff matches the size of the change.
+
+## Flag
+- A breaking change (see breaking-change) with no version bump, no new versioned
+  path, and no changelog entry in the same diff.
+- A major bump for a change that adds only optional fields — it costs every
+  caller an upgrade for nothing.
+- A version bumped in one manifest but not in the client or docs that mirror it.
+
+## Do not flag
+- A pre-1.0 package moving fast on purpose, when the README says so.
+- An internal package with no external consumers.
+
+## Good / bad
+
+Bad — the shape changed, the version did not:
+\`\`\`diff
+-      total_cents: o.totalCents,
++      total: formatAmount(o.totalCents, o.currency),
+\`\`\`
+
+Good — the break is carried by a new version, so callers opt in:
+\`\`\`diff
++router.get('/v2/orders', listOrdersV2);
+ router.get('/orders', listOrders);
+\`\`\`
+
+## Output
+State which rule of semver the change violates and what the bump should have
+been. WARNING by default; CRITICAL when the package is already consumed
+externally and the break is silent.`;
+
+const DEPRECATION_POLICY = `# deprecation-policy
+
+Removing something is the LAST step, not the first. Check that anything taken
+away in this diff went through a deprecation window.
+
+## Flag
+- A field, route or parameter deleted in the same release it was deprecated in.
+- A removal with no replacement named in a comment, a changelog or a header.
+- A deprecation with no removal date — "deprecated" with no deadline is forever.
+- A \`@deprecated\` marker added and the symbol deleted in the same diff.
+
+## Do not flag
+- Removing something added and never released in the same cycle.
+- Deleting a symbol with no callers anywhere in the repo or its clients.
+
+## Good / bad
+
+Bad — gone with no warning and no replacement named:
+\`\`\`diff
+-  total_cents: o.totalCents,
+\`\`\`
+
+Good — announced, dated, and the replacement is shipped alongside:
+\`\`\`diff
+   total_cents: o.totalCents, // deprecated 2026-01-10, removed after 2026-07-10
++  total: formatAmount(o.totalCents, o.currency),
+\`\`\`
+
+## Output
+Say what was removed, what replaces it, and what the window should have been.
+CRITICAL when a released field vanishes with no replacement, WARNING when the
+replacement exists but the window was short or undated.`;
 
 export type SeedSkill = {
   name: string;
@@ -161,14 +284,46 @@ export const SEED_SKILLS: SeedSkill[] = [
     enabled: false,
     versions: [{ body: SECRET_LEAKAGE_GATE, note: 'Imported from secdev/agent-skills' }],
   },
+  /* The API Contract Reviewer's four skills — one per concern, so each can be
+     toggled and ordered against a diff on its own (see the note above their
+     bodies). Every description is DIRECTIVE: it tells the agent what to do, not
+     what is true, because the description is what an agent reads to decide the
+     body is relevant. */
   {
-    name: 'api-contract-gate',
+    name: 'breaking-change',
     description:
-      'Flags breaking changes to a route signature, request/response shape, or status codes.',
+      'Apply when a diff touches a published route, its request fields, or its query parameters. Flag anything that breaks an existing caller.',
     type: 'convention',
     source: 'manual',
     enabled: true,
-    versions: [{ body: API_CONTRACT_GATE, note: 'Initial contract gate' }],
+    versions: [{ body: BREAKING_CHANGE, note: 'Initial breaking-change gate' }],
+  },
+  {
+    name: 'response-schema',
+    description:
+      'Apply when a diff changes what a route returns. Check the returned shape against its declared schema and the snake_case wire convention.',
+    type: 'convention',
+    source: 'manual',
+    enabled: true,
+    versions: [{ body: RESPONSE_SCHEMA, note: 'Initial response-schema gate' }],
+  },
+  {
+    name: 'semver-discipline',
+    description:
+      'Apply when a diff contains a breaking change. Check that the version signal matches the size of the change.',
+    type: 'convention',
+    source: 'manual',
+    enabled: true,
+    versions: [{ body: SEMVER_DISCIPLINE, note: 'Initial semver gate' }],
+  },
+  {
+    name: 'deprecation-policy',
+    description:
+      'Apply when a diff removes a field, route or parameter. Check that it went through a dated deprecation window with a named replacement.',
+    type: 'convention',
+    source: 'manual',
+    enabled: true,
+    versions: [{ body: DEPRECATION_POLICY, note: 'Initial deprecation policy' }],
   },
 ];
 
@@ -317,6 +472,8 @@ export const SEED_SKILL_AGENTS: {
     description:
       'Flags breaking changes to a route signature, request/response shape, or status codes.',
     systemPrompt: API_CONTRACT_REVIEWER_PROMPT,
-    skills: ['api-contract-gate'],
+    // Order is the order they are appended to the prompt: detect the break
+    // first, then judge how it was shipped.
+    skills: ['breaking-change', 'response-schema', 'semver-discipline', 'deprecation-policy'],
   },
 ];
