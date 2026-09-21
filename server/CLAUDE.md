@@ -67,8 +67,11 @@ contract here means changing `client/src/vendor/shared/` too. See the root
 `*.it.test.ts` = integration: real Postgres via testcontainers, needs Docker,
 self-skips without it. Everything else is the hermetic unit lane.
 
-`make test` runs the unit lane. The integration lane has no target — see the
-`dev-env` skill.
+`make test` runs the unit lane, `make test-it` the integration one. `make
+check` runs every lane CI runs except the browser e2e — reach for it before a
+PR, because typecheck and the unit lane alone do not catch a webpack-only
+client break. Its `build-web` step skips itself while `make dev` holds :3000;
+stop the dev server to cover that lane.
 
 A DB-backed test importing `test/helpers/pg.ts` **must** use the `.it.test.ts`
 suffix or it will run in the unit lane and fail in CI. Details: [`../TESTING.md`](../TESTING.md)

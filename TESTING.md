@@ -58,6 +58,10 @@ No `chat`, no model key.
 
 ## Running locally
 
+`make check` runs everything below except the browser e2e lane (~30s) and is
+the pre-PR gate. Its web-build step skips itself while a dev server holds
+:3000 (they share `client/.next`), so stop `make dev` for a full run. The per-package commands stay useful for a tight inner loop:
+
 ```sh
 # per package
 cd client        && pnpm test           # + pnpm typecheck
