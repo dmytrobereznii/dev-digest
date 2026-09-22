@@ -1,21 +1,30 @@
-# 06 — Custom Claude Code agents
+# Custom Claude Code agents: authoring rules
 
-**Status:** draft — research done, no agent written yet.
-**Scope:** repo-wide. How we write `.claude/agents/<name>.md` files so each one is
-worth running, in both quality and token cost.
-**Researched:** 2026-09-22 against the live Claude Code docs, the Anthropic
-platform docs, the Anthropic engineering blog, and Anthropic's own agent files.
-[Sources](#sources) at the end. Where a rule rests on a version or a price, it
-says so. Check those again before relying on them.
+How we write `.claude/agents/<name>.md` so each agent is worth running, in both
+quality and token cost. The catalog of agents that exist is in
+[`.claude/agents/README.md`](../../.claude/agents/README.md).
 
-When the first agent lands, the rules in §3–§6 move to `.claude/agents/README.md`
-and this spec is deleted, per `CLAUDE.md`.
+Researched 2026-09-22 against the live Claude Code docs, the Anthropic platform
+docs, the Anthropic engineering blog and Anthropic's own agent files
+([Sources](#sources)). Rules that depend on a version or a price say so; check
+them again before relying on them.
 
 **Goal:** every custom agent in this repo:
 
 1. is picked for the right tasks, and only those;
 2. starts from the fewest tokens that still do the job;
 3. returns a short result the parent can act on without re-reading the repo.
+
+**Settled decisions** (they were open questions in spec 06):
+
+- Catalog: `.claude/agents/README.md` lists every agent, and `CLAUDE.md` →
+  *Naming conventions* has a row for agent files.
+- `memory` stays off. Agents *report* findings, and the parent routes them
+  through `/engineering-insights` into `INSIGHTS.md`, the team's only store.
+- Write-path limits (planner, test-writer, doc-writer) are enforced by the
+  agent's prompt only, not by a hook.
+- Agents that read or analyze get no `Write`/`Edit`. They get `Bash` only where
+  their process needs it, and the body declares it read-only.
 
 ---
 
@@ -31,7 +40,7 @@ this first.
 | **Hook** (`.claude/settings.json`) | A rule that must hold every time (e.g. `pr-self-review-gate.sh`) | Deterministic. A model never enforces a rule reliably |
 | **`/btw`** | A side question about what is already in the conversation | It sees the full context, has no tools, and adds nothing to history |
 | **Fork** (`/subtask`, `context: fork`) | Side work that needs the whole conversation so far | A fork inherits the parent's history and reads the parent's cache; a fresh agent does neither |
-| **Custom subagent** | Work that is **self-contained**, produces **verbose intermediate output** (test logs, broad search, doc fetches), needs **different tool limits or model**, or is the **same kind of job done repeatedly** | — this is the case this spec covers |
+| **Custom subagent** | Work that is **self-contained**, produces **verbose intermediate output** (test logs, broad search, doc fetches), needs **different tool limits or model**, or is the **same kind of job done repeatedly** | — this is the case this doc covers |
 | **Agent teams / workflows** | Independent pieces of a large job that must coordinate or cross-check | About 7× the tokens of a normal session (teams in plan mode). Only for high-value jobs |
 
 The test: *would the verbose middle of this task pollute the parent's context,
@@ -86,7 +95,7 @@ filename. `:` is not allowed in names.
 | `omitClaudeMd` | `true` only for read-only agents that get everything they need from the delegation prompt (v2.1.271+). See §7 for why it matters here. |
 | `isolation: worktree` | For agents that edit files in parallel. **Gotcha:** the worktree branches from the *default branch*, not the parent's `HEAD`, so it will not see uncommitted work. |
 | `permissionMode` | Leave it unset (inherits). Never commit `bypassPermissions`. |
-| `memory` | Off by default. See open question Q2. |
+| `memory` | Off. See *Settled decisions* above. |
 | `background`, `color`, `experimental.cacheTtl`, `initialPrompt` | Not used unless a concrete need is written in the file. |
 
 ## 4. Writing the `description`
@@ -99,8 +108,7 @@ say **when to use the agent**, not what the agent is.
 - Include `Use proactively` only for agents the parent should start on its own
   (e.g. after code changes). Leave it out otherwise.
 - **No `<example>` transcripts** in the description. Anthropic's older plugins
-  used them, but the current `agent-development` guidance moves worked
-  scenarios into the body.
+  used them; the current `agent-development` guidance drops them.
 - **No ALL-CAPS or "MUST".** Recent Claude models follow the system prompt
   closely and over-trigger on aggressive wording. Write `Use when …`, not
   `CRITICAL: you MUST use …`.
@@ -117,23 +125,26 @@ agents run about 300–450 words and its judgment-heavy reviewers about
 Sections, in order:
 
 1. **Role**, one sentence in second person: `You are a <role> for DevDigest, responsible for <outcome>.`
-2. **When to invoke**: the worked scenarios the description points to.
-3. **Inputs**: what the delegation prompt must contain (paths, PR number,
+2. **Inputs**: what the delegation prompt must contain (paths, PR number,
    question). The agent can't see the conversation, so anything missing here
    must be asked for or looked up.
-4. **Process**: numbered *how* steps that name the tools ("Grep for X, then Read
+3. **Process**: numbered *how* steps that name the tools ("Grep for X, then Read
    the hits"), not "analyse the code". Say when to stop searching.
-5. **Output contract**: a literal template. It must be:
+4. **Output contract**: a literal template. It must be:
    - short: state a budget (e.g. ≤ 400 words or ≤ N findings);
    - specific to location: every finding carries `path:line`;
    - classed by confidence or severity, with a stated reporting threshold
      (e.g. "report only confidence ≥ 80");
    - explicit when nothing was found (`No findings.`) instead of padded;
    - wrapped in XML tags if the parent will parse sections.
-6. **Constraints / non-goals**: what the agent must not do ("advisory only — do
+5. **Constraints / non-goals**: what the agent must not do ("advisory only — do
    not edit files"), what it leaves to others, and which repo zones it never
    touches.
-7. **Edge cases**: 3–5 named situations and what to do in each.
+6. **Edge cases**: 3–5 named situations and what to do in each.
+
+No "When to invoke" section: the `description` has already routed the agent
+by the time the body runs, so a restatement changes nothing. Leave out rules
+the `tools` list already enforces (an agent without Bash cannot commit).
 
 Positive phrasing ("do X") works better than lists of "don'ts". A few canonical
 examples do more than long rule lists.
@@ -188,8 +199,9 @@ the main conversation only; the plan-tier view attributes usage to subagents.
 - **Tell the agent the session protocol isn't its job.** `CLAUDE.md` tells
   every reader to read `INSIGHTS.md`, announce it, and run
   `/engineering-insights` when wrapping up. A subagent inherits those
-  instructions. Every body should say: *"You are a subagent: skip the session
-  protocol's wrap-up; the parent owns `/engineering-insights`."* Only agents
+  instructions. Every body that loads CLAUDE.md should say: *"Skip the session
+  protocol's wrap-up; the parent owns `/engineering-insights`."* An agent with
+  `omitClaudeMd: true` never sees the protocol, so it leaves the line out. Only agents
   whose task depends on package history should read that package's
   `INSIGHTS.md`.
 - **Carry the load-bearing guardrails into any agent that omits CLAUDE.md** and
@@ -237,10 +249,7 @@ maxTurns: 20
 You are the <role> for DevDigest, responsible for <outcome>.
 You are a subagent: you see only this prompt and the task message, not the
 parent conversation. Skip the session protocol's wrap-up; the parent owns it.
-
-## When to invoke
-- <scenario 1>
-- <scenario 2>
+<!-- drop the wrap-up sentence when omitClaudeMd: true -->
 
 ## Inputs
 The task message gives you <X>. If <Y> is missing, <look it up via … | say so and stop>.
@@ -278,23 +287,9 @@ Report only findings at confidence ≥ 80. If there are none, return NO_FINDINGS
 - [ ] `model` set explicitly, with a reason if it is `opus` or `inherit`
 - [ ] `tools` is an allowlist; `Agent` is absent unless the agent orchestrates
 - [ ] `maxTurns` set
-- [ ] Body has role, inputs, process with a stop condition, output template with budget and threshold, and constraints
-- [ ] Body opts out of the session-protocol wrap-up; guardrails restated if `omitClaudeMd`
+- [ ] Body has role, inputs, process with a stop condition, output template with budget and threshold, and constraints; no "When to invoke" restating the description
+- [ ] Body opts out of the wrap-up only if it loads CLAUDE.md; restates guardrails if `omitClaudeMd`
 - [ ] Tried on at least 5 real delegation prompts; cost per run noted
-
-## Open questions
-
-- **Q1, catalog:** do we add an agents row to `CLAUDE.md` → *Naming
-  conventions* and a `.claude/agents/README.md` catalog like
-  `.claude/skills/README.md`? Proposed: yes, with the first agent.
-- **Q2, `memory`:** agent memory at `project` scope would be a second, per-agent
-  knowledge store beside `INSIGHTS.md`, which `CLAUDE.md` names as the team's
-  single store. Proposed: leave it off, and have agents *report* findings for
-  the parent to route through `/engineering-insights`.
-- **Q3, first agents:** candidates that pass §1 (not decided):
-  `test-runner` (runs a `make` test lane and returns only failures, on `haiku`),
-  `contract-drift-checker` (diffs the two vendored `shared/` copies and reports
-  drift, read-only, on `haiku`).
 
 ## Sources
 

@@ -156,6 +156,8 @@ that way.
   agent body must opt out of the wrap-up. Read-only agents can set
   `omitClaudeMd: true` (v2.1.271+) and restate only the guardrails they need.
   `.context/specs/06-custom-claude-agents.md` §7
+  **Updated 2026-09-22:** spec 06 is deleted; its rules now live in
+  `.context/docs/custom-agents.md` §7.
 
 ## Recurring Errors & Fixes
 
