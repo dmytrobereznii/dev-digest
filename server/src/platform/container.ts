@@ -29,6 +29,7 @@ import { ConventionsRepository } from '../modules/conventions/repository.js';
 import { ReviewRepository } from '../modules/reviews/repository.js';
 import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
+import { IntentService } from '../modules/intent/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
 
@@ -77,6 +78,7 @@ export class Container {
   private _conventionsRepo?: ConventionsRepository;
   private _reviewRepo?: ReviewRepository;
   private _repoIntel?: RepoIntel;
+  private _intent?: IntentService;
   private _depgraph?: DepGraph;
   private _tokenizer?: Tokenizer;
   private _priceBook?: PriceBook;
@@ -127,6 +129,16 @@ export class Container {
     if (this.overrides.repoIntel) return this.overrides.repoIntel;
     this._repoIntel ??= new RepoIntelService(this);
     return this._repoIntel;
+  }
+
+  /**
+   * The intent service (L03 D1) — reviews' run-executor calls
+   * `container.intent.ensure(...)` rather than importing `modules/intent`
+   * directly, so `reviews` never imports a sibling module (repoIntel facade
+   * precedent, D1).
+   */
+  get intent(): IntentService {
+    return (this._intent ??= new IntentService(this));
   }
 
   /** Import-graph builder (dependency-cruiser). T3 indexer pipeline only. */

@@ -11,6 +11,11 @@ denormalised, so there is nothing to backfill or keep in sync.
 | `cost_usd` | `SUM(agent_runs.cost_usd)` | every run with `status = 'done'`; NULL costs skipped by `SUM`; `null` when nothing priced |
 | `status` | `deriveReviewStatus()` | GitHub state + `last_reviewed_sha` vs `head_sha` + age |
 
+`cost_usd` excludes intent-derivation spend (L03 D13): `pr_intent.cost_usd` is
+never folded into this `SUM`. One derivation serves every agent in a run, so
+splitting it across `agent_runs` rows would be arbitrary; it shows on the
+Intent card instead.
+
 ## Where each number comes from upstream
 
 ```

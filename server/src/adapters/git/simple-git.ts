@@ -1,6 +1,6 @@
 import { simpleGit, type SimpleGit } from 'simple-git';
-import { join } from 'node:path';
-import { mkdir, readFile, access, rm } from 'node:fs/promises';
+import { join, sep } from 'node:path';
+import { mkdir, readFile, realpath, access, rm } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import type {
   GitClient,
@@ -126,8 +126,24 @@ export class SimpleGitClient implements GitClient {
     }));
   }
 
+  /**
+   * D6.4 — resolves both the target and the clone root to their realpath and
+   * throws unless the target is inside the root. This is the SECOND
+   * containment check (the first is `normalizeRepoPath`'s lexical guard in
+   * `reviewer-core/src/intent/references.ts`, which rejects a literal `..` in
+   * the path text) and the one that actually matters: it also catches a
+   * COMMITTED SYMLINK inside the clone that points outside it (e.g. at
+   * `~/.devdigest/secrets.json`), which no amount of string-checking the input
+   * path can see. Protects every caller, conventions included.
+   */
   async readFile(repo: RepoRef, path: string): Promise<string> {
-    return readFile(join(this.clonePathFor(repo), path), 'utf8');
+    const base = this.clonePathFor(repo);
+    const target = join(base, path);
+    const [realBase, realTarget] = await Promise.all([realpath(base), realpath(target)]);
+    if (realTarget !== realBase && !realTarget.startsWith(realBase + sep)) {
+      throw new Error(`readFile: "${path}" resolves outside the clone`);
+    }
+    return readFile(target, 'utf8');
   }
 }
 

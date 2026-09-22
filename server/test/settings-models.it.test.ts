@@ -37,18 +37,34 @@ d('Settings: feature models + secrets status (Testcontainers pg)', () => {
       provider: 'openrouter',
       model: 'deepseek/deepseek-v4-flash',
     });
+    // L03 D12 — 'review_intent' defaults to a CHEAP model, distinct from
+    // 'onboarding'/'risk_brief', and specifically not deepseek-v4-flash
+    // (reviewer-core INSIGHTS: it hangs on long prompts).
+    expect(await resolveFeatureModel(app.container, workspaceId, 'review_intent')).toEqual({
+      provider: 'openrouter',
+      model: 'anthropic/claude-haiku-4.5',
+    });
 
     // Persist an override through the normal PUT /settings path.
     const put = await app.inject({
       method: 'PUT',
       url: '/settings',
-      payload: { feature_models: { onboarding: { provider: 'openrouter', model: 'z-ai/glm-4.7-flash' } } },
+      payload: {
+        feature_models: {
+          onboarding: { provider: 'openrouter', model: 'z-ai/glm-4.7-flash' },
+          review_intent: { provider: 'anthropic', model: 'claude-haiku-4-5' },
+        },
+      },
     });
     expect(put.statusCode).toBe(200);
 
     expect(await resolveFeatureModel(app.container, workspaceId, 'onboarding')).toEqual({
       provider: 'openrouter',
       model: 'z-ai/glm-4.7-flash',
+    });
+    expect(await resolveFeatureModel(app.container, workspaceId, 'review_intent')).toEqual({
+      provider: 'anthropic',
+      model: 'claude-haiku-4-5',
     });
     // An unset feature still resolves to its own registry default.
     expect(await resolveFeatureModel(app.container, workspaceId, 'risk_brief')).toEqual({

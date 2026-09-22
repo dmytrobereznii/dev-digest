@@ -21,6 +21,7 @@ import {
   CONVENTION_SCAN_MODEL,
   CONVENTION_SCAN_AGE_MS,
 } from './seed-conventions.js';
+import { seedIntent } from './seed-intent.js';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -520,6 +521,10 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
       agentIdByName,
     }, fixture);
   }
+
+  // ---- L03: the intent layer's demo rows (./seed-intent.ts) ----
+  // Runs last so every demo PR (#482 above + ./seed-prs/) already exists.
+  await seedIntent(db, { workspaceId, repoId });
 
   return { workspaceId, userId };
 }
