@@ -129,5 +129,8 @@
       "confirm": "Delete run",
       "cancel": "Cancel"
     }
+  },
+  "overview": {
+    "prBrief": "PR Brief"
   }
 }

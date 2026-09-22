@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
 
 export const s = {
+  briefSection: {
+    marginBottom: 28,
+  } satisfies CSSProperties,
   descriptionBox: {
     border: "1px solid var(--border)",
     borderRadius: 8,

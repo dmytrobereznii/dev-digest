@@ -1,49 +1,10 @@
-import type { FeatureModelDef } from "./types";
-
 /**
- * Client-local copy of the per-feature model registry.
- *
- * The server's source of truth is `FEATURE_MODELS` in `@devdigest/shared`, but
- * the client can only import TYPES from the vendored shared package — importing
- * a runtime VALUE pulls `vendor/shared/index.ts` into the webpack bundle, whose
- * `./contracts/*.js` re-exports Next's webpack can't resolve. So we mirror the
- * registry here (same pattern as the vendored `vendor/shared` / `vendor/ui`).
- * Keep this in sync with the shared registry.
+ * Per-feature model registry — re-exported straight from `@devdigest/shared`
+ * (L03 D12). This used to be a hand-mirrored copy: the header comment claimed a
+ * value import from the vendored shared package breaks webpack, which no
+ * longer holds (`next.config.mjs` now sets `resolve.extensionAlias`, client
+ * INSIGHTS 2026-09-20) — and the mirror had already drifted from the shared
+ * registry (`conventions` was `openai/gpt-5.4` here, `openrouter/anthropic/
+ * claude-haiku-4.5` in shared). One registry now, not two.
  */
-export const FEATURE_MODELS: FeatureModelDef[] = [
-  {
-    id: "onboarding",
-    label: "Onboarding Tour",
-    description: "Writes the per-repo onboarding tour.",
-    defaultProvider: "openrouter",
-    defaultModel: "deepseek/deepseek-v4-flash",
-  },
-  {
-    id: "review_intent",
-    label: "PR Review · Intent",
-    description: "Derives a PR’s intent and scope before review.",
-    defaultProvider: "openai",
-    defaultModel: "gpt-4.1",
-  },
-  {
-    id: "risk_brief",
-    label: "Risk Brief",
-    description: "Assesses merge risks for a pull request.",
-    defaultProvider: "openai",
-    defaultModel: "gpt-4.1",
-  },
-  {
-    id: "conformance",
-    label: "Conformance",
-    description: "Checks a PR against the project spec.",
-    defaultProvider: "openai",
-    defaultModel: "gpt-4.1",
-  },
-  {
-    id: "conventions",
-    label: "Conventions",
-    description: "Extracts coding conventions from the repo.",
-    defaultProvider: "openai",
-    defaultModel: "gpt-5.4",
-  },
-];
+export { FEATURE_MODELS } from "@devdigest/shared";

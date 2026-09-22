@@ -10,6 +10,35 @@
   "overlap": "{count} overlap",
   "unavailable": "Brief not available yet.",
   "unavailableHint": "Run a review or open the PR to compute it.",
+  "intent": {
+    "title": "Intent",
+    "inScope": "IN SCOPE",
+    "outOfScope": "OUT OF SCOPE",
+    "nothingStated": "Nothing stated",
+    "confidence": {
+      "high": "High confidence · documented",
+      "medium": "Medium confidence · partially documented",
+      "low": "Low confidence · inferred"
+    },
+    "inferredFrom": "Inferred from: {signals}",
+    "sources": "SOURCES",
+    "skip": {
+      "external_not_fetched": "not fetched",
+      "cross_repo": "different repo, not followed",
+      "outside_repo": "outside the repo",
+      "unsupported_type": "unsupported file type",
+      "not_found": "not found",
+      "no_clone": "repo not cloned",
+      "github_unavailable": "GitHub unavailable",
+      "fetch_failed": "fetch failed",
+      "limit_reached": "reference limit reached"
+    },
+    "derive": "Derive intent",
+    "rederive": "Re-derive",
+    "deriving": "Deriving…",
+    "stale": "Stale — the PR has changed since this was derived",
+    "empty": "No intent yet"
+  },
   "why": {
     "title": "git-why",
     "blame": "blame",

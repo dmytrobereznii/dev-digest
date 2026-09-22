@@ -136,7 +136,7 @@ export default function PRDetailPage() {
       />
 
       <div style={styles.content}>
-        {tab === "overview" && <OverviewTab prBody={pr.body} />}
+        {tab === "overview" && <OverviewTab prId={prId} prBody={pr.body} />}
 
         {tab === "findings" && (
           <FindingsTab
@@ -156,6 +156,9 @@ export default function PRDetailPage() {
               invalidateActiveRuns();
               invalidateRunHistory();
               refetchReviews();
+              // Step 0 of every run derives/reuses intent (L03 D2) — refresh the
+              // Overview tab's Intent card so a just-run review's derivation shows.
+              if (prId) qc.invalidateQueries({ queryKey: ["pr-intent", prId] });
             }}
           />
         )}

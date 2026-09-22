@@ -21,6 +21,7 @@ import { themeNoFlashScript } from "../lib/theme";
 const USED_NAMESPACES = [
   "addRepo",
   "agents",
+  "brief",
   "common",
   "conventions",
   "prReview",
