@@ -53,6 +53,11 @@ export class OpenRouterProvider implements LLMProvider {
       baseURL: this.baseURL,
       timeout: opts.timeoutMs ?? 90_000,
       maxRetries: opts.maxRetries ?? 2,
+      // Node's built-in fetch, not the SDK's bundled node-fetch@2: on Node 26
+      // node-fetch throws "Invalid response body … Premature close" at the end
+      // of any gzipped OpenRouter body that arrived in several chunks (slow
+      // generations after keep-alive whitespace), failing every longer review.
+      fetch: globalThis.fetch,
     });
   }
 

@@ -24,6 +24,10 @@ export interface BuildTraceInput {
     model: string;
     pr?: number | null;
     source?: 'local' | 'ci';
+    /** Names of the skills that reached the prompt (linked AND enabled).
+        Omitted → []; the trace then reads "no skills", which is the truth for
+        every run recorded before skills were resolved into a run. */
+    skills?: string[];
   };
   stats: RunStats;
   promptAssembly: PromptAssembly;
@@ -43,6 +47,7 @@ export function buildRunTrace(input: BuildTraceInput): RunTrace {
       model: input.config.model,
       pr: input.config.pr ?? null,
       source: input.config.source ?? 'local',
+      skills: input.config.skills ?? [],
     },
     stats: input.stats,
     prompt_assembly: input.promptAssembly,

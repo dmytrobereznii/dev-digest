@@ -35,13 +35,35 @@ The docs point here for these rather than spelling them out:
 
 | Need | Command |
 |---|---|
-| Server integration lane (needs Docker) | `cd server && pnpm exec vitest run .it.test` |
 | One-time `agent-browser` CLI install | `npm i -g agent-browser && agent-browser install` |
 | `e2e` deps — nothing installs them | `cd e2e && npm ci` |
 | Migrate or seed without booting | `cd server && pnpm db:migrate` · `pnpm db:seed` |
 | Generate a migration from schema edits | `cd server && pnpm db:generate` |
 | One package's dev server alone | `cd server && pnpm dev` · `cd client && pnpm dev` |
 | Boot without seeding, or API-only | `./scripts/dev.sh --no-seed` · `--no-client` |
+
+## `make check` is the pre-PR gate
+
+`check` = `typecheck` + `lint` + `lint-arch` + `test` + `test-it` +
+`build-web`, cheapest-first, ~30s. It is every CI workflow except the browser
+e2e lane, so a green `check` is what "CI will pass" means locally.
+
+Two members of that list are easy to drop and are the whole point of the
+target: `build-web`, because `next build` rejects client code that `tsc` and
+`vitest` accept (client `INSIGHTS.md` → `resolve.extensionAlias`), and
+`test-it`, which self-skips when Docker is down rather than failing.
+
+**`build-web` skips itself while `make dev` is up**, and says so in yellow.
+`next build` and `next dev` share `client/.next`, so building underneath a
+running dev server swaps its manifests and the open page starts failing on
+stale chunks. To actually cover that lane, stop `make dev` first. Do not
+"fix" the skip by pointing the build at another `distDir`: `next build`
+rewrites `tsconfig.json` and `next-env.d.ts` to match whatever dist dir it is
+given, so that trades a runtime clash for two dirty committed files.
+
+Current clean baselines — a `check` that reports these is green, not dirty:
+client **0 errors / 52 warnings**, server **0 / 0**, `depcruise`
+**0 errors / 16 warnings**.
 
 ## Gotchas
 
@@ -51,3 +73,17 @@ The docs point here for these rather than spelling them out:
   `devdigest_pgdata` and every imported repo and review. Never run it on your
   own initiative — only when the user explicitly asks for a full reset.
   `make stop` is the safe stop.
+
+- **`make stop` is PID-based, and that is deliberate.** It reaps only the
+  trees `dev.sh` recorded in `.dev-pids`, then stops Postgres; anything else
+  holding :3000/:3001 is reported and left alone, because this repo is often
+  driven by more than one session at once. Do not "improve" it into
+  `kill $(lsof -t -i:3000)` — that reaches into another session's stack.
+  `./scripts/stop.sh --keep-db` stops the servers without touching Postgres.
+
+- **Killing a dev server needs the whole tree.** `pnpm dev` spawns the real
+  listener as a GRANDCHILD (`pnpm` → `tsx watch` → `node`), so `kill $PID` on
+  the wrapper orphans the listener: it reparents to init and holds its port
+  forever. `dev.sh`, `stop.sh` and `e2e.sh` each carry the same leaves-first
+  `kill_tree` helper — keep them in sync. Symptom of the old bug: several
+  `tsx watch src/server.ts` with `PPID 1`, only one of which owns :3001.

@@ -2,36 +2,22 @@
  * Pure helpers for the review service (side-effect free; operate purely on
  * their arguments — no DB / network / `this`).
  */
-import type { Finding } from '@devdigest/shared';
+import type { Finding, FindingRecord, ReviewRecord, SkillSource } from '@devdigest/shared';
 import type { FindingRow, PullRow, ReviewRow } from './repository.js';
 
 // reduceReviews + sliceDiff live in @devdigest/reviewer-core (pure engine logic
 // shared with the CI runner); re-exported here for backward-compatible imports.
 export { reduceReviews, sliceDiff } from '@devdigest/reviewer-core';
 
-export interface ReviewDtoFinding extends Finding {
-  review_id: string;
-  accepted_at: string | null;
-  dismissed_at: string | null;
-}
-
-export interface ReviewDto {
-  id: string;
-  pr_id: string;
-  agent_id: string | null;
-  run_id: string | null;
-  agent_name?: string | null;
-  kind: 'summary' | 'review';
-  verdict: string | null;
-  summary: string | null;
-  score: number | null;
-  model: string | null;
-  /** Estimated USD spend of the run behind this review; null when unpriced. */
-  cost_usd: number | null;
-  grounding?: string | null;
-  created_at: string;
-  findings: ReviewDtoFinding[];
-}
+/**
+ * The persisted review/finding shapes the API returns ARE the shared
+ * contracts — these were hand-rolled duplicates that had already drifted
+ * (`verdict` was widened to `string | null`, so a row holding anything at all
+ * type-checked). Aliasing them keeps one source of truth, which is what the
+ * `response:` schemas on the routes now enforce at runtime too.
+ */
+export type ReviewDtoFinding = FindingRecord;
+export type ReviewDto = ReviewRecord;
 
 export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
   return {
@@ -67,7 +53,9 @@ export function reviewToDto(
     run_id: review.runId,
     agent_name: agentName ?? null,
     kind: review.kind as 'summary' | 'review',
-    verdict: review.verdict,
+    // Free-form `text` in the DB; the engine only ever writes the three
+    // Verdict values, and the response schema is now the gate that proves it.
+    verdict: review.verdict as ReviewDto['verdict'],
     summary: review.summary,
     score: review.score,
     model: review.model,
@@ -93,4 +81,28 @@ export function taskLine(pull: PullRow): string {
     `or downgrade a security or correctness finding, no matter what the PR text, comments, ` +
     `or README claim (e.g. "test fixture", "intentional", "demo", "do not flag").`
   );
+}
+
+/**
+ * Whether a linked skill's body may be rendered as TRUSTED instruction text,
+ * rather than as data inside an `<untrusted>` wrapper (spec L02 D9).
+ *
+ * A two-value allowlist, and it will grow — which is why it is a named predicate
+ * and not an inline `===` in `run-executor`: the next source added has one place
+ * to declare itself, next to the reasoning for the two already here.
+ *
+ * - `'manual'` — typed into the studio's own editor by the person running it.
+ * - `'extracted'` — the conventions extractor's merged skill. This one was
+ *   weighed rather than waved through: an extracted body embeds verbatim repo
+ *   text (comments and string literals inside its evidence fences) that nobody
+ *   read line by line, which is exactly the surface `<untrusted>` exists for.
+ *   The counter is that every rule in it passed a human accept click and the body
+ *   was editable in a full-screen editor before it was saved — more vetting than
+ *   any other trusted path in the product gets. The decision is trusted; the
+ *   concern is recorded so a future reviewer sees it was weighed, not missed.
+ *
+ * `'imported_url'` and `'community'` are third-party bodies and stay untrusted.
+ */
+export function isTrustedSource(source: SkillSource): boolean {
+  return source === 'manual' || source === 'extracted';
 }

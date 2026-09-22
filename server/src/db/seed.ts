@@ -13,6 +13,14 @@ import {
   CONFIG_PATCH,
   USERS_PATCH,
 } from './seed-diffs.js';
+import { DEMO_PRS, seedDemoPr } from './seed-prs/index.js';
+import { SEED_SKILLS, SEED_SKILL_AGENTS, LESSON_AGENT_MODEL } from './seed-skills.js';
+import {
+  SEED_CONVENTIONS,
+  CONVENTION_SCAN_SAMPLE_COUNT,
+  CONVENTION_SCAN_MODEL,
+  CONVENTION_SCAN_AGE_MS,
+} from './seed-conventions.js';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -40,8 +48,23 @@ const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
  * with a few findings, and the three built-in agents (General + Security +
  * Performance), all on the default openrouter/deepseek-v4-flash provider+model.
  *
- * Course lessons populate the other tables (skills, conventions, memory, eval,
- * …) once their features are built — they start empty here.
+ * Then the demo PRs from `./seed-prs/` (#479, #486, #474), which widen the
+ * fixture set across size and quality. Unlike #482 they ship UNREVIEWED — the
+ * review surface is filled by running a real agent against them. #482 keeps
+ * its own block above, sample review included, because the e2e flows pin its
+ * exact values.
+ *
+ * Then L02's Skills Lab fixtures (`./seed-skills.ts`): four skills — one of
+ * them third-party and disabled, one with two versions — plus the two lesson
+ * agents that link them.
+ *
+ * Then L02's Conventions extractor output (`./seed-conventions.ts`): one
+ * `convention_scans` row for the demo repo and the three candidates it
+ * "found". Seeded because the demo repo has no clone to extract from — that
+ * file says why in full.
+ *
+ * Course lessons populate the remaining tables (memory, eval, …) once their
+ * features are built — they start empty here.
  */
 
 export const DEFAULT_WORKSPACE_NAME = 'default';
@@ -256,6 +279,154 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
     if (!existing) await db.insert(t.agents).values(a);
   }
 
+  // ---- L02: the Skills Lab fixtures + the two lesson agents ----
+  // Idempotent like everything above: a skill or agent is written once, by
+  // name. An existing row is left alone — the point of the seed is a usable
+  // first boot, not overwriting whatever the user has since edited.
+  const skillIdByName = new Map<string, string>();
+  for (const sk of SEED_SKILLS) {
+    let [row] = await db
+      .select()
+      .from(t.skills)
+      .where(and(eq(t.skills.workspaceId, workspaceId), eq(t.skills.name, sk.name)));
+    if (!row) {
+      const live = sk.versions[sk.versions.length - 1]!;
+      [row] = await db
+        .insert(t.skills)
+        .values({
+          workspaceId,
+          name: sk.name,
+          description: sk.description,
+          type: sk.type,
+          source: sk.source,
+          body: live.body,
+          enabled: sk.enabled,
+          version: sk.versions.length,
+        })
+        .returning();
+      // History, oldest first — v1 … vN, where vN is the live body. Seeding
+      // more than one version is what makes the Versions tab non-trivial on
+      // first boot.
+      await db.insert(t.skillVersions).values(
+        sk.versions.map((v, i) => ({
+          skillId: row!.id,
+          version: i + 1,
+          body: v.body,
+          note: v.note,
+        })),
+      );
+    }
+    skillIdByName.set(sk.name, row!.id);
+  }
+
+  // Both lesson agents override DEFAULT_MODEL — see LESSON_AGENT_MODEL's note.
+  for (const a of SEED_SKILL_AGENTS) {
+    let [agent] = await db
+      .select()
+      .from(t.agents)
+      .where(and(eq(t.agents.workspaceId, workspaceId), eq(t.agents.name, a.name)));
+    if (!agent) {
+      [agent] = await db
+        .insert(t.agents)
+        .values({
+          workspaceId,
+          name: a.name,
+          description: a.description,
+          provider: DEFAULT_PROVIDER,
+          model: LESSON_AGENT_MODEL,
+          systemPrompt: a.systemPrompt,
+          enabled: true,
+          version: 1,
+          createdBy: userId,
+        })
+        .returning();
+    }
+    // Links are upserted by (agentId, skillId) so the seed can re-run; `order`
+    // is the array index, which is the order the bodies reach the prompt.
+    for (const [order, skillName] of a.skills.entries()) {
+      const skillId = skillIdByName.get(skillName);
+      if (!skillId) continue;
+      await db
+        .insert(t.agentSkills)
+        .values({ agentId: agent!.id, skillId, order })
+        .onConflictDoNothing();
+    }
+  }
+
+  // ---- L02: the Conventions extractor's output (./seed-conventions.ts) ----
+  // The demo repo has `clonePath: null`, so the extract route refuses it with a
+  // 422 and nothing can produce these rows on a fresh install — the fixture
+  // file carries the full reasoning, including why they legitimately skip the
+  // evidence gate.
+  //
+  // Write-once, keyed on natural identity like every block above: one scan per
+  // repo, then one candidate per rule text. An existing row is left alone, so
+  // re-running the seed neither duplicates the scan nor re-opens a candidate
+  // the user has since accepted or rejected.
+  let [conventionScan] = await db
+    .select()
+    .from(t.conventionScans)
+    .where(
+      and(
+        eq(t.conventionScans.workspaceId, workspaceId),
+        eq(t.conventionScans.repoId, repoId),
+      ),
+    );
+  if (!conventionScan) {
+    [conventionScan] = await db
+      .insert(t.conventionScans)
+      .values({
+        workspaceId,
+        repoId,
+        sampleCount: CONVENTION_SCAN_SAMPLE_COUNT,
+        model: CONVENTION_SCAN_MODEL,
+        // Backdated an hour so the page's subtitle reads the design's "last scan
+        // 1h ago" instead of "just now" — see CONVENTION_SCAN_AGE_MS.
+        createdAt: new Date(Date.now() - CONVENTION_SCAN_AGE_MS),
+      })
+      .returning();
+  }
+  for (const c of SEED_CONVENTIONS) {
+    const [existing] = await db
+      .select({ id: t.conventions.id, category: t.conventions.category })
+      .from(t.conventions)
+      .where(
+        and(
+          eq(t.conventions.workspaceId, workspaceId),
+          eq(t.conventions.repoId, repoId),
+          eq(t.conventions.rule, c.rule),
+        ),
+      );
+    if (existing) {
+      // Backfill only. A row seeded before `category` existed keeps a NULL
+      // there forever otherwise, because this loop's whole job is to not
+      // touch rows that are already here — and the demo then shows unlabelled
+      // cards on any database that predates the column. Triage state, evidence
+      // and confidence are deliberately NOT refreshed: those are the user's.
+      if (existing.category === null) {
+        await db
+          .update(t.conventions)
+          .set({ category: c.category })
+          .where(eq(t.conventions.id, existing.id));
+      }
+      continue;
+    }
+    await db.insert(t.conventions).values({
+      workspaceId,
+      repoId,
+      category: c.category,
+      rule: c.rule,
+      evidencePath: c.evidencePath,
+      evidenceSnippet: c.evidenceSnippet,
+      confidence: c.confidence,
+      // Untriaged, and `accepted` is DERIVED from `status` — written here only
+      // because it never moves without it (spec D2).
+      status: 'pending',
+      accepted: false,
+      scanId: conventionScan!.id,
+    });
+  }
+
   // ---- the run behind the sample review ----
   // Separate from the PR block above (and self-healing) on purpose: the sample
   // review predates agent_runs, so DBs seeded earlier have a review with no
@@ -329,6 +500,25 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
       },
     });
+  }
+
+  // ---- the rest of the demo PRs ----
+  // Declarative fixtures under ./seed-prs/, written by one generic seeder.
+  // Runs last so the built-in agents exist to attribute their runs to.
+  const agentRows = await db
+    .select({ id: t.agents.id, name: t.agents.name })
+    .from(t.agents)
+    .where(eq(t.agents.workspaceId, workspaceId));
+  const agentIdByName = new Map(agentRows.map((a) => [a.name, a.id]));
+
+  for (const fixture of DEMO_PRS) {
+    await seedDemoPr(db, {
+      workspaceId,
+      repoId,
+      provider: DEFAULT_PROVIDER,
+      model: DEFAULT_MODEL,
+      agentIdByName,
+    }, fixture);
   }
 
   return { workspaceId, userId };

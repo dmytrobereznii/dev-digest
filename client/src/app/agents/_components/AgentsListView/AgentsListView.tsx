@@ -88,6 +88,7 @@ export function AgentsListView() {
                 ag={a}
                 onClick={() => router.push(`/agents/${a.id}?tab=config`)}
                 onToggle={(enabled) => update.mutate({ id: a.id, patch: { enabled } })}
+                deletable
               />
             ))}
           </div>

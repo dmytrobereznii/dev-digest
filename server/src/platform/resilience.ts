@@ -29,7 +29,9 @@ export interface RetryOptions {
   maxDelayMs?: number;
   /** Decide whether an error is retryable (rate-limit / 5xx by default). */
   isRetryable?: (err: unknown) => boolean;
-  onRetry?: (attempt: number, err: unknown) => void;
+  /** Awaited, so an async hook (e.g. an attempts-counter write) cannot
+   *  reject unobserved between attempts. */
+  onRetry?: (attempt: number, err: unknown) => void | Promise<void>;
 }
 
 function defaultIsRetryable(err: unknown): boolean {
@@ -56,7 +58,7 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
     } catch (err) {
       lastErr = err;
       if (attempt === retries || !isRetryable(err)) break;
-      opts.onRetry?.(attempt + 1, err);
+      await opts.onRetry?.(attempt + 1, err);
       const delay = Math.min(max, base * 2 ** attempt) + Math.random() * base;
       await new Promise((r) => setTimeout(r, delay));
     }

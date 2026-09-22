@@ -4,7 +4,7 @@
 # npm in reviewer-core/ and e2e/. The fan-out targets below encode that.
 
 .DEFAULT_GOAL := help
-.PHONY: help dev db stop test typecheck e2e
+.PHONY: help dev db stop check test test-it build-web typecheck lint lint-arch e2e
 
 help: ## Show this help
 	@grep -hE '^[a-z0-9-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -16,18 +16,53 @@ dev: ## Boot the whole stack (Postgres -> migrate -> seed -> API + web)
 db: ## Postgres + migrate + seed only, then exit
 	./scripts/dev.sh --db-only
 
-stop: ## Stop Postgres, keeping the container and the data volume
-	docker compose stop
+stop: ## Stop the dev servers this checkout started, then Postgres (data kept)
+	./scripts/stop.sh
+
+# Everything the CI workflows run except the browser e2e lane, in the order
+# that fails cheapest-first. `make e2e` is the one deliberate omission: it
+# needs the agent-browser CLI and a full ephemeral stack.
+#
+# `build-web` is here because it is the ONLY step that catches a client change
+# webpack rejects but tsc and vitest accept (see client INSIGHTS.md on
+# `resolve.extensionAlias`). `test-it` self-skips when Docker is down.
+#
+# `build-web` SKIPS itself when a dev server owns :3000, because `next build`
+# and `next dev` share `client/.next` — building underneath a running dev
+# server replaces its manifests and the open page starts failing on stale
+# chunks. Redirecting the build with `distDir` is NOT a fix: `next build`
+# rewrites `tsconfig.json` and `next-env.d.ts` to point at whatever dist dir it
+# is given, so it dirties two committed files. CI has no dev server, so there
+# it always runs.
+check: typecheck lint lint-arch test test-it build-web ## Everything CI runs except browser e2e (~40s)
+	@printf '\033[1;32m✓ check passed\033[0m — e2e not included (make e2e)\n'
 
 test: ## Unit lanes, no Docker (client, server, reviewer-core)
 	cd client && pnpm test
 	cd server && pnpm exec vitest run --exclude '**/*.it.test.ts'
 	cd reviewer-core && npm test
 
+test-it: ## Server integration lane (real Postgres via testcontainers; needs Docker)
+	cd server && pnpm exec vitest run .it.test
+
+build-web: ## Production build of the web app — the lane typecheck + test miss
+	@if lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then \
+		printf '\033[1;33m! build-web skipped\033[0m — :3000 is in use and `next build` shares client/.next with it.\n   Stop `make dev`, then re-run to cover the webpack-only lane.\n'; \
+	else \
+		cd client && pnpm build; \
+	fi
+
 typecheck: ## Type-check server, client, reviewer-core
 	cd server && pnpm typecheck
 	cd client && pnpm typecheck
 	cd reviewer-core && npm run typecheck
+
+lint: ## ESLint both TypeScript packages
+	cd client && pnpm exec eslint .
+	cd server && pnpm exec eslint .
+
+lint-arch: ## Check the onion-architecture boundaries (server)
+	cd server && pnpm exec depcruise src
 
 e2e: ## Hermetic browser e2e on isolated ports (ephemeral Postgres)
 	./scripts/e2e.sh

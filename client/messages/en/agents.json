@@ -3,6 +3,18 @@
     "noDescription": "No description",
     "skillCount": "{count} skills"
   },
+  "danger": {
+    "action": "Delete",
+    "actionFor": "Delete {name}",
+    "confirmTitle": "Delete “{name}”?",
+    "body": "Removes the agent and its run history link. This can’t be undone.",
+    "unlinks": "Unlinks {count, plural, one {# skill} other {# skills}} — the skills themselves are kept.",
+    "noSkills": "No skills are linked to this agent.",
+    "confirm": "Delete agent",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "deleteError": "Could not delete this agent."
+  },
   "list": {
     "breadcrumbLab": "Skills Lab",
     "breadcrumb": "Agents",
@@ -91,7 +103,9 @@
     "title": "Skills",
     "enabledCount": "{linked} of {total} enabled",
     "filterPlaceholder": "Filter skills…",
-    "orderHint": "Order matters — earlier skills appear earlier in the assembled prompt. Toggle to attach."
+    "orderHint": "Order matters — earlier skills appear earlier in the assembled prompt. Toggle to attach.",
+    "moveUp": "Move earlier in the prompt",
+    "moveDown": "Move later in the prompt"
   },
   "mount": {
     "body": "Mount point for {owner}. The Agent Editor shell + tab routing are wired by A2 — {owner} renders this tab."

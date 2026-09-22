@@ -74,8 +74,14 @@ export const FEATURE_MODELS: FeatureModelDef[] = [
     id: 'conventions',
     label: 'Conventions',
     description: 'Extracts coding conventions from the repo.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-5.4',
+    // A cheap model, because a default is what actually runs. This is the same
+    // slug the L02 lesson agents use (`seed-skills.ts` → LESSON_AGENT_MODEL),
+    // so extraction needs no key the install does not already require.
+    // NOTE: `anthropic/claude-haiku-4.5` is the OPENROUTER slug — running Haiku
+    // through the first-party Anthropic API would be provider 'anthropic' and
+    // the id `claude-haiku-4-5`. Do not "normalise" it to that.
+    defaultProvider: 'openrouter',
+    defaultModel: 'anthropic/claude-haiku-4.5',
   },
 ];
 

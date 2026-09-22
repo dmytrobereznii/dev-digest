@@ -46,4 +46,9 @@ jobs:
 
       - run: pnpm typecheck
 
+      # ESLint. Warnings do not fail the build: the 52-warning baseline is the
+      # deep-relative-import debt listed in frontend-architecture § Known
+      # exceptions. An ERROR is something this change introduced.
+      - run: pnpm exec eslint .
+
       - run: pnpm test

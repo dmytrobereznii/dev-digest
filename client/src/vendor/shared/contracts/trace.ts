@@ -77,6 +77,9 @@ export const RunTrace = z.object({
     model: z.string(),
     pr: z.number().int().nullish(),
     source: z.enum(['local', 'ci']).default('local'),
+    /** Names of the skills that reached the prompt (linked AND enabled).
+        `.default([])` keeps traces persisted before skills existed parseable. */
+    skills: z.array(z.string()).default([]),
   }),
   stats: RunStats,
   prompt_assembly: PromptAssembly,
@@ -115,3 +118,18 @@ export const RunSummary = z.object({
   blockers: z.number().int().nullable(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;
+
+/**
+ * One in-flight run for a PR (`GET /pulls/:id/runs/active`) — the server-side
+ * source of truth for "which agents are running now". A narrower shape than
+ * RunSummary on purpose: the poller runs every 4 s and needs only enough to
+ * label the spinner.
+ */
+export const ActiveRun = z.object({
+  run_id: z.string(),
+  agent_id: z.string().nullable(),
+  agent_name: z.string().nullable(),
+  ran_at: z.string().nullable(),
+});
+export type ActiveRun = z.infer<typeof ActiveRun>;
+

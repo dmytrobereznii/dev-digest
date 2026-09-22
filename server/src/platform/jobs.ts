@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import * as t from '../db/schema.js';
 import { withTimeout, withRetry } from './resilience.js';
+import { redactUrlCredentials } from './redact.js';
 
 /**
  * JobRunner — async work (clone, PR import, indexing, polling) on a
@@ -90,7 +91,10 @@ export class JobRunner {
           .set({
             status: 'failed',
             finishedAt: new Date(),
-            error: (err as Error).message,
+            // Redacted at CAPTURE: a failed clone's message can quote the
+            // remote URL, and that URL carries the PAT. jobs.error is read
+            // back by the UI and is in every database dump.
+            error: redactUrlCredentials((err as Error).message),
           })
           .where(eq(t.jobs.id, jobId));
         throw err;

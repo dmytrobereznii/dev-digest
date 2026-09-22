@@ -1,9 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { CiFailOn, Provider, ReviewStrategy } from '@devdigest/shared';
+import {
+  Agent,
+  AgentSkillLink,
+  AgentVersion,
+  CiFailOn,
+  ModelInfo,
+  Provider,
+  ReviewStrategy,
+} from '@devdigest/shared';
 import { getContext } from '../_shared/context.js';
-import { IdParams } from '../_shared/schemas.js';
+import { ApiErrors, IdParams, NotFound, OkResponse } from '../_shared/schemas.js';
 import { NotFoundError } from '../../platform/errors.js';
 import { AgentsService } from './service.js';
 
@@ -71,108 +79,177 @@ export default async function agentsRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
   const service = new AgentsService(app.container);
 
-  app.get('/agents', async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    return service.list(workspaceId);
-  });
-
-  app.get('/agents/:id', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    const agent = await service.get(workspaceId, req.params.id);
-    if (!agent) throw new NotFoundError('Agent not found');
-    return agent;
-  });
-
-  app.post('/agents', { schema: { body: CreateAgentBody } }, async (req, reply) => {
-    const { workspaceId, userId } = await getContext(app.container, req);
-    const body = req.body;
-    const agent = await service.create(
-      workspaceId,
-      {
-        name: body.name,
-        provider: body.provider,
-        model: body.model,
-        system_prompt: body.system_prompt,
-        ...(body.description !== undefined ? { description: body.description } : {}),
-        ...(body.output_schema !== undefined ? { output_schema: body.output_schema } : {}),
-        ...(body.strategy !== undefined ? { strategy: body.strategy } : {}),
-        ...(body.ci_fail_on !== undefined ? { ci_fail_on: body.ci_fail_on } : {}),
-        ...(body.repo_intel !== undefined ? { repo_intel: body.repo_intel } : {}),
-        ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
-      },
-      userId,
-    );
-    reply.status(201);
-    return agent;
-  });
-
-  app.put(
-    '/agents/:id',
-    { schema: { params: IdParams, body: UpdateAgentBody } },
+  app.get(
+    '/agents',
+    { schema: { response: { 200: z.array(Agent), ...ApiErrors } } },
     async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const agent = await service.update(workspaceId, req.params.id, req.body);
+      return service.list(workspaceId);
+    },
+  );
+
+  app.get(
+    '/agents/:id',
+    { schema: { params: IdParams, response: { 200: Agent, ...ApiErrors, ...NotFound } } },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      const agent = await service.get(workspaceId, req.params.id);
       if (!agent) throw new NotFoundError('Agent not found');
       return agent;
     },
   );
 
-  app.delete('/agents/:id', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    const ok = await service.delete(workspaceId, req.params.id);
-    if (!ok) throw new NotFoundError('Agent not found');
-    return { ok: true };
-  });
+  app.post(
+    '/agents',
+    { schema: { body: CreateAgentBody, response: { 201: Agent, ...ApiErrors } } },
+    async (req, reply) => {
+      const { workspaceId, userId } = await getContext(app.container, req);
+      const body = req.body;
+      const agent = await service.create(
+        workspaceId,
+        {
+          name: body.name,
+          provider: body.provider,
+          model: body.model,
+          system_prompt: body.system_prompt,
+          ...(body.description !== undefined ? { description: body.description } : {}),
+          ...(body.output_schema !== undefined ? { output_schema: body.output_schema } : {}),
+          ...(body.strategy !== undefined ? { strategy: body.strategy } : {}),
+          ...(body.ci_fail_on !== undefined ? { ci_fail_on: body.ci_fail_on } : {}),
+          ...(body.repo_intel !== undefined ? { repo_intel: body.repo_intel } : {}),
+          ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+        },
+        userId,
+      );
+      reply.status(201);
+      return agent;
+    },
+  );
 
-  app.get('/agents/:id/versions', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    const versions = await service.listVersions(workspaceId, req.params.id);
-    if (!versions) throw new NotFoundError('Agent not found');
-    return versions;
-  });
+  app.put(
+    '/agents/:id',
+    {
+      schema: {
+        params: IdParams,
+        body: UpdateAgentBody,
+        response: { 200: Agent, ...ApiErrors, ...NotFound },
+      },
+    },
+    async (req) => {
+        const { workspaceId } = await getContext(app.container, req);
+        const agent = await service.update(workspaceId, req.params.id, req.body);
+        if (!agent) throw new NotFoundError('Agent not found');
+        return agent;
+      },
+    );
+
+    app.delete(
+      '/agents/:id',
+      {
+        schema: {
+          params: IdParams,
+          response: { 200: OkResponse, ...ApiErrors, ...NotFound },
+        },
+      },
+      async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      const ok = await service.delete(workspaceId, req.params.id);
+      if (!ok) throw new NotFoundError('Agent not found');
+      return { ok: true };
+    },
+  );
+
+  app.get(
+    '/agents/:id/versions',
+    {
+      schema: {
+        params: IdParams,
+        response: { 200: z.array(AgentVersion), ...ApiErrors, ...NotFound },
+      },
+    },
+    async (req) => {
+      const { workspaceId } = await getContext(app.container, req);
+      const versions = await service.listVersions(workspaceId, req.params.id);
+      if (!versions) throw new NotFoundError('Agent not found');
+      return versions;
+    },
+  );
 
   app.get(
     '/agents/:id/versions/:version',
-    { schema: { params: VersionParams } },
+    {
+      schema: {
+        params: VersionParams,
+        response: { 200: AgentVersion, ...ApiErrors, ...NotFound },
+      },
+    },
     async (req) => {
+        const { workspaceId } = await getContext(app.container, req);
+        const version = await service.getVersion(workspaceId, req.params.id, req.params.version);
+        if (!version) throw new NotFoundError('Agent version not found');
+        return version;
+      },
+    );
+
+    app.get(
+      '/agents/:id/skills',
+      {
+        schema: {
+          params: IdParams,
+          response: { 200: z.array(AgentSkillLink), ...ApiErrors, ...NotFound },
+        },
+      },
+      async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const version = await service.getVersion(workspaceId, req.params.id, req.params.version);
-      if (!version) throw new NotFoundError('Agent version not found');
-      return version;
+      const agent = await service.get(workspaceId, req.params.id);
+      if (!agent) throw new NotFoundError('Agent not found');
+      return service.skillLinks(req.params.id);
     },
   );
-
-  app.get('/agents/:id/skills', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    const agent = await service.get(workspaceId, req.params.id);
-    if (!agent) throw new NotFoundError('Agent not found');
-    return service.skillLinks(req.params.id);
-  });
 
   app.post(
     '/agents/:id/skills',
-    { schema: { params: IdParams, body: SetSkillsBody } },
+    {
+      schema: {
+        params: IdParams,
+        body: SetSkillsBody,
+        response: { 200: z.array(AgentSkillLink), ...ApiErrors, ...NotFound },
+      },
+    },
     async (req) => {
+        const { workspaceId } = await getContext(app.container, req);
+        const body = req.body;
+        const links =
+          body.skill_ids !== undefined
+            ? await service.setSkills(workspaceId, req.params.id, body.skill_ids)
+            : await service.linkSkill(workspaceId, req.params.id, body.skill_id!, body.order);
+        if (!links) throw new NotFoundError('Agent not found');
+        return links;
+      },
+    );
+
+    app.get(
+      '/agents/:id/models',
+      {
+        schema: {
+          params: IdParams,
+          response: { 200: z.array(ModelInfo), ...ApiErrors, ...NotFound },
+        },
+      },
+      async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      const body = req.body;
-      const links =
-        body.skill_ids !== undefined
-          ? await service.setSkills(workspaceId, req.params.id, body.skill_ids)
-          : await service.linkSkill(workspaceId, req.params.id, body.skill_id!, body.order);
-      if (!links) throw new NotFoundError('Agent not found');
-      return links;
+      const agent = await service.get(workspaceId, req.params.id);
+      if (!agent) throw new NotFoundError('Agent not found');
+      return service.listModels(agent.provider);
     },
   );
 
-  app.get('/agents/:id/models', { schema: { params: IdParams } }, async (req) => {
-    const { workspaceId } = await getContext(app.container, req);
-    const agent = await service.get(workspaceId, req.params.id);
-    if (!agent) throw new NotFoundError('Agent not found');
-    return service.listModels(agent.provider);
-  });
-
-  app.get('/providers/:id/models', { schema: { params: ProviderParams } }, async (req) => {
-    await getContext(app.container, req);
-    return service.listModels(req.params.id);
-  });
+  app.get(
+    '/providers/:id/models',
+    { schema: { params: ProviderParams, response: { 200: z.array(ModelInfo), ...ApiErrors } } },
+    async (req) => {
+      await getContext(app.container, req);
+      return service.listModels(req.params.id);
+    },
+  );
 }

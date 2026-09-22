@@ -1,12 +1,12 @@
 {
   "name": "Open a PR from the list and load its review detail",
-  "description": "From the seeded repo's PR list, click into PR #482 and confirm the detail route loads with the PR title and review surface. Exercises nested routing (/repos/<id>/pulls/<number>) and the per-PR detail fetch. Assumes a freshly-seeded DB where the demo repo acme/payments-api (PR #482) is the first repo — guaranteed by the e2e-web.yml workflow's fresh seed; run locally against a clean DB (see e2e/README.md).",
+  "description": "From the seeded repo's PR list, click into PR #482 and confirm the detail route loads with the PR title and review surface. Exercises nested routing (/repos/<id>/pulls/<number>) and the per-PR detail fetch. Assumes a freshly-seeded DB where the demo repo acme/payments-api (PR #482) is the first repo — guaranteed by the e2e-web.yml workflow's fresh seed; run locally against a clean DB (see e2e/README.md). The Findings column header is asserted as FINDINGS because `headRow` sets `text-transform: uppercase` (client .../pulls/styles.ts) and Chrome's `innerText` — what agent-browser matches on — applies text-transform. By contrast the PR title is asserted in full despite rendering truncated, because `text-overflow: ellipsis` is purely visual and does not affect `innerText`.",
   "steps": [
     { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
     { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
     { "cmd": ["wait", "--text", "Add rate limiting to public API endpoints"], "label": "seeded PR title row is visible" },
     { "cmd": ["wait", "--text", "$0.014"], "label": "Cost column shows the seeded run's total spend" },
-    { "cmd": ["wait", "--text", "Findings"], "label": "PR list has the Findings column" },
+    { "cmd": ["wait", "--text", "FINDINGS"], "label": "PR list has the Findings column (asserted UPPERCASE: the header is CSS text-transform'd and Chrome's innerText applies it)" },
     { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
     { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
     { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },

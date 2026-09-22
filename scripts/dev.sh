@@ -95,9 +95,30 @@ fi
 
 # --- dev servers -------------------------------------------------------------
 SERVER_PID=""
+CLIENT_PID=""
+PIDFILE="$ROOT/.dev-pids"
+
+# Recursively kill a process and all its descendants, leaves first.
+#
+# `pnpm dev` spawns the real listener as a GRANDCHILD (pnpm -> tsx watch -> node,
+# and pnpm -> next dev -> next-server), so `kill $SERVER_PID` alone kills the
+# wrapper and ORPHANS the listener: it is reparented to init and holds its port
+# forever. That is not hypothetical — it leaked five stacks across two days
+# before this helper existed. `scripts/e2e.sh` has carried the same function
+# since it hit the identical bug; keep the two in sync.
+kill_tree() {
+  local pid="$1"
+  [ -n "$pid" ] || return 0
+  local kid
+  for kid in $(pgrep -P "$pid" 2>/dev/null || true); do kill_tree "$kid"; done
+  kill "$pid" 2>/dev/null || true
+}
+
 cleanup() {
-  log "shutting down dev servers (Postgres stays up; stop it with: docker compose down)"
-  [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true
+  log "shutting down dev servers (Postgres stays up; stop it with: make stop)"
+  kill_tree "$CLIENT_PID"
+  kill_tree "$SERVER_PID"
+  rm -f "$PIDFILE"
 }
 trap cleanup EXIT INT TERM
 
@@ -107,8 +128,19 @@ SERVER_PID=$!
 
 if [ "$RUN_CLIENT" -eq 1 ]; then
   log "starting web on :3000 (client) — Ctrl-C to stop both"
-  (cd client && pnpm dev)
+  (cd client && pnpm dev) &
+  CLIENT_PID=$!
+fi
+
+# Recorded so `make stop` can reap exactly these trees when this shell dies
+# without its trap running — SIGKILL, a closed terminal, an agent session
+# ending. `make stop` is deliberately PID-based rather than "kill whatever
+# holds :3000": this repo is often driven by more than one session at once.
+printf '%s\n' $SERVER_PID $CLIENT_PID > "$PIDFILE"
+
+if [ "$RUN_CLIENT" -eq 1 ]; then
+  wait "$CLIENT_PID" || true
 else
   log "API running (PID $SERVER_PID) — Ctrl-C to stop"
-  wait "$SERVER_PID"
+  wait "$SERVER_PID" || true
 fi

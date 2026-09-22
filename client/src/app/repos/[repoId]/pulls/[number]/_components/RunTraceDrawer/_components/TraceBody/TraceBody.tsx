@@ -32,6 +32,21 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
               {trace.config.provider ?? "—"}
             </span>
           </Row>
+          {/* Linked AND enabled at run time — a skill that contributed nothing
+              to the prompt is deliberately absent (spec 01-skills D6). */}
+          <Row label={t("trace.config.skillsLoaded")}>
+            <div style={s.specsWrap}>
+              {trace.config.skills.length === 0 ? (
+                <span style={s.specsNone}>—</span>
+              ) : (
+                trace.config.skills.map((sk, i) => (
+                  <Badge key={i} mono color="var(--text-secondary)">
+                    {sk}
+                  </Badge>
+                ))
+              )}
+            </div>
+          </Row>
           <Row label={t("trace.config.memoryPulled")}>
             <span>{t("trace.config.items", { count: trace.memory_pulled.length })}</span>
           </Row>

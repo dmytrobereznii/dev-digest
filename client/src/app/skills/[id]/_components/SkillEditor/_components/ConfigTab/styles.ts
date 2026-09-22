@@ -1,0 +1,42 @@
+import type { CSSProperties } from "react";
+
+/** Co-located styles for the skill ConfigTab (transcribed from screen_skills.jsx:92). */
+export const s = {
+  wrap: { maxWidth: 760 } satisfies CSSProperties,
+  header: { display: "flex", alignItems: "center", gap: 10, marginBottom: 18 } satisfies CSSProperties,
+  h2: { fontSize: 16, fontWeight: 700 } satisfies CSSProperties,
+  enabledLabel: {
+    marginLeft: "auto",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12.5,
+    color: "var(--text-secondary)",
+  } satisfies CSSProperties,
+  untrusted: {
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-start",
+    padding: "11px 14px",
+    borderRadius: 8,
+    border: "1px solid var(--warn)",
+    background: "var(--warn-bg)",
+    fontSize: 12.5,
+    lineHeight: 1.5,
+    color: "var(--text-secondary)",
+    marginBottom: 18,
+  } satisfies CSSProperties,
+  untrustedIcon: { color: "var(--warn)", flexShrink: 0, marginTop: 1 } satisfies CSSProperties,
+  actions: { display: "flex", alignItems: "center", gap: 8, marginTop: 8 } satisfies CSSProperties,
+  saveHint: {
+    marginLeft: "auto",
+    fontSize: 11.5,
+    color: "var(--text-muted)",
+    alignSelf: "center",
+  } satisfies CSSProperties,
+  saveError: { fontSize: 12.5, color: "var(--crit)", alignSelf: "center" } satisfies CSSProperties,
+  danger: { marginTop: 24, paddingTop: 18, borderTop: "1px solid var(--border)" } satisfies CSSProperties,
+  dangerRow: { display: "flex", alignItems: "center", gap: 12 } satisfies CSSProperties,
+  dangerTitle: { fontSize: 13, fontWeight: 600, color: "var(--crit)" } satisfies CSSProperties,
+  dangerBody: { fontSize: 12, color: "var(--text-muted)", marginTop: 2 } satisfies CSSProperties,
+} as const;

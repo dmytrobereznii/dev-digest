@@ -220,6 +220,59 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
+  it('deleting a run cascades to its review, its findings and its trace', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Cascade', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    const body = (
+      await app.inject({
+        method: 'POST',
+        url: `/pulls/${pr.id}/review`,
+        payload: { agentId: agent.id },
+      })
+    ).json();
+    const runId: string = body.runs[0].run_id;
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+
+    const [review] = await pg.handle.db.select().from(t.reviews).where(eq(t.reviews.runId, runId));
+    expect(review).toBeDefined();
+    const reviewId = review!.id;
+    const before = await pg.handle.db
+      .select()
+      .from(t.findings)
+      .where(eq(t.findings.reviewId, reviewId));
+    expect(before.length).toBeGreaterThan(0);
+
+    const del = await app.inject({ method: 'DELETE', url: `/runs/${runId}` });
+    expect(del.statusCode).toBe(200);
+    expect(del.json()).toEqual({ ok: true });
+
+    // The database does this, not the repository: reviews.run_id references
+    // agent_runs ON DELETE CASCADE, and findings already cascaded from reviews.
+    // deleteAgentRun issues exactly one DELETE, against agent_runs.
+    expect(
+      await pg.handle.db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.reviews).where(eq(t.reviews.id, reviewId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.findings).where(eq(t.findings.reviewId, reviewId)),
+    ).toHaveLength(0);
+    expect(
+      await pg.handle.db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId)),
+    ).toHaveLength(0);
+
+    await app.close();
+  });
+
   it('dual-provider structured output: anthropic provider returns the same Review shape', async () => {
     const app = await appWith(REVIEW_FIXTURE, 'anthropic');
     const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
@@ -294,6 +347,161 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     // The replay buffer should contain our log lines as SSE `data:` frames.
     expect(sse.payload).toContain('Starting review');
     expect(sse.payload).toContain('Citation grounding');
+    await app.close();
+  });
+
+  /**
+   * D6 — the two gates on inclusion, asserted at the only level that proves
+   * them: a real run's persisted trace. A skill's body reaches the prompt IFF
+   * it is linked to the running agent AND `skills.enabled` is true. This is the
+   * assertion the whole lesson rests on (spec 01-skills §8) — the control
+   * experiment on camera is "same agent, same PR, skill linked vs not".
+   */
+  it('a run includes ONLY linked AND enabled skills, wrapping the untrusted one (D6)', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    // trusted + enabled → plain `## <name>` heading, body verbatim.
+    const trusted = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: {
+          name: 'd6-trusted-skill',
+          description: 'Applies always.',
+          body: 'Prefer explicit null checks over truthiness.',
+        },
+      })
+    ).json();
+    expect(trusted.source).toBe('manual');
+    expect(trusted.enabled).toBe(true);
+
+    // third-party + enabled → body delimiter-wrapped as untrusted DATA. The
+    // provenance checkbox forces enabled:false, so vetting it is a second,
+    // explicit act — which is exactly the point of D2.
+    const untrusted = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: {
+          name: 'd6-untrusted-skill',
+          description: 'Came from elsewhere.',
+          body: 'Detect sk_live_ keys in the diff.',
+          source_is_external: true,
+        },
+      })
+    ).json();
+    expect(untrusted.source).toBe('imported_url');
+    expect(untrusted.enabled).toBe(false);
+    await app.inject({
+      method: 'PUT',
+      url: `/skills/${untrusted.id}`,
+      payload: { enabled: true },
+    });
+
+    // linked but globally disabled → contributes nothing and leaves no trace of
+    // itself. The global toggle is a kill switch across every agent.
+    const disabled = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: {
+          name: 'd6-disabled-skill',
+          description: 'Switched off globally.',
+          body: 'THIS_BODY_MUST_NOT_REACH_THE_PROMPT',
+        },
+      })
+    ).json();
+    await app.inject({
+      method: 'PUT',
+      url: `/skills/${disabled.id}`,
+      payload: { enabled: false },
+    });
+
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'D6Agent', provider: 'openai', model: 'gpt-4.1', system_prompt: 'd6' },
+      })
+    ).json();
+
+    // All THREE are linked; only two are enabled.
+    await app.inject({
+      method: 'POST',
+      url: `/agents/${agent.id}/skills`,
+      payload: { skill_ids: [trusted.id, untrusted.id, disabled.id] },
+    });
+
+    const body = (
+      await app.inject({
+        method: 'POST',
+        url: `/pulls/${pr.id}/review`,
+        payload: { agentId: agent.id },
+      })
+    ).json();
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+
+    const runId = body.runs[0].run_id;
+    const trace = (await app.inject({ method: 'GET', url: `/runs/${runId}/trace` })).json();
+    const skillsBlock: string = trace.prompt_assembly.skills;
+
+    // ONE Skills block holding both enabled skills, each under its own heading.
+    expect(skillsBlock).not.toBeNull();
+    expect(skillsBlock).toContain('## d6-trusted-skill');
+    expect(skillsBlock).toContain('## d6-untrusted-skill');
+
+    // The trusted body is verbatim and NOT wrapped.
+    expect(skillsBlock).toContain('Prefer explicit null checks over truthiness.');
+    expect(skillsBlock).not.toContain('<untrusted source="skill:d6-trusted-skill">');
+
+    // The third-party body IS wrapped — the model is told it is data.
+    expect(skillsBlock).toContain('<untrusted source="skill:d6-untrusted-skill">');
+
+    // The disabled skill left no trace of itself anywhere in the prompt.
+    expect(skillsBlock).not.toContain('d6-disabled-skill');
+    expect(skillsBlock).not.toContain('THIS_BODY_MUST_NOT_REACH_THE_PROMPT');
+    expect(trace.prompt_assembly.user).not.toContain('THIS_BODY_MUST_NOT_REACH_THE_PROMPT');
+
+    // The Configuration section names exactly the skills that reached the prompt.
+    expect(trace.config.skills).toEqual(['d6-trusted-skill', 'd6-untrusted-skill']);
+
+    await app.close();
+  });
+
+  /**
+   * Acceptance #12 — an agent with no linked skills produces a prompt with no
+   * `## Skills / rules` section at all, byte-identical to the pre-skills shape.
+   * This is what makes the control experiment a comparison rather than a claim.
+   */
+  it('an agent with no linked skills produces no Skills section at all', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'BareAgent', provider: 'openai', model: 'gpt-4.1', system_prompt: 'bare' },
+      })
+    ).json();
+
+    const body = (
+      await app.inject({
+        method: 'POST',
+        url: `/pulls/${pr.id}/review`,
+        payload: { agentId: agent.id },
+      })
+    ).json();
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+
+    const runId = body.runs[0].run_id;
+    const trace = (await app.inject({ method: 'GET', url: `/runs/${runId}/trace` })).json();
+
+    expect(trace.prompt_assembly.skills).toBeNull();
+    expect(trace.prompt_assembly.user).not.toContain('## Skills / rules');
+    expect(trace.config.skills).toEqual([]);
+
     await app.close();
   });
 

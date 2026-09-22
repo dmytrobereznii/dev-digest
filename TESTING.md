@@ -58,6 +58,10 @@ No `chat`, no model key.
 
 ## Running locally
 
+`make check` runs everything below except the browser e2e lane (~30s) and is
+the pre-PR gate. Its web-build step skips itself while a dev server holds
+:3000 (they share `client/.next`), so stop `make dev` for a full run. The per-package commands stay useful for a tight inner loop:
+
 ```sh
 # per package
 cd client        && pnpm test           # + pnpm typecheck
@@ -80,10 +84,10 @@ cd e2e && npm install && npm test
   (`vitest run --exclude '**/*.it.test.ts'`); the integration lane selects only
   it (`vitest run .it.test`). A DB-backed test that imports `test/helpers/pg.ts`
   must use the `.it.test.ts` suffix.
-- **`server/package.json` is `skip-worktree`** (a local variant diverges from the
-  committed file). CI therefore invokes the split with
-  `pnpm exec vitest run …` rather than relying on committed `test:unit` /
-  `test:integration` scripts.
+- **CI invokes the lanes directly, not through package scripts.** There are no
+  committed `test:unit` / `test:integration` scripts, so every workflow spells
+  the split out as `pnpm exec vitest run …`. `pnpm exec eslint .` and
+  `pnpm exec depcruise src` follow the same convention.
 - **Hermetic by default.** Reach for `src/adapters/mocks.ts` (MockLLMProvider,
   MockGitClient) rather than real network/keys.
 - **E2E specs are deterministic batch JSON** (`e2e/specs/*.flow.json`) using

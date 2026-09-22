@@ -85,7 +85,9 @@
       "extracted": "Extracted",
       "community": "Community",
       "imported_url": "Imported"
-    }
+    },
+    "agents": "{count, plural, one {# agent} other {# agents}}",
+    "version": "v{version}"
   },
   "preview": {
     "untrustedBadge": "untrusted source",
@@ -96,6 +98,86 @@
     "untrustedNotice": "This skill came from an untrusted source. Its body is stored as data (delimiter-wrapped) and must be vetted before it is enabled for an agent.",
     "bodyLabel": "Skill body (Markdown)",
     "bodyHint": "Saving a changed body creates a new immutable version.",
-    "version": "v{version}"
+    "version": "v{version}",
+    "heading": "Preview",
+    "blurb": "The skill body as the model receives it, rendered. Config holds the same text as Markdown source.",
+    "tokens": "~{count} tokens",
+    "empty": "This skill has no body yet."
+  },
+  "editor": {
+    "tabs": {
+      "config": "Config",
+      "versions": "Versions",
+      "preview": "Preview"
+    }
+  },
+  "config": {
+    "heading": "Configuration",
+    "version": "v{version}",
+    "enabled": "Enabled",
+    "nameLabel": "Name",
+    "nameHint": "Lowercase and hyphenated, like a filename — it becomes the skill's heading in the assembled prompt.",
+    "namePlaceholder": "pr-quality-rubric",
+    "descriptionLabel": "Description",
+    "descriptionHint": "Say when an agent should apply this skill. This is the skill's interface — it is what an agent reads to decide the body is relevant.",
+    "descriptionPlaceholder": "Apply when reviewing a pull request that changes test files.",
+    "typeLabel": "Type",
+    "typeHint": "Grouping only — it does not change what is sent to the model.",
+    "bodyLabel": "Skill body",
+    "bodyHint": "The only text sent to the model. Editing the body is the entire skill — everything else is metadata.",
+    "bodyPlaceholder": "# Rule\nDescribe the rule…",
+    "unsaved": "unsaved",
+    "tokens": "tokens",
+    "noteLabel": "Change note",
+    "noteHint": "Optional — one line, stored with the version this save snapshots.",
+    "notePlaceholder": "Tightened scope rule; cap at 5 high-signal findings",
+    "save": "Save skill",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "saveHint": "Saving snapshots the body as v{n}",
+    "saveError": "Could not save this skill."
+  },
+  "danger": {
+    "title": "Delete skill",
+    "body": "Removes it from all agents. This can't be undone.",
+    "action": "Delete",
+    "confirmTitle": "Delete “{name}”?",
+    "usedBy": "Used by {count, plural, one {# agent} other {# agents}}:",
+    "notUsed": "No agent uses this skill.",
+    "confirm": "Delete skill",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "deleteError": "Could not delete this skill.",
+    "actionFor": "Delete {name}"
+  },
+  "versions": {
+    "heading": "Versions",
+    "count": "{count, plural, one {# version} other {# versions}}",
+    "blurb": "Every save snapshots the body so eval runs stay reproducible against the exact text they scored.",
+    "version": "v{version}",
+    "noNote": "—",
+    "current": "Current",
+    "restore": "Restore",
+    "restoring": "Restoring…",
+    "restoredFrom": "Restored from v{version}",
+    "loadError": "Could not load this skill's history.",
+    "restoreError": "Could not restore that version.",
+    "empty": {
+      "title": "No history yet",
+      "body": "Saving a changed body snapshots it here as a new version."
+    }
+  },
+  "create": {
+    "title": "Add a skill",
+    "subtitle": "Write or paste the Markdown an agent should append to its prompt.",
+    "typeLabel": "Type",
+    "enabledLabel": "Enabled",
+    "externalLabel": "This came from a third party",
+    "externalHint": "Tick it for anything you did not write yourself. The body is stored as untrusted data, delimiter-wrapped, and the skill stays disabled until you have vetted it.",
+    "footerNote": "Saved as v1 · added to Skills Lab",
+    "cancel": "Cancel",
+    "submit": "Create skill",
+    "submitting": "Creating…",
+    "error": "Could not create this skill."
   }
 }

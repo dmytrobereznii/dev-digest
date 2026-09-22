@@ -1,3 +1,4 @@
+import { estimateTokens } from "@devdigest/ui";
 import type { LogLine } from "@devdigest/ui";
 import type { RunTrace } from "@devdigest/shared";
 
@@ -26,3 +27,13 @@ export function formatSeconds(ms: number): string {
 export function formatTokens(tokensIn: number, tokensOut: number): string {
   return `${(tokensIn / 1000).toFixed(0)}k→${(tokensOut / 1000).toFixed(1)}k`;
 }
+
+/**
+ * Per-prompt-block token estimate.
+ *
+ * Re-exported from the kit's `CodeEditor` module rather than re-derived: the
+ * skill editor's header and this drawer must never disagree about what a block
+ * "costs". This is an ESTIMATE (`~N tokens`) — the run's real usage comes from
+ * the provider and is shown in the Stats row.
+ */
+export { estimateTokens };

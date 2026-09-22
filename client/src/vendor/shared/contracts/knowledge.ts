@@ -141,13 +141,50 @@ export const CommunitySkill = z.object({
 export type CommunitySkill = z.infer<typeof CommunitySkill>;
 
 // ---- Conventions ----
+/**
+ * One extracted house rule awaiting triage.
+ *
+ * `status` is the triage state and the only thing `PUT /conventions/:id`
+ * patches; `accepted` is DERIVED from it (`status === 'accepted'`) and written
+ * only by the repository, never independently — it stays because the card's
+ * left border and Accept button read it. A `rejected` row never appears in
+ * `GET /repos/:id/conventions`; the field is here so a test can assert a
+ * rejection stuck without reading the DB.
+ */
+export const ConventionStatus = z.enum(['pending', 'accepted', 'rejected']);
+export type ConventionStatus = z.infer<typeof ConventionStatus>;
+
+/**
+ * What KIND of house rule this is. A closed set rather than free text: the
+ * model picks one, so two scans of the same repo group the same way and the
+ * card can colour the label. `other` is the honest escape hatch — a rule that
+ * does not fit is still a rule, and forcing it into `naming` would be worse.
+ *
+ * Nullable on the candidate: rows extracted before this field existed have no
+ * category, and backfilling one by guessing is exactly the invention the
+ * grounding gate exists to prevent.
+ */
+export const ConventionCategory = z.enum([
+  'naming',
+  'structure',
+  'error-handling',
+  'typing',
+  'imports',
+  'testing',
+  'tooling',
+  'other',
+]);
+export type ConventionCategory = z.infer<typeof ConventionCategory>;
+
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: ConventionCategory.nullable(),
   rule: z.string(),
   evidence_path: z.string(),
   evidence_snippet: z.string(),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
+  status: ConventionStatus,
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
 

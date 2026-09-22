@@ -3,7 +3,7 @@
 "use client";
 
 import React from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Skeleton,
@@ -12,7 +12,6 @@ import {
   AutoTriggerStatus,
 } from "@devdigest/ui";
 import { AppShell } from "@/components/app-shell";
-import { RepoNotFound } from "@/components/repo-not-found";
 import { usePulls, useRefreshRepo } from "@/lib/hooks";
 import { useActiveRepo, useRepoNotFound } from "@/lib/repo-context";
 import { ApiError } from "@/lib/api";
@@ -60,14 +59,9 @@ export default function PullsPage() {
   const openCount = (pulls ?? []).filter((p) => OPEN_STATUSES.has(p.status)).length;
   const needsReviewCount = (pulls ?? []).filter((p) => p.status === "needs_review").length;
 
-  // Stale/unknown :repoId → friendly empty state instead of a 404 error.
-  if (repoNotFound) {
-    return (
-      <AppShell crumb={[{ label: repoName, mono: true }, { label: t("list.breadcrumb") }]}>
-        <RepoNotFound />
-      </AppShell>
-    );
-  }
+  // Stale/unknown :repoId → the route's 404 boundary (app/not-found.tsx), which
+  // renders the same RepoNotFound surface this page used to render by hand.
+  if (repoNotFound) notFound();
 
   return (
     <AppShell crumb={[{ label: repoName, mono: true }, { label: t("list.breadcrumb") }]}>

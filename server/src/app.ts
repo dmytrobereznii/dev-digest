@@ -158,8 +158,19 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     }
     app.log.error(err);
     const e = err as { statusCode?: number; message?: string };
-    reply.status(e.statusCode ?? 500).send({
-      error: { code: 'internal_error', message: e.message ?? 'Internal error' },
+    const status = e.statusCode ?? 500;
+    // An unrecognised 5xx is a bug, and its message can carry driver detail,
+    // file paths or internal identifiers. In production it stays in the log
+    // above and the client gets a generic string; in development the detail is
+    // what makes the error useful. A 4xx that arrives here came from a plugin
+    // that MEANT its message for the client (rate-limit, body-too-large), so
+    // it is passed through either way.
+    const leaks = status >= 500 && config.nodeEnv === 'production';
+    reply.status(status).send({
+      error: {
+        code: 'internal_error',
+        message: leaks ? 'Internal error' : (e.message ?? 'Internal error'),
+      },
     });
   });
 

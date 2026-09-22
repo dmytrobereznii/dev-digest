@@ -1,0 +1,29 @@
+{
+  "name": "Skills Lab lists seeded skills, opens one, and links show on an agent",
+  "description": "Covers the L02 skills surface end to end on seeded data: /skills lists the seeded skills as SkillCards (including the imported_url one flagged 'needs vetting'), opening pr-quality-rubric reaches the tabbed editor at /skills/:id?tab=config, the Versions tab shows its snapshot history (the seed writes two versions for this skill), and the seeded Test Quality Reviewer agent's Skills tab shows its linked skills. Read-only seeded data — no model call, no API key. Note the `wait --load networkidle` before each tab click: both editors render a Skeleton until their TanStack Query resolves, and `wait --url` matches on navigation, so the tab row does not exist yet. The sidebar renders nav items as links, so the `role button` locators can only match the in-page tab buttons. Assumes a freshly-seeded DB (see e2e/README.md — use the hermetic runner).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/skills"], "label": "load the Skills Lab" },
+    { "cmd": ["wait", "--url", "/skills"], "label": "skills route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skills fetch settles" },
+    { "cmd": ["wait", "--text", "pr-quality-rubric"], "label": "seeded skill card is visible" },
+    { "cmd": ["wait", "--text", "secret-leakage-gate"], "label": "the untrusted seeded skill is listed too" },
+    { "cmd": ["wait", "--text", "needs vetting"], "label": "the imported_url skill is flagged for vetting" },
+    { "cmd": ["find", "text", "pr-quality-rubric", "click"], "label": "open the skill editor" },
+    { "cmd": ["wait", "--url", "tab=config"], "label": "editor opens on the Config tab" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "skill detail settles" },
+    { "cmd": ["wait", "--text", "Configuration"], "label": "Config tab heading renders" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Versions"], "label": "switch to the Versions tab" },
+    { "cmd": ["wait", "--url", "tab=versions"], "label": "versions tab is active in the URL" },
+    { "cmd": ["wait", "--text", "Every save snapshots the body"], "label": "versions blurb renders" },
+    { "cmd": ["wait", "--text", "Current"], "label": "the current version is marked" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "go to the agents list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "Test Quality Reviewer", "click"], "label": "open the seeded lesson agent" },
+    { "cmd": ["wait", "--url", "tab=config"], "label": "agent editor opens on Config" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agent detail settles — the editor is a Skeleton until its query resolves" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Skills"], "label": "switch to the agent's Skills tab" },
+    { "cmd": ["wait", "--url", "tab=skills"], "label": "skills tab is active in the URL" },
+    { "cmd": ["wait", "--text", "test-coverage-nudge"], "label": "a linked skill is listed on the agent" }
+  ]
+}
