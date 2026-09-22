@@ -65,6 +65,8 @@ describe('deriveIntent', () => {
     await deriveIntent({ llm, ...baseInput });
     const req = lastRequest()!;
     const user = req.messages[1]!.content;
+    expect(user).toContain('<untrusted source="pr-title">');
+    expect(user).toContain('<untrusted source="pr-branch">');
     expect(user).toContain('<untrusted source="pr-description">');
     expect(user).toContain('<untrusted source="issue:#12">');
     expect(user).toContain('<untrusted source="commits">');

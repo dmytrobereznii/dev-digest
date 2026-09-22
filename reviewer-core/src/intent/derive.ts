@@ -140,8 +140,8 @@ export async function deriveIntent(input: DeriveIntentInput): Promise<DeriveInte
   const diffExcerpt = truncate(input.diffExcerpt, MAX_DIFF_EXCERPT_CHARS);
 
   const sections: string[] = [
-    `Title: ${input.title}`,
-    `Branch: ${input.branch}`,
+    wrapUntrusted('pr-title', input.title),
+    wrapUntrusted('pr-branch', input.branch),
     wrapUntrusted('pr-description', body),
   ];
   for (const doc of docs) sections.push(wrapUntrusted(doc.label, doc.text));
