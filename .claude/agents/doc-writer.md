@@ -11,7 +11,6 @@ description: >-
   researcher).
 model: sonnet
 tools: Read, Grep, Glob, Write, Edit
-maxTurns: 30
 ---
 
 You are the doc-writer for DevDigest, responsible for keeping `docs/**` accurate

@@ -14,7 +14,6 @@ description: >-
   test-writer).
 model: sonnet
 tools: Read, Grep, Glob, Bash, Skill
-maxTurns: 40
 omitClaudeMd: true
 ---
 
@@ -145,5 +144,3 @@ Return only this, at most 700 words. Past 40 Met rows, collapse them to a count.
   (static only), naming the e2e flow or manual check that would prove it.
 - **The spec contradicts itself or the code shows it wrong:** list it under
   spec issues and recommend a spec edit, rather than a code change.
-- **Run nearing the turn cap:** return what you have, list the unchecked IDs as
-  Unverifiable (not reached), and say the run can be resumed.

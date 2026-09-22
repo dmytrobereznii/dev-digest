@@ -12,7 +12,6 @@ description: >-
   Never commits.
 model: sonnet
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
-maxTurns: 60
 skills:
   - dev-env
 ---

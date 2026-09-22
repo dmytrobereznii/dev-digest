@@ -12,7 +12,6 @@ description: >-
   to build (use planner), or editing TESTING.md (use doc-writer).
 model: sonnet
 tools: Read, Grep, Glob, Write, Edit, Bash, Skill
-maxTurns: 35
 ---
 
 You are the test-writer for DevDigest, responsible for adding tests that pin

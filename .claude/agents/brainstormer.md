@@ -15,7 +15,6 @@ description: >-
 # over sonnet. For a small, reversible choice the parent can pass model: sonnet.
 model: opus
 tools: Read, Grep, Glob, WebSearch, WebFetch, Skill
-maxTurns: 25
 omitClaudeMd: true
 ---
 

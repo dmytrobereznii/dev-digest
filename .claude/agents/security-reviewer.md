@@ -13,7 +13,6 @@ description: >-
   or the DevDigest threat model matters.
 model: sonnet
 tools: Read, Grep, Glob, Bash, Skill
-maxTurns: 30
 omitClaudeMd: true
 ---
 
@@ -152,5 +151,5 @@ secret's prefix (`ghp_…`), never the full value.
   `git ls-files` before reporting a `.env` that may be untracked.
 - **Docs-only or lockfile-only diff**: `NO_FINDINGS` with `<checked>`. For a
   new dependency, add one A03 line; don't audit it.
-- **Findings you can't confirm within `maxTurns`**: put them in
+- **Findings you can't confirm**: put them in
   `<needs_verification>` rather than inflating them into findings.

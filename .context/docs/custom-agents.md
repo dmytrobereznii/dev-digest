@@ -90,7 +90,7 @@ filename. `:` is not allowed in names.
 | `tools` | **Always an allowlist** for read-only or advisory agents (`Read, Grep, Glob`, plus `Bash` only if needed). Leave out `Agent` unless the agent orchestrates. |
 | `disallowedTools` | Use it instead of `tools` only when the agent needs almost everything. A specifier such as `Bash(git push *)` still removes the **whole** tool, so use a hook for finer control. |
 | `effort` | Set `low` for mechanical agents. Otherwise leave it unset so it inherits. Changing model or effort is a separate prompt cache. |
-| `maxTurns` | Set it as a runaway guard (e.g. 15–30). A capped run comes back marked partial (v2.1.246+) and can be resumed. |
+| `maxTurns` | Unset for now (decided 2026-09-22): the first capped run, planner at 40, stopped before writing anything. Add it back per agent when a run actually loops, at about 2× that agent's longest normal run. A capped run comes back marked partial (v2.1.246+) and can be resumed. |
 | `skills` | Preload only a skill the agent needs on **every** run, because its **full text** is injected at startup. The agent can still call other skills through the Skill tool. |
 | `omitClaudeMd` | `true` only for read-only agents that get everything they need from the delegation prompt (v2.1.271+). See §7 for why it matters here. |
 | `isolation: worktree` | For agents that edit files in parallel. **Gotcha:** the worktree branches from the *default branch*, not the parent's `HEAD`, so it will not see uncommitted work. |
@@ -241,7 +241,6 @@ description: >-
   Not for <overlap> — use <other> instead.
 model: haiku            # haiku | sonnet — opus only with a stated reason
 tools: Read, Grep, Glob # allowlist; add Bash only if the process needs it
-maxTurns: 20
 # omitClaudeMd: true    # read-only agents that restate the rules they need
 # effort: low           # mechanical agents
 ---
@@ -286,7 +285,6 @@ Report only findings at confidence ≥ 80. If there are none, return NO_FINDINGS
 - [ ] `description` says *when*, lists 2–4 triggers and a "Not for", has no caps and no `<example>` transcripts
 - [ ] `model` set explicitly, with a reason if it is `opus` or `inherit`
 - [ ] `tools` is an allowlist; `Agent` is absent unless the agent orchestrates
-- [ ] `maxTurns` set
 - [ ] Body has role, inputs, process with a stop condition, output template with budget and threshold, and constraints; no "When to invoke" restating the description
 - [ ] Body opts out of the wrap-up only if it loads CLAUDE.md; restates guardrails if `omitClaudeMd`
 - [ ] Tried on at least 5 real delegation prompts; cost per run noted

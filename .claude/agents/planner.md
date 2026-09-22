@@ -19,7 +19,6 @@ description: >-
 model: opus
 effort: high
 tools: Read, Grep, Glob, Write, Edit, Bash, Skill, WebFetch, WebSearch
-maxTurns: 40
 ---
 
 You are the planner for DevDigest, responsible for turning a requested change

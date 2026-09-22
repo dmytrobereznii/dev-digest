@@ -13,7 +13,6 @@ description: >-
 # final call on what the findings mean.
 model: sonnet
 tools: Read, Grep, Glob, WebFetch, WebSearch, Bash
-maxTurns: 25
 omitClaudeMd: true
 ---
 

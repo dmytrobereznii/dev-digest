@@ -17,7 +17,6 @@ description: >-
 # abstraction-quality question the parent can pass model: opus per call.
 model: sonnet
 tools: Read, Grep, Glob, Bash
-maxTurns: 25
 omitClaudeMd: true
 ---
 
