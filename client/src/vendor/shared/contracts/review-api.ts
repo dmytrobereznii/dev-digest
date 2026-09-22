@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Finding, Verdict } from './findings.js';
-import { Intent, SmartDiff } from './brief.js';
+import { Intent, IntentConfidence, IntentSignal, IntentSource, SmartDiff } from './brief.js';
 
 /**
  * A2 — Review-Core API surface contracts. These extend the core
@@ -58,9 +58,42 @@ export const ReviewRunResponse = z.object({
 });
 export type ReviewRunResponse = z.infer<typeof ReviewRunResponse>;
 
-/** Intent persisted for a PR (the Intent plus the pr_id it scopes). */
-export const PrIntentRecord = Intent.extend({ pr_id: z.string() });
+/**
+ * Intent persisted for a PR (D3/D4): the Intent plus the pr_id it scopes,
+ * the code-computed confidence/signals, the references it drew on, what
+ * derived it and what that cost, and whether it is stale vs. the PR's
+ * current head_sha / text.
+ */
+export const PrIntentRecord = Intent.extend({
+  pr_id: z.string(),
+  confidence: IntentConfidence,
+  signals: z.array(IntentSignal),
+  sources: z.array(IntentSource),
+  /** Model slug that derived this row; null before any derivation. */
+  model: z.string().nullable(),
+  /** Estimated USD spend of the derivation; null when unpriced. */
+  cost_usd: z.number().nullable(),
+  tokens_in: z.number().int(),
+  tokens_out: z.number().int(),
+  /** head_sha the row was derived against; null before any derivation. */
+  head_sha: z.string().nullable(),
+  derived_at: z.string(),
+  /** True when head_sha or pr_text_hash no longer matches the PR row (D2). */
+  stale: z.boolean(),
+});
 export type PrIntentRecord = z.infer<typeof PrIntentRecord>;
+
+/** Response of `GET /pulls/:id/intent` — null when no row has been derived yet. */
+export const PrIntentResponse = z.object({
+  intent: PrIntentRecord.nullable(),
+});
+export type PrIntentResponse = z.infer<typeof PrIntentResponse>;
+
+/** Body of `POST /pulls/:id/intent`. */
+export const DeriveIntentRequest = z.object({
+  force: z.boolean().default(false),
+});
+export type DeriveIntentRequest = z.infer<typeof DeriveIntentRequest>;
 
 /** Smart-diff response for a PR (the SmartDiff). */
 export const SmartDiffResponse = SmartDiff;

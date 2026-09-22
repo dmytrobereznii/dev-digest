@@ -164,6 +164,63 @@ describe('assemblePrompt — ## Skills / rules', () => {
   });
 });
 
+describe('assemblePrompt — ## PR intent (D8)', () => {
+  const intent = {
+    intent: 'Add rate limiting to the public API.',
+    in_scope: ['Return 429 with Retry-After header'],
+    out_of_scope: ['Auth changes'],
+  };
+
+  it('omits the section when intent is absent — byte-identical to today', () => {
+    const withoutIntentParam = assemblePrompt({ system: 'sys', diff: 'DIFF' });
+    const withUndefinedIntent = assemblePrompt({ system: 'sys', diff: 'DIFF', intent: undefined });
+    expect(withoutIntentParam.messages[1]!.content).not.toContain('## PR intent');
+    expect(withUndefinedIntent.messages).toEqual(withoutIntentParam.messages);
+    expect(withUndefinedIntent.assembly.intent ?? null).toBeNull();
+  });
+
+  it('high confidence: renders scope guidance and the wrapped block after PR description, before skills', () => {
+    const { messages, assembly } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      prDescription: 'Adds rate limiting.',
+      intent: { ...intent, confidence: 'high' },
+      skills: [{ name: 'rubric', body: 'Cap findings.', trusted: true }],
+    });
+    const user = messages[1]!.content;
+    expect(user).toContain('## PR intent (confidence: high)');
+    expect(user).toMatch(/in-scope item.*implemented wrongly/i);
+    expect(user).toContain('<untrusted source="pr-intent">');
+    expect(user).toContain('Return 429 with Retry-After header');
+    expect(user.indexOf('## PR description')).toBeLessThan(user.indexOf('## PR intent'));
+    expect(user.indexOf('## PR intent')).toBeLessThan(user.indexOf('## Skills / rules'));
+    expect(assembly.intent).toContain('## PR intent (confidence: high)');
+  });
+
+  it('low confidence: renders the hedged guidance', () => {
+    const { messages } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      intent: { ...intent, confidence: 'low' },
+    });
+    const user = messages[1]!.content;
+    expect(user).toContain('## PR intent (confidence: low)');
+    expect(user).toMatch(/inferred from indirect signals/i);
+    expect(user).toMatch(/orientation only/i);
+  });
+
+  it('medium confidence: keeps scope findings as SUGGESTION questions', () => {
+    const { messages } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      intent: { ...intent, confidence: 'medium' },
+    });
+    const user = messages[1]!.content;
+    expect(user).toContain('## PR intent (confidence: medium)');
+    expect(user).toMatch(/SUGGESTION severity.*question/i);
+  });
+});
+
 describe('wrapUntrusted — the delimiter chokepoint', () => {
   // Tested directly, not only through assemblePrompt: every current caller
   // happens to pass a sanitised label, so a call-site-only guard would leave

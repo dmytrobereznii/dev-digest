@@ -17,6 +17,7 @@ export {
   wrapUntrusted,
   type PromptParts,
   type PromptSkill,
+  type PromptIntent,
   type AssembledPrompt,
 } from './prompt.js';
 
@@ -58,3 +59,28 @@ export {
 // The single OpenAI-compatible structured provider (OpenRouter), shared by the
 // CI runner and the server's openrouter path. Owns session grouping + guards.
 export { OpenRouterProvider, type OpenRouterProviderOptions } from './llm/openrouter.js';
+
+// Intent (D1/D4): pure reference parsing + the confidence rule + the one
+// injected-LLM derivation call. I/O (GitHub, the clone, persistence) stays
+// in the server's modules/intent/.
+export {
+  extractReferences,
+  normalizeRepoPath,
+  type RepoIdentity,
+  type ExtractedReference,
+  type ResolvableReference,
+  type SkippedReference,
+  type NormalizedPathResult,
+} from './intent/references.js';
+export {
+  computeConfidence,
+  meaningfulText,
+  type ConfidenceInput,
+  type ConfidenceResult,
+} from './intent/confidence.js';
+export {
+  deriveIntent,
+  type DeriveIntentInput,
+  type DeriveIntentResult,
+  type DeriveIntentDoc,
+} from './intent/derive.js';
