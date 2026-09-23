@@ -23,6 +23,7 @@ export default [
   {
     ignores: [
       ".next/**",
+      ".next-e2e/**",
       "node_modules/**",
       "next-env.d.ts",
       // Vendored: the design system and the Zod contracts are owned elsewhere

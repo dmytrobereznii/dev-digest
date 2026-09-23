@@ -5,6 +5,10 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // `scripts/e2e.sh` sets NEXT_DIST_DIR=.next-e2e. Its `next dev` inlines a
+  // different NEXT_PUBLIC_API_BASE (:3101), and sharing `.next` with a running
+  // `make dev` left :3000 serving chunks that call the torn-down e2e API.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   env: {
     NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:3001",
   },

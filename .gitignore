@@ -6,6 +6,7 @@ dist/
 !agent-runner/dist/**
 build/
 .next/
+.next-e2e/
 # PIDs of the dev servers scripts/dev.sh started, read by scripts/stop.sh
 .dev-pids
 out/
