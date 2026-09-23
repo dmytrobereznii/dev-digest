@@ -28,6 +28,14 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Tool & Library Notes
 
+- **2026-09-23** — `agent-browser wait --text` matches rendered
+  `innerText`, case-sensitively, so CSS `text-transform` applies: a
+  `SectionLabel` whose copy is "Reviewer-ordered diff" must be asserted
+  as `"REVIEWER-ORDERED DIFF"`. Asserting the i18n string as written
+  times out with no hint about casing. Check the rendered form with
+  `document.querySelector(…).innerText` before writing the step.
+  `e2e/specs/11-smart-diff.flow.json`, `e2e/specs/10-pr-intent.flow.json:11`
+
 - **2026-09-20** — `agent-browser find role button click --name X` does **not**
   fail on an ambiguous match: with three identically-named buttons it exits 0 and
   clicks the FIRST one. Verified against a throwaway page — after the click the

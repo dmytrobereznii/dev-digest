@@ -110,6 +110,15 @@ The `pr_id`-only history query takes the same index with
 
 ## Codebase Patterns
 
+- **2026-09-23** — `pr_files` has no stable order and no position
+  column. `GET /pulls/:id` refreshes it with a bare `delete` then
+  `insert` (no transaction), and the offline read is a `select` with no
+  `orderBy`. Anything that reads `pr_files` must key by `path` and must
+  not treat row order as GitHub's file order or assume a row survives a
+  concurrent refresh. Smart Diff takes display order from `pr.files` on
+  the client and joins `/smart-diff` groups by path for this reason.
+  `server/src/modules/pulls/routes.ts:235-274`
+
 - **2026-09-20** — `app.ts`'s `isResponseSerializationError` branch is LIVE as
   of the response-contract work; before it, no route declared a response schema
   so the branch could not fire. Proved by planting a field the handler does not
@@ -197,3 +206,10 @@ The `pr_id`-only history query takes the same index with
   `server/.dependency-cruiser.cjs`
 
 ## Open Questions
+
+- **2026-09-23** — `test/intent.it.test.ts` > "a review run stores
+  prompt_assembly.intent in the trace" failed once in a standalone
+  `make test-it`, but passed inside `make check` just before and 3/3 in
+  isolation (`pnpm exec vitest run test/intent.it.test.ts`). Cause
+  unknown; possibly timing under the full lane. If it recurs, capture
+  the assertion output before re-running.
