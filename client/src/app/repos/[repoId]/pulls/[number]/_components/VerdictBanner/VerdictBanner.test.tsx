@@ -30,4 +30,19 @@ describe("VerdictBanner (smoke)", () => {
     expect(screen.getByText("42")).toBeInTheDocument();
     expect(screen.getByText(/1 findings · 1 blockers/)).toBeInTheDocument();
   });
+
+  it("shows the design's cost row under the score when cost is passed", () => {
+    renderWithIntl(
+      <VerdictBanner
+        verdict="request_changes"
+        summary={null}
+        score={61}
+        findingsCount={6}
+        blockers={2}
+        cost={{ usd: 0.014, tokensIn: 8200, tokensOut: 1300 }}
+      />,
+    );
+    expect(screen.getByText("PR SCORE")).toBeInTheDocument();
+    expect(screen.getByText(/8\.2K→1\.3K/)).toBeInTheDocument();
+  });
 });

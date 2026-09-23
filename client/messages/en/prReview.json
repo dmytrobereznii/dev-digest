@@ -131,6 +131,7 @@
     }
   },
   "overview": {
-    "prBrief": "PR Brief"
+    "prBrief": "PR Brief",
+    "noReview": "Not reviewed yet — run a review to get a verdict and score."
   }
 }

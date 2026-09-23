@@ -1,12 +1,15 @@
 /* VerdictBanner — ported from findings.jsx.
-   request_changes / approve / comment + summary + finding/blocker counts + score. */
+   request_changes / approve / comment + summary + finding/blocker counts + score,
+   plus the design's cost row under the score when `cost` is passed (the PR
+   Brief passes it; the per-run accordion shows cost in its own header). */
 "use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon, Badge, CircularScore } from "@devdigest/ui";
+import { Icon, Badge, CircularScore, CostBadge } from "@devdigest/ui";
 import type { Verdict } from "@devdigest/shared";
 import { VERDICT_META } from "./constants";
+import { formatTokenPair } from "./helpers";
 import { s } from "./styles";
 
 export function VerdictBanner({
@@ -16,6 +19,7 @@ export function VerdictBanner({
   findingsCount,
   blockers,
   agentName,
+  cost,
 }: {
   verdict: Verdict;
   summary: string | null;
@@ -23,6 +27,7 @@ export function VerdictBanner({
   findingsCount: number;
   blockers: number;
   agentName?: string | null;
+  cost?: { usd: number | null; tokensIn: number | null; tokensOut: number | null };
 }) {
   const t = useTranslations("prReview");
   const m = VERDICT_META[verdict] ?? VERDICT_META.comment;
@@ -51,6 +56,19 @@ export function VerdictBanner({
         <div style={s.scoreCol}>
           <CircularScore score={score} size={52} stroke={5} />
           <span style={s.scoreLabel}>{t("verdict.prScore")}</span>
+          {cost && (
+            <div style={s.costRow}>
+              <Icon.DollarSign size={11} style={s.costIcon} />
+              <CostBadge
+                usd={cost.usd}
+                tokens={
+                  cost.tokensIn != null && cost.tokensOut != null
+                    ? formatTokenPair(cost.tokensIn, cost.tokensOut)
+                    : undefined
+                }
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

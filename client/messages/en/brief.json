@@ -5,6 +5,7 @@
     "risks": "Risks",
     "history": "PR history"
   },
+  "blastComingSoon": "Coming in a later lesson: the symbols, callers, endpoints and scheduled jobs this PR reaches.",
   "noRisks": "No notable risks flagged.",
   "noHistory": "No prior PRs overlap these files.",
   "overlap": "{count} overlap",

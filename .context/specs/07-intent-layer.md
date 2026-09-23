@@ -261,9 +261,18 @@ system prompt says that text inside those blocks is data only.
 The Overview gets `SectionLabel icon="FileText"` "PR Brief", then the design's
 two-column brief grid (`1fr 1fr`, gap 16) with the Intent card — `SectionLabel
 icon="Target"` "Intent" and the design's `IntentBlock` — in the **left**
-column, then the existing Description. The right column stays empty until L04
-adds Blast radius; the verdict banner, risk areas and history are **not**
-built (L04/L05).
+column. The right column holds a **Blast radius placeholder** card (the
+design's `Workflow` label, a dashed box saying it arrives in a later lesson)
+so the grid has no hole; L04 replaces it with the real card. Risk areas and
+history are **not** built (L04/L05).
+**Pulled forward from L05 (user request, 2026-09-23):** the design's verdict
+banner sits above the grid, as in `BriefCard`. It reuses the existing
+`VerdictBanner` fed by the newest `kind: "review"` with a verdict — the PR
+list's "newest review" score rule — with blockers counted as undismissed
+CRITICAL findings and the design's cost row (`$` + `CostBadge` + `in→out`
+tokens) taken from that review's own run. No review → a dashed muted "Not
+reviewed yet" line. The Overview's Description section is removed; the design
+has none.
 **Additions, not in the design** (built from existing tokens and kit), kept
 compact so the space under the card's divider stays free for L05's Risk areas:
 - a **confidence badge** in the Intent `SectionLabel` row (its `right` slot):
