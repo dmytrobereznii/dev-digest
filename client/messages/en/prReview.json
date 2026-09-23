@@ -57,12 +57,36 @@
     "blockers": " · {count} blockers"
   },
   "smartDiff": {
-    "coreLabel": "Core",
+    "title": "Reviewer-ordered diff",
+    "stats": "{count, plural, one {# file} other {# files}} · <add>+{additions}</add> <del>−{deletions}</del>",
+    "smartOrder": "Smart order",
+    "originalOrder": "Original order",
+    "coreLabel": "Core logic",
+    "testsLabel": "Tests",
     "wiringLabel": "Wiring",
+    "docsLabel": "Docs",
     "boilerplateLabel": "Boilerplate",
+    "desc": {
+      "core": "The substance of the change — review closely",
+      "tests": "Proves the change — check what it asserts",
+      "wiring": "Hooks the core into the app",
+      "docs": "Prose and reference — skim for accuracy",
+      "boilerplate": "Generated / mechanical — skim"
+    },
+    "marker": {
+      "critical": "blocker",
+      "warning": "warning",
+      "suggestion": "suggestion"
+    },
+    "filesWithFindings": "{count, plural, one {# file} other {# files}} with findings",
+    "noReview": "No review yet — run one to see findings inline",
+    "unavailable": "Grouping unavailable",
+    "showComments": "Show comments",
+    "hideComments": "Hide comments",
+    "postFailed": "Couldn’t post the comment to GitHub.",
     "largeTitle": "This PR is large ({lines} changed lines)",
     "largeBody": "Consider splitting it into smaller, focused PRs for easier review:",
-    "filesCount": "{count} files",
+    "filesCount": "{count, plural, one {# file} other {# files}}",
     "findingLines": "{count} finding-lines",
     "groupedByRole": "Smart Diff · grouped by role"
   },

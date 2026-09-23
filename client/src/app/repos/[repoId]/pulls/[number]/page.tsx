@@ -159,6 +159,8 @@ export default function PRDetailPage() {
               // Step 0 of every run derives/reuses intent (L03 D2) — refresh the
               // Overview tab's Intent card so a just-run review's derivation shows.
               if (prId) qc.invalidateQueries({ queryKey: ["pr-intent", prId] });
+              // A run's findings feed Smart Diff's dots/cards too (D13).
+              if (prId) qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
             }}
           />
         )}
