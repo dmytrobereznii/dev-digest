@@ -12,6 +12,7 @@ different endpoints and do not all count the same set, so a number that
 | Agent runs · Timeline row | `RunHistory` + `SeverityCounts` | `severityCountsByRun(reviews)` joined on `run_id`; cost from `RunSummary.cost_usd` | no |
 | Agent runs · Review runs pills + filter | `ReviewRunAccordion` → `FindingsPanel` | `review.findings` from `usePrReviews` | **yes** |
 | Trace drawer · COST tile + findings | `RunTraceDrawer` | `useRunTrace` stats; findings passed from the page's reviews | yes |
+| Files changed · Smart Diff | `DiffTab` → `useSmartDiff` | `GET /pulls/:id/smart-diff` `finding_lines` per file, from the latest review | no |
 
 Paths are under `src/app/repos/[repoId]/pulls/`.
 
@@ -27,6 +28,11 @@ Paths are under `src/app/repos/[repoId]/pulls/`.
   click narrows to one level, clicking it again clears.
 - **No LLM on any of these paths.** Every number is grouped from persisted
   findings, in SQL (list) or in the component (everything else).
+- **Smart Diff follows the latest-review rule too, and does not count
+  dismissed.** `finding_lines` holds only undismissed `start_line`s from the
+  newest `kind='review'` row (same rule as the PR list); a dismissed finding's
+  inline `FindingCard` still renders in the diff, muted, same as everywhere
+  else `FindingCard` appears.
 - **One formatter for money**: `formatUsd` in `@devdigest/ui` — `null` → `—`,
   `≥ $1` → 2 dp, below that 3 dp, and 4 dp when 3 would print `$0.000`.
 

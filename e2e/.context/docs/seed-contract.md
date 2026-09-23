@@ -33,18 +33,43 @@ before L01 gains the run on the next `pnpm db:seed`; it does not need a reset.
 
 ## The other demo PRs do not touch this contract
 
-Since `server/src/db/seed-prs/`, the seed also writes PRs **#479**, **#486** and
-**#474** on the same repo. They were chosen not to collide with anything above:
+Since `server/src/db/seed-prs/`, the seed also writes PRs **#479**, **#486**
+and **#474** on the same repo. They were chosen not to collide with anything
+above:
 
 - they ship **unreviewed** — no review, findings, run or cost — so nothing they
   add can shadow `$0.014`, `2 findings`, `request changes`, or the seeded
-  finding title. Only #482 has a review on a fresh DB;
+  finding title. #482 and #499 are the only PRs with a review on a fresh DB;
 - no title duplicates a value in the table, and `find text` matches exactly;
 - they stay on `acme/payments-api`, so the first-repo rule still holds. **A new
   fixture must never introduce a second repo** — that is what breaks 02/04/05;
-- all three derive `needs_review`, so they sit beside #482 under the list's
-  default filter rather than displacing it.
+- all three derive `needs_review`, so they sit beside #482 and #499 under the
+  list's default filter rather than displacing them.
 
 A fixture that *does* carry a seeded review has to be re-checked against this
 table before it lands, because a second review on the list changes what the
 Findings and Cost columns show.
+
+## #499 — the Smart Diff fixture, the second reviewed PR
+
+`server/src/db/seed-prs/499-retry-window.ts` (spec
+`.context/specs/08-smart-diff.md` §6) is the second exception to "ships
+unreviewed": `GET /pulls/:id/smart-diff` needs a PR whose files cover every
+role (core, tests, wiring, docs, boilerplate) *and* carries a reviewed finding
+set, which is a state no real run can be made to produce on demand.
+
+| Value | Written by the seed as |
+|---|---|
+| `Cap payout retries with a sliding window` | PR #499 title — duplicates nothing above |
+| `pnpm-lock.yaml` | its boilerplate-role file |
+| `package.json` | its wiring-role file (not boilerplate — D2 in the spec) |
+| `docs/retry-window.md` | its docs-role file |
+| `src/lib/retry-window.ts`, `src/api/payouts/retry.ts` | its core-role files, carrying the CRITICAL and WARNING findings |
+| `test/lib/retry-window.test.ts` | its tests-role file, carrying the SUGGESTION finding |
+
+Like #482, `lastReviewedSha: null` keeps it `needs_review` under the list's
+default filter despite carrying a review — a seeded review does not by itself
+flip the derived status (`server/src/modules/pulls/status.ts`). Flow
+`e2e/specs/11-smart-diff.flow.json` asserts on #499; a new #499 assertion in
+another flow must be re-checked against this table the same way a new #482
+assertion would be.
