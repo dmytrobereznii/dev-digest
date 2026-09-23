@@ -21,7 +21,7 @@
       "low": "Low confidence · inferred"
     },
     "inferredFrom": "Inferred from: {signals}",
-    "sources": "SOURCES",
+    "sources": "Sources",
     "skip": {
       "external_not_fetched": "not fetched",
       "cross_repo": "different repo, not followed",

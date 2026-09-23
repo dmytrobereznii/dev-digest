@@ -67,7 +67,14 @@ describe("IntentCard", () => {
     expect(screen.getByText("Authentication changes")).toBeInTheDocument();
     expect(screen.getByText("High confidence · documented")).toBeInTheDocument();
     expect(screen.getByText("#12")).toBeInTheDocument();
-    expect(screen.getByText("not fetched")).toBeInTheDocument();
+    expect(screen.getByText("(not fetched)")).toBeInTheDocument();
+  });
+
+  it("omits the Sources label when nothing was referenced", () => {
+    queryData = { intent: { ...RECORD, sources: [] } };
+    renderWithIntl(<IntentCard prId="pr1" />);
+    expect(screen.queryByText("Sources")).not.toBeInTheDocument();
+    expect(screen.getByText("Re-derive")).toBeInTheDocument();
   });
 
   it("shows the low-confidence signals hint", () => {

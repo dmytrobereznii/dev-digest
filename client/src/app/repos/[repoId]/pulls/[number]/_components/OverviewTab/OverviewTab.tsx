@@ -17,7 +17,12 @@ export function OverviewTab({ prId, prBody }: OverviewTabProps) {
     <>
       <section style={s.briefSection}>
         <SectionLabel icon="FileText">{t("overview.prBrief")}</SectionLabel>
-        <IntentCard prId={prId} />
+        {/* The design's two-column brief grid (screen_pr_detail.jsx BriefCard).
+            Intent fills the left column; the right one stays empty until L04
+            adds Blast radius. */}
+        <div style={s.briefGrid}>
+          <IntentCard prId={prId} />
+        </div>
       </section>
 
       {prBody && (

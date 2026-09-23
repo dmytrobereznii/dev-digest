@@ -11,7 +11,9 @@ export const CONFIDENCE_TOKENS: Record<
   { color: string; bg: string; outline: boolean }
 > = {
   high: { color: "var(--ok)", bg: "var(--ok-bg)", outline: false },
-  medium: { color: "var(--warn)", bg: "var(--warn-bg)", outline: false },
+  // --info, not --warn: "partially documented" is not a problem, and --warn is
+  // already the "Needs review" status colour in the PR header
+  medium: { color: "var(--info)", bg: "var(--info-bg)", outline: false },
   low: { color: "var(--text-muted)", bg: "transparent", outline: true },
 };
 

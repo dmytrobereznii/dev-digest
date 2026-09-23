@@ -4,6 +4,11 @@ export const s = {
   briefSection: {
     marginBottom: 28,
   } satisfies CSSProperties,
+  briefGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 16,
+  } satisfies CSSProperties,
   descriptionBox: {
     border: "1px solid var(--border)",
     borderRadius: 8,

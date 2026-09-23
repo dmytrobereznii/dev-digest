@@ -1,6 +1,8 @@
 /* IntentCard — the design's `IntentBlock` (screen_pr_detail.jsx:3-19) plus the
-   D11 additions the design does not draw: a confidence badge, a sources list,
-   a footer (model/cost/Re-derive/stale note), an empty state and a skeleton.
+   D11 additions the design does not draw, kept compact so the space under the
+   divider stays free for L05's Risk areas: a confidence badge in the label row,
+   one muted footer line (sources, model, cost, stale note, Re-derive), an empty
+   state and a skeleton.
    Lives in the PR Brief section of the Overview tab (L03 §6). */
 "use client";
 
@@ -48,14 +50,17 @@ export function IntentCard({ prId }: { prId: string | null }) {
 
   return (
     <Card>
-      <SectionLabel icon="Target">{t("intent.title")}</SectionLabel>
+      <SectionLabel
+        icon="Target"
+        right={
+          <Badge color={conf.color} bg={conf.bg} style={conf.outline ? s.outlineBadge : s.badge}>
+            {t(`intent.confidence.${intent.confidence}`)}
+          </Badge>
+        }
+      >
+        {t("intent.title")}
+      </SectionLabel>
       <p style={s.quote}>&ldquo;{intent.intent}&rdquo;</p>
-
-      <div style={s.badgeRow}>
-        <Badge color={conf.color} bg={conf.bg} style={conf.outline ? s.outlineBadge : undefined}>
-          {t(`intent.confidence.${intent.confidence}`)}
-        </Badge>
-      </div>
       {intent.confidence === "low" && intent.signals.length > 0 && (
         <p style={s.signalsLine}>
           {t("intent.inferredFrom", { signals: formatSignals(intent.signals) })}
@@ -99,25 +104,22 @@ export function IntentCard({ prId }: { prId: string | null }) {
 
       <div style={s.divider} />
 
-      <div style={s.sourcesHeader}>{t("intent.sources")}</div>
-      <ul style={s.sourcesList}>
+      <div style={s.footer}>
+        {intent.sources.length > 0 && <span style={s.footerLabel}>{t("intent.sources")}</span>}
         {intent.sources.map((source, i) => {
           const SourceIcon = Icon[sourceIcon(source.kind)];
           return (
-            <li key={i} style={s.sourceRow}>
-              <SourceIcon size={13} style={s.sourceIcon} />
+            <span key={i} style={s.source}>
+              <SourceIcon size={12} style={s.sourceIcon} />
               <span className="mono" style={s.sourceRef}>
                 {source.ref}
               </span>
               {source.status === "skipped" && source.reason && (
-                <span style={s.sourceReason}>{t(`intent.skip.${source.reason}`)}</span>
+                <span style={s.sourceReason}>({t(`intent.skip.${source.reason}`)})</span>
               )}
-            </li>
+            </span>
           );
         })}
-      </ul>
-
-      <div style={s.footer}>
         {intent.model && (
           <span className="mono" style={s.footerModel}>
             {intent.model}

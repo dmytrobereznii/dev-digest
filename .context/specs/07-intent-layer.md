@@ -258,22 +258,25 @@ Every input goes through `wrapUntrusted` with its own label (`pr-description`,
 system prompt says that text inside those blocks is data only.
 
 ### D11 — UI: the Intent block ships now, inside a PR Brief section with no other cards
-The Overview gets `SectionLabel icon="FileText"` "PR Brief", then one full-width
-card containing `SectionLabel icon="Target"` "Intent" and the design's
-`IntentBlock`, then the existing Description. The verdict banner, risk areas,
-blast radius and history are **not** built. L04/L05 add them and turn this into
-the design's two-column grid.
-**Additions, not in the design** (built from existing tokens and kit):
-- a **confidence badge** after the quote: high → `var(--ok)`/`var(--ok-bg)`
-  "High confidence · documented", medium → `var(--warn)`/`var(--warn-bg)`,
-  low → `var(--text-muted)` outline "Low confidence · inferred". A low
-  confidence also shows one muted line naming the signals it was inferred from;
-- a **SOURCES** list, using the same 11px/700 header style: one row per source
-  with an icon, the ref in mono, and for a skipped source the muted, localized
-  reason;
-- a footer in muted 11.5px: model, cost (`CostBadge` if the kit exports it,
-  verify during implementation), "Re-derive" ghost button, and a stale note
-  when `stale`;
+The Overview gets `SectionLabel icon="FileText"` "PR Brief", then the design's
+two-column brief grid (`1fr 1fr`, gap 16) with the Intent card — `SectionLabel
+icon="Target"` "Intent" and the design's `IntentBlock` — in the **left**
+column, then the existing Description. The right column stays empty until L04
+adds Blast radius; the verdict banner, risk areas and history are **not**
+built (L04/L05).
+**Additions, not in the design** (built from existing tokens and kit), kept
+compact so the space under the card's divider stays free for L05's Risk areas:
+- a **confidence badge** in the Intent `SectionLabel` row (its `right` slot):
+  high → `var(--ok)`/`var(--ok-bg)` "High confidence · documented", medium →
+  `var(--info)`/`var(--info-bg)` (not `--warn`, which is the "Needs review"
+  status colour), low → `var(--text-muted)` outline "Low confidence ·
+  inferred". A low confidence also shows one muted line under the quote naming
+  the signals it was inferred from;
+- **one muted 11.5px footer line** under the divider: a "Sources" label and
+  one inline item per source (icon, ref in mono, and for a skipped source the
+  localized reason in parentheses) — label omitted when there are no sources —
+  then model, `CostBadge`, a stale note when `stale`, and a "Re-derive" ghost
+  button right-aligned;
 - an empty state ("No intent yet" + primary "Derive intent"); a skeleton while
   loading. An empty out-of-scope list shows "Nothing stated".
 
