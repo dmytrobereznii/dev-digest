@@ -84,3 +84,8 @@ export {
   type DeriveIntentResult,
   type DeriveIntentDoc,
 } from './intent/derive.js';
+
+// Smart Diff (D1/D2/D3): a pure, path-only classifier that groups the Files
+// changed tab by role. No diff content, no I/O.
+export { classifyFile, normalizePath } from './smart-diff/classify.js';
+export { ROLE_ORDER } from './smart-diff/constants.js';

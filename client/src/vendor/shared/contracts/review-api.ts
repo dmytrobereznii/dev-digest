@@ -95,6 +95,12 @@ export const DeriveIntentRequest = z.object({
 });
 export type DeriveIntentRequest = z.infer<typeof DeriveIntentRequest>;
 
-/** Smart-diff response for a PR (the SmartDiff). */
-export const SmartDiffResponse = SmartDiff;
+/**
+ * Smart-diff response for a PR: the SmartDiff plus the review it was built
+ * from (D4). `review_id` is the newest `kind='review'` row's id, or null
+ * before any review exists.
+ */
+export const SmartDiffResponse = SmartDiff.extend({
+  review_id: z.string().nullable(),
+});
 export type SmartDiffResponse = z.infer<typeof SmartDiffResponse>;
