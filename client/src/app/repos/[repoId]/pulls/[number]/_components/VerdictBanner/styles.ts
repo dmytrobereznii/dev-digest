@@ -1,12 +1,12 @@
 import type { CSSProperties } from "react";
 
-/** Co-located styles for VerdictBanner (extracted from inline styles). */
+/** Co-located styles for VerdictBanner — sizes match findings.jsx:78-99. */
 export const s = {
   wrap: {
     display: "flex",
-    gap: 18,
+    gap: 16,
     alignItems: "flex-start",
-    padding: 18,
+    padding: 16,
     borderRadius: 10,
     border: "1px solid var(--border)",
     background: "var(--bg-elevated)",
@@ -25,26 +25,36 @@ export const s = {
   titleRow: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     flexWrap: "wrap",
   } satisfies CSSProperties,
-  label: (color: string): CSSProperties => ({ fontSize: 18, fontWeight: 700, color }),
+  label: (color: string): CSSProperties => ({ fontSize: 16, fontWeight: 700, color }),
   summary: {
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 1.55,
     color: "var(--text-secondary)",
-    marginTop: 8,
+    marginTop: 6,
+    textWrap: "pretty",
   } satisfies CSSProperties,
   scoreCol: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 5,
+    gap: 4,
     flexShrink: 0,
   } satisfies CSSProperties,
   scoreLabel: {
-    fontSize: 12,
+    fontSize: 10.5,
     color: "var(--text-muted)",
     letterSpacing: "0.04em",
   } satisfies CSSProperties,
+  costRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 5,
+    paddingTop: 6,
+    borderTop: "1px solid var(--border)",
+  } satisfies CSSProperties,
+  costIcon: { color: "var(--text-muted)" } satisfies CSSProperties,
 } as const;

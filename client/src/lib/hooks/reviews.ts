@@ -14,6 +14,7 @@ import {
   ReviewRecord,
   ReviewRunResponse,
   RunSummary,
+  SmartDiffResponse,
 } from "@devdigest/shared";
 import type { FindingActionKind, RunEvent } from "@devdigest/shared";
 
@@ -59,6 +60,19 @@ export function usePrReviews(prId: string | null | undefined) {
   });
 }
 
+/**
+ * Smart Diff for a PR (D3-D5): groups, findings joined from the latest
+ * review, `review_id`. Its key stays beside `["reviews", prId]`'s consumers
+ * below so every invalidation of one lists the other (D13).
+ */
+export function useSmartDiff(prId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["smart-diff", prId],
+    queryFn: () => api.get(`/pulls/${prId}/smart-diff`, SmartDiffResponse),
+    enabled: !!prId,
+  });
+}
+
 /** Delete one run from the PR's run history (+ its trace). */
 export function useDeleteRun(prId: string | null | undefined) {
   const qc = useQueryClient();
@@ -69,6 +83,7 @@ export function useDeleteRun(prId: string | null | undefined) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
       qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
     },
   });
 }
@@ -85,7 +100,10 @@ export function useDeleteReview(prId: string | null | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reviewId: string) => api.del(`/reviews/${reviewId}`, Ok),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviews", prId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
+    },
   });
 }
 
@@ -135,6 +153,7 @@ export function useRunReview() {
       ),
     onSuccess: (_d, { prId }) => {
       qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
     },
   });
 }
@@ -160,7 +179,10 @@ export function useFindingAction() {
         z.object({ finding: FindingRecord })
       ),
     onSuccess: (_d, { prId }) => {
-      if (prId) qc.invalidateQueries({ queryKey: ["reviews", prId] });
+      if (prId) {
+        qc.invalidateQueries({ queryKey: ["reviews", prId] });
+        qc.invalidateQueries({ queryKey: ["smart-diff", prId] });
+      }
     },
   });
 }

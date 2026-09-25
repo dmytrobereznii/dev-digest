@@ -102,3 +102,4 @@ a CI artifact by `.github/workflows/e2e-web.yml`).
 | `07-settings` | `/settings/api-keys` + `/settings/models` → section titles render |
 | `08-skills` | Skills Lab list → skill editor (Config + Versions) → an agent's linked skills |
 | `09-conventions` | sidebar → repo's Conventions page → seeded candidates → accept one → Create skill modal |
+| `10-pr-intent` | PR #482 → Overview tab → seeded PR Brief / Intent card (quote, IN SCOPE, high-confidence badge) |

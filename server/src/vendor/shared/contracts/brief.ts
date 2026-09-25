@@ -13,6 +13,52 @@ export const Intent = z.object({
 });
 export type Intent = z.infer<typeof Intent>;
 
+/** How confident the code is in a derived Intent — computed, never model-reported (D7). */
+export const IntentConfidence = z.enum(['high', 'medium', 'low']);
+export type IntentConfidence = z.infer<typeof IntentConfidence>;
+
+/** Which inputs had content and fed a derived Intent (D7). */
+export const IntentSignal = z.enum([
+  'title',
+  'description',
+  'linked_docs',
+  'commits',
+  'branch',
+  'file_paths',
+  'diff',
+]);
+export type IntentSignal = z.infer<typeof IntentSignal>;
+
+/** What kind of reference a resolved/skipped IntentSource points at (D5). */
+export const IntentSourceKind = z.enum(['issue', 'pull', 'repo_file', 'external']);
+export type IntentSourceKind = z.infer<typeof IntentSourceKind>;
+
+/** Why a reference was skipped instead of resolved (D5/D6/D9). */
+export const IntentSkipReason = z.enum([
+  'external_not_fetched',
+  'cross_repo',
+  'outside_repo',
+  'unsupported_type',
+  'not_found',
+  'no_clone',
+  'github_unavailable',
+  'fetch_failed',
+  'limit_reached',
+]);
+export type IntentSkipReason = z.infer<typeof IntentSkipReason>;
+
+/** One reference discovered while deriving Intent — resolved or skipped, with audit fields. */
+export const IntentSource = z.object({
+  kind: IntentSourceKind,
+  ref: z.string(),
+  status: z.enum(['used', 'skipped']),
+  reason: IntentSkipReason.nullable(),
+  title: z.string().nullable(),
+  chars: z.number().int().nullable(),
+  truncated: z.boolean(),
+});
+export type IntentSource = z.infer<typeof IntentSource>;
+
 // ---- Blast radius ----
 export const ChangedSymbol = z.object({
   name: z.string(),
@@ -78,7 +124,8 @@ export const PrHistory = z.object({
 export type PrHistory = z.infer<typeof PrHistory>;
 
 // ---- Smart Diff ----
-export const SmartDiffRole = z.enum(['core', 'wiring', 'boilerplate']);
+/** Enum order is the display order: core -> tests -> wiring -> docs -> boilerplate. */
+export const SmartDiffRole = z.enum(['core', 'tests', 'wiring', 'docs', 'boilerplate']);
 export type SmartDiffRole = z.infer<typeof SmartDiffRole>;
 
 export const SmartDiffFile = z.object({

@@ -117,6 +117,13 @@ that way.
 
 ## What Doesn't Work
 
+- **2026-09-22** — Trusting the `claude-code-guide` subagent's summary of the
+  Claude Code docs as-is. Its report on subagents was wrong on three points: it
+  said the built-in agents' models were undocumented (they are), garbled how
+  forks are triggered, and presented its own guesses as doc "security tips".
+  Before a Claude Code mechanic goes into a spec or skill, confirm it with
+  WebFetch on the raw page: `https://code.claude.com/docs/en/<page>.md`.
+
 ## Codebase Patterns
 
 - **2026-09-20** — The conventions→skill **merge format is transcribed in TWO
@@ -140,6 +147,17 @@ that way.
   deleted on merge per `CLAUDE.md`.
 
 ## Tool & Library Notes
+
+- **2026-09-22** — Every custom Claude Code subagent (not built-in Explore or
+  Plan) loads the full CLAUDE.md hierarchy at spawn. Here that is root
+  `CLAUDE.md` plus its `@README.md` and `@TESTING.md` imports: ~20 KB, about 5k
+  tokens per spawn. It also inherits the session protocol (read
+  `INSIGHTS.md`, announce it, run `/engineering-insights` at wrap-up), so an
+  agent body must opt out of the wrap-up. Read-only agents can set
+  `omitClaudeMd: true` (v2.1.271+) and restate only the guardrails they need.
+  `.context/specs/06-custom-claude-agents.md` §7
+  **Updated 2026-09-22:** spec 06 is deleted; its rules now live in
+  `.context/docs/custom-agents.md` §7.
 
 ## Recurring Errors & Fixes
 

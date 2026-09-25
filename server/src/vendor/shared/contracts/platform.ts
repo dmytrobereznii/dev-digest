@@ -52,9 +52,12 @@ export const FEATURE_MODELS: FeatureModelDef[] = [
   {
     id: 'review_intent',
     label: 'PR Review · Intent',
-    description: 'Derives a PR’s intent and scope before review.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4.1',
+    // A cheap model, because a default is what actually runs (same reasoning
+    // as `conventions` below). It must NOT be `deepseek/deepseek-v4-flash` —
+    // reviewer-core INSIGHTS: it hangs on long prompts.
+    description: 'Derives a PR’s intent and scope before review, on a cheap model.',
+    defaultProvider: 'openrouter',
+    defaultModel: 'anthropic/claude-haiku-4.5',
   },
   {
     id: 'risk_brief',

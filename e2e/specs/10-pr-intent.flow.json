@@ -1,0 +1,20 @@
+{
+  "name": "PR Overview shows the derived intent",
+  "description": "PR #482 is seeded with a 'high'-confidence pr_intent row (server/src/db/seed-intent.ts, matching the design's own INTENT fixture). The Overview tab (the default tab, no ?tab= needed) renders it via IntentCard with no derive click and no model call: the PR Brief section, the quoted intent, the IN SCOPE header and list, and the confidence badge (L03 D2/D11).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list data settles — `wait --url` matches on navigation, while the list is still a Skeleton until its TanStack Query resolves" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["wait", "--text", "PR BRIEF"], "label": "Overview tab renders the PR Brief section (SectionLabel uppercases; innerText applies text-transform)" },
+    {
+      "cmd": ["wait", "--text", "Add rate limiting to public API endpoints to prevent abuse from unauthenticated clients."],
+      "label": "seeded intent quote renders"
+    },
+    { "cmd": ["wait", "--text", "IN SCOPE"], "label": "in-scope column header renders" },
+    { "cmd": ["wait", "--text", "Apply to /api/public/* routes"], "label": "a seeded in-scope item renders" },
+    { "cmd": ["wait", "--text", "High confidence · documented"], "label": "high-confidence badge renders" }
+  ]
+}

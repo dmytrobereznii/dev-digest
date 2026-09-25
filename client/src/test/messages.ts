@@ -7,3 +7,4 @@
  * tests reach it through the `@/` alias.
  */
 export { default as prReview } from "../../messages/en/prReview.json";
+export { default as shell } from "../../messages/en/shell.json";

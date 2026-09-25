@@ -5,6 +5,7 @@ import { PR_486 } from './486-partner-webhooks.js';
 import { PR_491 } from './491-payout-status-cache.js';
 import { PR_495 } from './495-refund-window.js';
 import { PR_497 } from './497-orders-list-shape.js';
+import { PR_499 } from './499-retry-window.js';
 
 export type { DemoPr } from './types.js';
 export { seedDemoPr, type SeedPrContext } from './helpers.js';
@@ -34,9 +35,16 @@ export { seedDemoPr, type SeedPrContext } from './helpers.js';
  * they are deliberately free of ordinary bugs — a run that flags something for
  * the wrong reason proves nothing about the skill.
  *
- * All six start as `needs_review`. Their `updatedAt` values differ, so the
+ * #499 is a second exception to the "ships unreviewed" rule, alongside #482:
+ * the Smart Diff view (`.context/specs/08-smart-diff.md` §6) needs a PR whose
+ * files span all five roles (core, tests, wiring, docs, boilerplate) AND
+ * carries a reviewed finding set, which is a state no real run can be made to
+ * produce on demand. `lastReviewedSha: null` keeps it under the default list
+ * filter regardless, same as #482.
+ *
+ * All seven start as `needs_review`. Their `updatedAt` values differ, so the
  * first real run spreads them across the derived statuses: #474 (20 days old)
  * becomes `stale`, the rest become `reviewed` — and the default list filter
  * then hides them, which is the filter they exist to exercise.
  */
-export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_491, PR_495, PR_497, PR_474];
+export const DEMO_PRS: DemoPr[] = [PR_479, PR_486, PR_491, PR_495, PR_497, PR_474, PR_499];

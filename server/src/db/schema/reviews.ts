@@ -60,6 +60,20 @@ export const findings = pgTable(
   (t) => ({ reviewIdx: index('findings_review_idx').on(t.reviewId) }),
 );
 
+/** One row of `pr_intent.sources` (D3/D4) — a persistence-layer mirror of the
+ *  shared `IntentSource` contract, kept structurally compatible but untyped on
+ *  the enum fields (DB rows are looser than the API contract; the repository
+ *  edge casts to `IntentSource[]`, same pattern as `ReviewDto`/`ReviewRecord`). */
+export interface IntentSourceRow {
+  kind: string;
+  ref: string;
+  status: 'used' | 'skipped';
+  reason: string | null;
+  title: string | null;
+  chars: number | null;
+  truncated: boolean;
+}
+
 export const prIntent = pgTable('pr_intent', {
   prId: uuid('pr_id')
     .primaryKey()
@@ -67,6 +81,21 @@ export const prIntent = pgTable('pr_intent', {
   intent: text('intent').notNull(),
   inScope: jsonb('in_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   outOfScope: jsonb('out_of_scope').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  // ---- L03 D3: derivation metadata ----
+  confidence: text('confidence', { enum: ['high', 'medium', 'low'] }).notNull().default('low'),
+  signals: jsonb('signals').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  sources: jsonb('sources').$type<IntentSourceRow[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Model slug that derived this row; null before any derivation. */
+  model: text('model'),
+  /** Estimated USD spend of the derivation; null when unpriced. */
+  costUsd: doublePrecision('cost_usd'),
+  tokensIn: integer('tokens_in').notNull().default(0),
+  tokensOut: integer('tokens_out').notNull().default(0),
+  /** head_sha the row was derived against; null before any derivation. */
+  headSha: text('head_sha'),
+  /** sha256(title + "\n" + body) at derivation time — the freshness key's text half. */
+  prTextHash: text('pr_text_hash'),
+  derivedAt: timestamp('derived_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const prBrief = pgTable('pr_brief', {

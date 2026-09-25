@@ -77,6 +77,8 @@ cleanup() {
     [ -n "$pids" ] && kill $pids 2>/dev/null || true
   done
   docker rm -f "$PG_CONTAINER" >/dev/null 2>&1 || true
+  # next dev rewrites the committed next-env.d.ts to reference ITS distDir.
+  [ -n "${NEXT_ENV_SNAPSHOT:-}" ] && [ -f "$NEXT_ENV_SNAPSHOT" ] && mv "$NEXT_ENV_SNAPSHOT" client/next-env.d.ts
   exit "$code"
 }
 trap cleanup EXIT INT TERM
@@ -144,8 +146,13 @@ done
 log "API healthy"
 
 # --- web on :$WEB_PORT (next dev → reads NEXT_PUBLIC_API_BASE from env) -------
+# Own distDir: next inlines NEXT_PUBLIC_API_BASE into the chunks it writes, so
+# sharing client/.next with a running `make dev` leaves :3000 calling this
+# script's API after teardown. See client/next.config.mjs.
 log "starting web on :$WEB_PORT"
-(cd client && pnpm exec next dev -p "$WEB_PORT") &
+NEXT_ENV_SNAPSHOT="$(mktemp)"
+cp client/next-env.d.ts "$NEXT_ENV_SNAPSHOT"
+(cd client && NEXT_DIST_DIR=.next-e2e pnpm exec next dev -p "$WEB_PORT") &
 WEB_PID=$!
 log "waiting for web :$WEB_PORT"
 web_up=0

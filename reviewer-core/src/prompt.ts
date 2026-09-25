@@ -1,4 +1,4 @@
-import type { ChatMessage, PromptAssembly } from '@devdigest/shared';
+import type { ChatMessage, Intent, IntentConfidence, PromptAssembly } from '@devdigest/shared';
 
 /**
  * Prompt assembly + prompt-injection hardening.
@@ -55,6 +55,43 @@ export function wrapUntrusted(label: string, content: string): string {
 const MAX_PR_DESCRIPTION_CHARS = 4000;
 
 /**
+ * PR intent (D8) — a derived Intent plus the confidence code computed for it.
+ * The reviewer's instructions differ by confidence level (never reported by
+ * the model itself; see `reviewer-core/src/intent/confidence.ts`).
+ */
+export type PromptIntent = Intent & { confidence: IntentConfidence };
+
+// Trusted guidance per confidence level (D8). The intent/scope CONTENT is
+// untrusted author text and is delimiter-wrapped separately below; this
+// guidance is a fixed constant the model cannot influence.
+const INTENT_GUIDANCE: Record<IntentConfidence, string> = {
+  high:
+    'Check the diff against the stated scope. An in-scope item that is implemented wrongly or ' +
+    'incompletely is a finding at the implementing line, with the item quoted in the rationale. ' +
+    'A change that falls under out-of-scope, or is unrelated to the stated intent, is a ' +
+    'SUGGESTION at that change, unless the change is defective in itself. An in-scope item with ' +
+    'no code in the diff belongs in the summary, not as a finding — the grounding gate would ' +
+    'drop an invented line.',
+  medium:
+    'Check the diff against the stated scope using the same rules as high confidence, but keep ' +
+    'every scope-related finding at SUGGESTION severity and phrase it as a question.',
+  low:
+    'Inferred from indirect signals, not stated by the author. Use it for orientation only. Do ' +
+    'not raise a finding whose only basis is a mismatch with it. A likely scope mismatch may be ' +
+    'noted in the summary.',
+};
+
+function renderIntentBody(intent: PromptIntent): string {
+  const inScope =
+    intent.in_scope.length > 0 ? intent.in_scope.map((s) => `- ${s}`).join('\n') : '- (none stated)';
+  const outOfScope =
+    intent.out_of_scope.length > 0
+      ? intent.out_of_scope.map((s) => `- ${s}`).join('\n')
+      : '- (none stated)';
+  return `Intent: ${intent.intent}\nIn scope:\n${inScope}\nOut of scope:\n${outOfScope}`;
+}
+
+/**
  * One resolved skill the agent has linked. `trusted` is derived from the
  * skill's provenance by the CALLER (source === 'manual'), never from the body:
  * a third-party body is rendered as DATA inside `<untrusted>` so INJECTION_GUARD
@@ -100,6 +137,14 @@ export interface PromptParts {
    * undefined → section omitted.
    */
   prDescription?: string;
+  /**
+   * The PR's derived intent + code-computed confidence (D8). Renders
+   * immediately after `## PR description`, before skills, as its own
+   * `## PR intent (confidence: …)` section: trusted guidance for that level,
+   * then the intent/scope content delimiter-wrapped (untrusted — derived
+   * from author text). Empty/undefined → section omitted (no behavior change).
+   */
+  intent?: PromptIntent;
   /** The unified diff / user task (untrusted content). */
   diff: string;
   /** Optional task framing line, e.g. "Review PR #482 '…'". */
@@ -147,11 +192,16 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
       ? parts.prDescription.slice(0, MAX_PR_DESCRIPTION_CHARS)
       : undefined;
 
+  const intentBlock = parts.intent
+    ? `## PR intent (confidence: ${parts.intent.confidence})\n${INTENT_GUIDANCE[parts.intent.confidence]}\n${wrapUntrusted('pr-intent', renderIntentBody(parts.intent))}`
+    : undefined;
+
   const userSections: string[] = [];
   if (parts.task) userSections.push(parts.task);
   if (prDescription) {
     userSections.push(`## PR description\n${wrapUntrusted('pr-description', prDescription)}`);
   }
+  if (intentBlock) userSections.push(intentBlock);
   if (skillsBlock) userSections.push(`## Skills / rules\n${skillsBlock}`);
   if (memoryBlock) userSections.push(`## Relevant memory\n${memoryBlock}`);
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
@@ -180,6 +230,7 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
     callers: parts.callers ?? null,
     repo_map: parts.repoMap ?? null,
     pr_description: prDescription ?? null,
+    intent: intentBlock ?? null,
     user,
   };
 

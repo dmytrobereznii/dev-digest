@@ -91,6 +91,7 @@ it.
 | i18n keys | camelCase, nested per feature file | `prReview.json` → `panel.hideLowConfidence` |
 | Tests | `*.test.ts(x)` next to the code; DB-backed `*.it.test.ts` | `helpers.test.ts` |
 | E2E flows | `NN-kebab.flow.json`, sequential | `e2e/specs/04-pr-findings.flow.json` |
+| Claude Code agents | `.claude/agents/<kebab-role>.md`, `name` = filename | `.claude/agents/plan-verifier.md` |
 | `.context/` files | kebab-case; specs `NN-kebab-slug.md` | `.context/specs/01-run-cost.md` |
 | Commit subjects | `type(area): summary` | `fix(db): …`, `feat(conventions): …` |
 

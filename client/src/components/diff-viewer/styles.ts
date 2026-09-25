@@ -22,13 +22,22 @@ export const s = {
   filePath: {
     fontSize: 13,
     fontWeight: 500,
-    flex: 1,
+    flex: "0 1 auto",
     minWidth: 0,
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   } satisfies CSSProperties,
-  fileStat: { fontSize: 12 } satisfies CSSProperties,
+  /** 6x6 dot after the path when the file has undismissed findings (D10). */
+  findingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 99,
+    background: "var(--crit)",
+    flexShrink: 0,
+  } satisfies CSSProperties,
+  /** marginLeft: auto takes the space filePath no longer claims (D10). */
+  fileStat: { fontSize: 12, marginLeft: "auto" } satisfies CSSProperties,
   addText: { color: "var(--code-add-text)" } satisfies CSSProperties,
   delText: { color: "var(--code-del-text)" } satisfies CSSProperties,
   fileBody: {
@@ -87,6 +96,41 @@ export function lineSignFor(kind: Line["kind"]): CSSProperties {
     width: 14,
     textAlign: "center",
     color: kind === "add" ? "var(--code-add-text)" : kind === "del" ? "var(--code-del-text)" : "var(--text-muted)",
+    flexShrink: 0,
+  };
+}
+
+/** Absolute 3px bar on the row a LineAnnotation's marker is anchored to (D9). */
+export function markerBarStyle(color: string): CSSProperties {
+  return {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    background: color,
+  };
+}
+
+/** Right-aligned pill: icon + label in the marker's colour (D9). `bg` is the
+    marker's own background (SEV[sev].bg); a caller with no `bg` (e.g. a plain
+    LineMarker built outside DiffTab's severity mapping) falls back to a
+    tinted mix of `color`. */
+export function markerPillStyle(color: string, bg?: string): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "center",
+    fontSize: 10.5,
+    // 14px + 1px padding + 1px border each side = 18px, inside the 20px code row.
+    lineHeight: "14px",
+    fontWeight: 600,
+    color,
+    border: `1px solid ${color}`,
+    background: bg ?? `color-mix(in srgb, ${color} 12%, transparent)`,
+    borderRadius: 5,
+    padding: "1px 6px",
     flexShrink: 0,
   };
 }

@@ -1,0 +1,23 @@
+{
+  "name": "PR detail Files changed tab renders the Smart Diff view",
+  "description": "PR #499 (spec .context/specs/08-smart-diff.md §6/§8) is seeded with files spanning all five Smart Diff roles and a review with findings in three of them. The Files changed tab renders the role-grouped, reviewer-ordered diff (DiffTab -> RoleGroup) instead of a flat file list: the section title, all five group headers, and the seeded CRITICAL finding inline under its cited line. Switching to Original order falls back to the flat pr.files list, revealing the boilerplate pnpm-lock.yaml that the grouped view keeps collapsed. Read-only seeded data (no model call). Assumes a freshly-seeded DB (see e2e/README.md).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list data settles — `wait --url` matches on navigation, while the list is still a Skeleton until its TanStack Query resolves" },
+    { "cmd": ["find", "text", "Cap payout retries with a sliding window", "click"], "label": "open the PR #499 row" },
+    { "cmd": ["wait", "--url", "/pulls/499"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Files changed"], "label": "switch to the Files changed tab" },
+    { "cmd": ["wait", "--url", "tab=diff"], "label": "diff tab is active in the URL" },
+    { "cmd": ["wait", "--text", "REVIEWER-ORDERED DIFF"], "label": "Smart Diff section title renders (SectionLabel uppercases; innerText applies text-transform, same as flow 10's PR BRIEF)" },
+    { "cmd": ["wait", "--text", "Core logic"], "label": "Core logic group header renders" },
+    { "cmd": ["wait", "--text", "Tests"], "label": "Tests group header renders" },
+    { "cmd": ["wait", "--text", "Wiring"], "label": "Wiring group header renders" },
+    { "cmd": ["wait", "--text", "Docs"], "label": "Docs group header renders" },
+    { "cmd": ["wait", "--text", "Boilerplate"], "label": "Boilerplate group header renders (collapsed, but its group header is not)" },
+    { "cmd": ["wait", "--text", "Unbounded retry-attempt queue growth in RetryWindow"], "label": "the seeded CRITICAL finding's title renders inline (its file auto-opens because it has findings)" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Original order"], "label": "switch off Smart order" },
+    { "cmd": ["wait", "--text", "pnpm-lock.yaml"], "label": "the boilerplate file — hidden in the grouped view's collapsed Boilerplate group — appears in the flat original-order list" }
+  ]
+}
