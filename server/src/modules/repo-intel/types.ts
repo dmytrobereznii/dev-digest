@@ -84,6 +84,12 @@ export interface BlastResult {
   factsByFile?: Record<string, { endpoints: string[]; crons: string[] }>;
   degraded?: boolean;
   reason?: DegradedReason;
+  /**
+   * True when some changed symbol had more than `MAX_CALLERS_PER_SYMBOL`
+   * distinct callers (persistent path only — spec 10 D2). Consumers (blast)
+   * surface this so the caller knows the map is capped, not exhaustive.
+   */
+  truncated?: boolean;
 }
 
 // ---------------------------------------------------------------------------
