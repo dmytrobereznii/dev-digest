@@ -89,6 +89,39 @@ export const BlastRadius = z.object({
 });
 export type BlastRadius = z.infer<typeof BlastRadius>;
 
+/** Why a blast-radius read is `degraded` (spec 10 D3) — the facade's own
+ *  `DegradedReason` plus the route-level `no_changed_files`. */
+export const BlastDegradedReason = z.enum([
+  'flag_off',
+  'index_failed',
+  'index_partial',
+  'repo_too_large',
+  'no_data',
+  'no_changed_files',
+]);
+export type BlastDegradedReason = z.infer<typeof BlastDegradedReason>;
+
+export const BlastStats = z.object({
+  symbols: z.number().int(),
+  callers: z.number().int(),
+  endpoints: z.number().int(),
+  crons: z.number().int(),
+});
+export type BlastStats = z.infer<typeof BlastStats>;
+
+/** `GET /pulls/:id/blast` response (spec 10 D3). Extends `BlastRadius` — which
+ *  stays embedded, unchanged, in `PrBrief` — with the status, cap and
+ *  attribution fields the card and the MCP tool need. */
+export const BlastRadiusResponse = BlastRadius.extend({
+  status: z.enum(['ok', 'degraded']),
+  degraded_reason: BlastDegradedReason.nullable(),
+  /** The SHA the caller line numbers come from (D7); null with no repo/clone. */
+  index_sha: z.string().nullable(),
+  stats: BlastStats,
+  truncated: z.boolean(),
+});
+export type BlastRadiusResponse = z.infer<typeof BlastRadiusResponse>;
+
 // ---- Risks ----
 export const RiskSeverity = z.enum(['high', 'medium', 'low']);
 export type RiskSeverity = z.infer<typeof RiskSeverity>;
