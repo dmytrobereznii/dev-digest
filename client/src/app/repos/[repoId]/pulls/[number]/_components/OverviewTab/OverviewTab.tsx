@@ -2,9 +2,10 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Card, Icon, SectionLabel } from "@devdigest/ui";
+import { SectionLabel } from "@devdigest/ui";
 import type { ReviewRecord, RunSummary } from "@devdigest/shared";
 import { IntentCard } from "../IntentCard";
+import { BlastRadiusCard } from "../BlastRadiusCard";
 import { VerdictBanner } from "../VerdictBanner";
 import { briefVerdict } from "./helpers";
 import { s } from "./styles";
@@ -13,14 +14,15 @@ interface OverviewTabProps {
   prId: string | null;
   reviews: ReviewRecord[] | undefined;
   runs: RunSummary[] | undefined;
+  repoFullName: string | null;
+  headSha: string | null;
 }
 
 /* The design's PR Brief (screen_pr_detail.jsx BriefCard): verdict banner, then
-   the two-column grid. Intent fills the left column; the right one holds a
-   Blast radius placeholder until L04 builds the real card. */
-export function OverviewTab({ prId, reviews, runs }: OverviewTabProps) {
+   the two-column grid. Intent fills the left column; Blast radius (spec 10)
+   fills the right one. */
+export function OverviewTab({ prId, reviews, runs, repoFullName, headSha }: OverviewTabProps) {
   const t = useTranslations("prReview");
-  const tb = useTranslations("brief");
   const verdict = briefVerdict(reviews, runs);
   return (
     <section style={s.briefSection}>
@@ -44,14 +46,7 @@ export function OverviewTab({ prId, reviews, runs }: OverviewTabProps) {
         )}
         <div style={s.briefGrid}>
           <IntentCard prId={prId} />
-          {/* L04 replaces this with the real Blast radius card. */}
-          <Card style={s.placeholderCard}>
-            <SectionLabel icon="Workflow">{tb("block.blast")}</SectionLabel>
-            <div style={s.placeholderBody}>
-              <Icon.Workflow size={22} style={s.placeholderIcon} />
-              <p style={s.placeholderText}>{tb("blastComingSoon")}</p>
-            </div>
-          </Card>
+          <BlastRadiusCard prId={prId} repoFullName={repoFullName} headSha={headSha} />
         </div>
       </div>
     </section>

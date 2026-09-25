@@ -1,18 +1,21 @@
 {
   "stat": {
-    "symbols": "symbols",
-    "callers": "callers",
-    "endpoints": "endpoints",
-    "crons": "cron/jobs"
+    "symbols": "{count, plural, one {symbol} other {symbols}}",
+    "callers": "{count, plural, one {caller} other {callers}}",
+    "endpoints": "{count, plural, one {endpoint} other {endpoints}}",
+    "crons": "{count, plural, one {cron} other {crons}}"
   },
-  "view": {
-    "tree": "tree",
-    "graph": "graph"
-  },
-  "callerCount": "{count} callers",
-  "noDownstream": "{count} changed symbol(s), no downstream callers found.",
-  "graph": {
-    "empty": "No downstream callers to graph.",
-    "ariaLabel": "Blast radius graph"
+  "view": { "tree": "Tree", "graph": "Graph", "graphSoon": "Graph view is coming in a later lesson" },
+  "callerCount": "{count, plural, one {# caller} other {# callers}}",
+  "noDownstream": "{count, plural, one {# changed symbol} other {# changed symbols}}, no downstream callers found.",
+  "truncated": "Some symbols have more callers than shown; the highest-ranked files are listed.",
+  "error": "Couldn't load the blast radius.",
+  "status": {
+    "flag_off": "Repo intelligence is off (REPO_INTEL_ENABLED=false); callers come from a text search and may be incomplete.",
+    "index_failed": "Indexing this repository failed, so the map may be incomplete. Re-analyze the repository to rebuild it.",
+    "index_partial": "The repository index is partial, so some callers may be missing.",
+    "repo_too_large": "The repository is too large to index fully, so the map may be incomplete.",
+    "no_data": "This repository has no index yet; any callers shown come from a text search and may be incomplete.",
+    "no_changed_files": "This PR's changed files aren't loaded yet. Reload the page to fetch them."
   }
 }
