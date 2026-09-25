@@ -3,8 +3,9 @@
 # live API. Uses npm (package-lock.json).
 #
 # server/src/vendor/shared/** is in the path filter because mcp aliases
-# @devdigest/shared to it at type-check time (D3). .mcp.json is in the filter
-# because check-mcp-json.mjs (D16) guards it.
+# @devdigest/shared to it at type-check time (mcp/.context/docs/decisions.md
+# D3). .mcp.json is in the filter because check-mcp-json.mjs (decisions.md
+# D16) guards it.
 name: mcp
 
 on:
@@ -45,7 +46,7 @@ jobs:
           cache: npm
           cache-dependency-path: mcp/package-lock.json
 
-      - name: check .mcp.json (D16)
+      - name: check .mcp.json (decisions.md D16)
         working-directory: .
         run: node mcp/scripts/check-mcp-json.mjs
 
