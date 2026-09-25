@@ -1,14 +1,16 @@
 /**
  * Test-only `fetch` stub + seed-shaped fixtures (spec §8): 5 agents (the
  * seeded set — see server INSIGHTS 2026-09-25), #482's review on
- * `acme/payments-api`, and its 3 pending conventions. `fakeFetch(routes)`
- * maps `"METHOD path"` to a response and records every call (with its
- * `init`), so a test can assert on `redirect`, on how many times a route was
- * hit, or swap a route mid-test via a function value.
+ * `acme/payments-api`, its 3 pending conventions, and its blast radius
+ * (a degraded `no_data` fixture, plus an `ok` one a test can swap in — spec
+ * 10 §8). `fakeFetch(routes)` maps `"METHOD path"` to a response and records
+ * every call (with its `init`), so a test can assert on `redirect`, on how
+ * many times a route was hit, or swap a route mid-test via a function value.
  */
 import type {
   ApiActiveRun,
   ApiAgent,
+  ApiBlast,
   ApiConventionsPage,
   ApiPr,
   ApiRepo,
@@ -120,7 +122,8 @@ export const SEEDED_PR: ApiPr = {
   head_sha: 'a1b2c3d4e5f6',
 };
 
-export const SEEDED_RUN_ID = 'run-482-security';
+// A real UUID: `get_findings`' `run_id` input is `.uuid()`-validated.
+export const SEEDED_RUN_ID = '00000000-0000-4000-8000-000000000482';
 
 export const SEEDED_REVIEW: ApiReview = {
   run_id: SEEDED_RUN_ID,
@@ -199,8 +202,50 @@ export const SEEDED_CONVENTIONS: ApiConventionsPage = {
   ],
 };
 
-/** A fresh, seed-shaped route map: agents, repos, #482's pull + review, and
- * conventions. Callers overwrite/add keys for the scenario under test. */
+/** A degraded `no_data` blast radius, matching the live #482 fixture — no
+ * clone, so the facade never finds callers (spec 10 §1). */
+export const SEEDED_BLAST_DEGRADED: ApiBlast = {
+  status: 'degraded',
+  degraded_reason: 'no_data',
+  summary: 'Blast radius unavailable: no_data.',
+  truncated: false,
+  changed_symbols: [],
+  downstream: [],
+};
+
+/** An `ok` blast radius with real callers/endpoints/crons — a test swaps
+ * this in for the degraded default to cover the non-degraded shape. */
+export const SEEDED_BLAST_OK: ApiBlast = {
+  status: 'ok',
+  degraded_reason: null,
+  summary: '2 symbols changed → 3 callers, 2 endpoints, 1 cron',
+  truncated: false,
+  changed_symbols: [
+    { name: 'chargeCard', file: 'src/billing/charge.ts', kind: 'function' },
+    { name: 'refundCard', file: 'src/billing/refund.ts', kind: 'function' },
+  ],
+  downstream: [
+    {
+      symbol: 'chargeCard',
+      callers: [
+        { name: 'handlePayment', file: 'src/api/payments.ts', line: 42 },
+        { name: 'retryJob', file: 'src/jobs/retry.ts', line: 10 },
+      ],
+      endpoints_affected: ['POST /payments'],
+      crons_affected: ['0 * * * *'],
+    },
+    {
+      symbol: 'refundCard',
+      callers: [{ name: 'handleRefund', file: 'src/api/refunds.ts', line: 8 }],
+      endpoints_affected: ['POST /refunds'],
+      crons_affected: [],
+    },
+  ],
+};
+
+/** A fresh, seed-shaped route map: agents, repos, #482's pull + review,
+ * conventions, and its (degraded) blast radius. Callers overwrite/add keys
+ * for the scenario under test. */
 export function defaultRoutes(): Routes {
   return {
     'GET /agents': { status: 200, body: SEEDED_AGENTS },
@@ -212,5 +257,6 @@ export function defaultRoutes(): Routes {
     [`GET /pulls/${String(SEEDED_PR.id)}/runs`]: { status: 200, body: [SEEDED_RUN] },
     [`GET /pulls/${String(SEEDED_PR.id)}/runs/active`]: { status: 200, body: SEEDED_ACTIVE_RUNS },
     [`GET /repos/${SEEDED_REPO.id}/conventions`]: { status: 200, body: SEEDED_CONVENTIONS },
+    [`GET /pulls/${String(SEEDED_PR.id)}/blast`]: { status: 200, body: SEEDED_BLAST_DEGRADED },
   };
 }

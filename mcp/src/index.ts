@@ -6,12 +6,12 @@
  */
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { DevDigestApi } from './api/client.js';
-import { loadConfig } from './config.js';
+import { loadConfig, type Config } from './config.js';
 import { ConfigError } from './errors.js';
 import { createServer } from './server.js';
 
 async function main(): Promise<void> {
-  let config;
+  let config: Config;
   try {
     config = loadConfig(process.env);
   } catch (err) {

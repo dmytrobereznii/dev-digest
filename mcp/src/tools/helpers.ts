@@ -12,7 +12,13 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ApiHttpError, ApiUnavailableError, ContractMismatchError, ToolError } from '../errors.js';
 import * as messages from '../messages.js';
+import { sanitizeUntrusted } from '../sanitize.js';
 import { sanitizeRelayedError } from './review-result.js';
+
+/** `err.code` is carried through for display only (never used to decide how
+ * to handle the error, `errors.ts` `ApiHttpError`), but it still comes off
+ * the wire — sanitize it before it reaches E10, same as `err.message`. */
+const ERROR_CODE_MAX = 64;
 
 export function errorResult(text: string): CallToolResult {
   return { isError: true, content: [{ type: 'text', text }] };
@@ -32,7 +38,8 @@ export function toErrorResult(err: unknown, apiUrl: string): CallToolResult {
   if (err instanceof ApiUnavailableError) return errorResult(messages.e8(apiUrl));
   if (err instanceof ContractMismatchError) return errorResult(messages.e9(err.method, err.path));
   if (err instanceof ApiHttpError) {
-    return errorResult(messages.e10(err.status, err.code, sanitizeRelayedError(err.message)));
+    const code = sanitizeUntrusted(err.code, ERROR_CODE_MAX, { singleLine: true });
+    return errorResult(messages.e10(err.status, code, sanitizeRelayedError(err.message)));
   }
   throw err;
 }

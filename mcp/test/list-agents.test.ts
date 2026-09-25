@@ -86,4 +86,23 @@ describe('T2 — list_agents', () => {
       'DevDigest API error 500 internal_error: boom. Do not retry with the same arguments; tell the user.',
     );
   });
+
+  it('E10 sanitizes and caps a dirty envelope `code` (defence in depth)', async () => {
+    const zwsp = '​';
+    const dirtyCode = `weird${zwsp}code${'x'.repeat(100)}`;
+    const routes: Routes = {
+      ...defaultRoutes(),
+      'GET /agents': { status: 500, body: { error: { code: dirtyCode, message: 'boom' } } },
+    };
+    const { client } = await connectTestServer(routes);
+
+    const result = await client.callTool({ name: 'list_agents' });
+    expect(result.isError).toBe(true);
+    const text = (result.content as Array<{ type: string; text: string }>)[0]?.text ?? '';
+    expect(text).not.toContain(zwsp);
+    expect(text).not.toContain(dirtyCode);
+    expect(text).toBe(
+      `DevDigest API error 500 weirdcode${'x'.repeat(55)}: boom. Do not retry with the same arguments; tell the user.`,
+    );
+  });
 });

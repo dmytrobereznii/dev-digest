@@ -129,6 +129,49 @@ export const ApiConventionsPage = z.object({
 });
 export type ApiConventionsPage = z.infer<typeof ApiConventionsPage>;
 
+// ---- Blast radius (GET /pulls/:id/blast) -----------------------------------
+export const ApiBlastChangedSymbol = z.object({
+  name: z.string(),
+  file: z.string(),
+  kind: z.string(),
+});
+export type ApiBlastChangedSymbol = z.infer<typeof ApiBlastChangedSymbol>;
+
+export const ApiBlastCaller = z.object({
+  name: z.string(),
+  file: z.string(),
+  line: z.number().int(),
+});
+export type ApiBlastCaller = z.infer<typeof ApiBlastCaller>;
+
+export const ApiBlastDownstream = z.object({
+  symbol: z.string(),
+  callers: z.array(ApiBlastCaller),
+  endpoints_affected: z.array(z.string()),
+  crons_affected: z.array(z.string()),
+});
+export type ApiBlastDownstream = z.infer<typeof ApiBlastDownstream>;
+
+export const ApiBlastDegradedReason = z.enum([
+  'flag_off',
+  'index_failed',
+  'index_partial',
+  'repo_too_large',
+  'no_data',
+  'no_changed_files',
+]);
+export type ApiBlastDegradedReason = z.infer<typeof ApiBlastDegradedReason>;
+
+export const ApiBlast = z.object({
+  status: z.enum(['ok', 'degraded']),
+  degraded_reason: ApiBlastDegradedReason.nullable(),
+  summary: z.string(),
+  truncated: z.boolean(),
+  changed_symbols: z.array(ApiBlastChangedSymbol),
+  downstream: z.array(ApiBlastDownstream),
+});
+export type ApiBlast = z.infer<typeof ApiBlast>;
+
 // ---- Structured error envelope --------------------------------------------
 export const ApiErrorBody = z.object({
   error: z.object({

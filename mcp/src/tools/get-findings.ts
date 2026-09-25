@@ -41,7 +41,11 @@ export const DESCRIPTION =
 export const INPUT_SHAPE = {
   repo: repoParam(),
   pr_number: prNumberParam(),
-  run_id: z.string().optional().describe('Run id from run_agent_on_pr; omit for the newest completed run'),
+  run_id: z
+    .string()
+    .uuid()
+    .optional()
+    .describe('Run id from run_agent_on_pr; omit for the newest completed run'),
   agent: agentParam().optional(),
   min_severity: minSeverityParam(),
   detail: detailParam(),
@@ -110,10 +114,9 @@ export function register(server: McpServer, deps: ResolveDeps): void {
       try {
         const repo = await resolveRepo(deps, args.repo);
         const pr = await resolvePr(deps, repo, args.pr_number, { sync: false });
-        const prId = pr.id as string; // resolvePr already threw ContractMismatchError on a null id
         const agent = args.agent ? await resolveAgent(deps, args.agent) : undefined;
 
-        const runs = await deps.api.listRuns(prId);
+        const runs = await deps.api.listRuns(pr.id);
 
         if (args.run_id) {
           const run = runs.find((r) => r.run_id === args.run_id);
@@ -132,7 +135,7 @@ export function register(server: McpServer, deps: ResolveDeps): void {
             );
           }
 
-          const settled = await waitForRunSettled(deps, prId, run, args.run_id);
+          const settled = await waitForRunSettled(deps, pr.id, run, args.run_id);
           if (settled === null) {
             const running = buildRunningResult({
               repo: repo.full_name,
@@ -150,7 +153,7 @@ export function register(server: McpServer, deps: ResolveDeps): void {
             throw runFailureToolError(settled, deps.config.webUrl);
           }
 
-          const reviews = await deps.api.listReviews(prId);
+          const reviews = await deps.api.listReviews(pr.id);
           const review = selectReview(reviews, args.run_id);
           const { result, shown, scopedTotal } = buildReviewResult({
             repo: repo.full_name,
@@ -190,7 +193,7 @@ export function register(server: McpServer, deps: ResolveDeps): void {
           throw new ToolError(messages.e17None(repo.full_name, pr.number, agent?.name));
         }
 
-        const reviews = await deps.api.listReviews(prId);
+        const reviews = await deps.api.listReviews(pr.id);
         const review = selectReview(reviews, newestDone.run_id);
         const { result, shown, scopedTotal } = buildReviewResult({
           repo: repo.full_name,

@@ -24,6 +24,7 @@ describe('DevDigestApi — the §5.1 method surface', () => {
         'listRuns',
         'listReviews',
         'getConventions',
+        'getBlast',
       ].sort(),
     );
   });

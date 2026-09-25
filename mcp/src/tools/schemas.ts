@@ -6,6 +6,7 @@
  * the tool handlers build the plain object directly.
  */
 import { z } from 'zod';
+import { ApiBlastDegradedReason } from '../api/schemas.js';
 import { SEVERITY_ORDER } from './constants.js';
 
 // ---- §6.1 ReviewResult (run_agent_on_pr, get_findings) ---------------------
@@ -102,7 +103,7 @@ export const BlastRadiusOutputSchema = z.object({
     }),
   ),
   summary: z.string(),
-  degraded_reason: z.string().nullable(),
+  degraded_reason: ApiBlastDegradedReason.nullable(),
   truncated: z.boolean(),
   next_step: z.string().optional(),
 });

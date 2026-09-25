@@ -22,6 +22,7 @@ import {
   ApiRun,
   ApiReview,
   ApiConventionsPage,
+  ApiBlast,
   ApiErrorBody,
 } from './schemas.js';
 
@@ -108,6 +109,15 @@ export class DevDigestApi {
       'GET',
       `/repos/${encodeURIComponent(repoId)}/conventions`,
       ApiConventionsPage,
+      this.config.requestTimeoutMs,
+    );
+  }
+
+  getBlast(prId: string): Promise<ApiBlast> {
+    return this.#request(
+      'GET',
+      `/pulls/${encodeURIComponent(prId)}/blast`,
+      ApiBlast,
       this.config.requestTimeoutMs,
     );
   }

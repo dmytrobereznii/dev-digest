@@ -22,6 +22,7 @@ import type {
   ReviewRunResponse,
   ReviewRecord,
   ConventionCandidate,
+  BlastRadiusResponse,
   ApiErrorBody as ServerApiErrorBody,
 } from '@devdigest/shared';
 import {
@@ -34,6 +35,7 @@ import {
   ApiRun,
   ApiReview,
   ApiConventionCandidate,
+  ApiBlast,
   ApiErrorBody,
 } from './schemas.js';
 
@@ -50,4 +52,5 @@ export type _Review = Assert<ReviewRecord extends z.input<typeof ApiReview> ? tr
 export type _ConventionCandidate = Assert<
   ConventionCandidate extends z.input<typeof ApiConventionCandidate> ? true : false
 >;
+export type _Blast = Assert<BlastRadiusResponse extends z.input<typeof ApiBlast> ? true : false>;
 export type _ErrorBody = Assert<ServerApiErrorBody extends z.input<typeof ApiErrorBody> ? true : false>;

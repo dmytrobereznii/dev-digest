@@ -12,7 +12,7 @@ the permission boundary.
 | `run_agent_on_pr` | Start a new review of a PR with one agent, wait for it, and return the verdict and findings. The only write; it spends LLM credits. |
 | `get_findings` | Read the verdict and findings of a review that already ran. Starts nothing, costs nothing. |
 | `get_conventions` | Get the coding conventions DevDigest extracted from a repo. |
-| `get_blast_radius` | Not implemented yet — always returns `status: not_implemented`. |
+| `get_blast_radius` | Map what a PR's changed code can affect: its callers, and the endpoints and crons downstream of them. |
 
 ```mermaid
 flowchart LR
@@ -30,8 +30,8 @@ cd mcp && npm ci
 `mcp/node_modules` file target.) The DevDigest API must be running for any
 tool call to succeed — `make dev` from the repo root, first.
 
-Env vars (all optional, all read by `loadConfig`, all default to a loopback
-origin per D12):
+Env vars (all optional, all read by `loadConfig`); the API URL is
+loopback-only per decisions.md D12:
 
 | Var | Default | What it does |
 |---|---|---|

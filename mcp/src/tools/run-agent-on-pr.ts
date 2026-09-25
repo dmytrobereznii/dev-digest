@@ -117,19 +117,18 @@ export function register(server: McpServer, deps: ResolveDeps): void {
           throw new ToolError(messages.e7(agent.name, deps.config.webUrl));
         }
         const pr = await resolvePr(deps, repo, args.pr_number, { sync: true });
-        const prId = pr.id as string; // resolvePr already threw ContractMismatchError on a null id
 
         const ctx: FlowContext = {
           repoId: repo.id,
           repoFullName: sanitizeRepoName(repo.full_name),
-          prId,
+          prId: pr.id,
           prNumber: pr.number,
           prTitle: pr.title,
           agentId: agent.id,
           agentName: agent.name,
         };
 
-        const key = `${prId}:${agent.id}`;
+        const key = `${pr.id}:${agent.id}`;
         const joined = inFlight.has(key);
         let startPromise = inFlight.get(key);
         if (!startPromise) {

@@ -35,3 +35,8 @@ export const CONVENTIONS_MAX = 40;
 
 // ---- D13: a relayed API/run error is redacted, sanitized, then cut here ----
 export const RELAYED_ERROR_MAX = 500;
+
+// ---- spec 10 D10: get_blast_radius re-caps, keeping the route's rank order -
+export const BLAST_MAX_CHANGED_SYMBOLS = 50;
+export const BLAST_MAX_DOWNSTREAM = 20;
+export const BLAST_MAX_CALLERS = 10;

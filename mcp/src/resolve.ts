@@ -20,6 +20,11 @@ export interface ResolveDeps {
   config: Config;
 }
 
+/** `resolvePr`'s return: `ApiPr` narrowed to a non-null `id` — every caller
+ * already 404s (E9, `ContractMismatchError`) on a null id before returning,
+ * so a caller never needs `pr.id as string` again. */
+export type ResolvedPr = ApiPr & { id: string };
+
 const REPO_PATTERN = /^[\w.-]+\/[\w.-]+$/;
 
 /** Strip a `https://github.com/` prefix, a `.git` suffix and trailing
@@ -87,7 +92,7 @@ export async function resolvePr(
   repo: ApiRepo,
   number: number,
   opts: { sync: boolean },
-): Promise<ApiPr> {
+): Promise<ResolvedPr> {
   if (opts.sync) {
     await deps.api.syncPulls(repo.id);
     const pr = await fetchPrOr404(deps, repo.id, number);
@@ -97,7 +102,7 @@ export async function resolvePr(
     if (pr.id == null) {
       throw new ContractMismatchError('GET', `/repos/${repo.id}/pulls/${number}`);
     }
-    return pr;
+    return { ...pr, id: pr.id };
   }
 
   const pr = await fetchPrOr404(deps, repo.id, number);
@@ -107,7 +112,7 @@ export async function resolvePr(
   if (pr.id == null) {
     throw new ContractMismatchError('GET', `/repos/${repo.id}/pulls/${number}`);
   }
-  return pr;
+  return { ...pr, id: pr.id };
 }
 
 /**

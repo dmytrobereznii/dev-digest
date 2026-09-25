@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ApiFinding, ApiReview, ApiRun } from '../src/api/schemas.js';
+import { INPUT_SHAPE } from '../src/tools/get-findings.js';
 import * as messages from '../src/messages.js';
 import { ReviewResultSchema } from '../src/tools/schemas.js';
 import { connectTestServer } from './helpers/connect.js';
@@ -230,9 +231,11 @@ describe('T11 — get_findings run_id and error paths', () => {
     expect(output.next_step).toContain('about a minute');
   });
 
-  it('E16: an unknown run_id', async () => {
+  it('E16: an unknown run_id (syntactically a UUID, but not one of this PR\'s runs)', async () => {
     const { client } = await connectTestServer(defaultRoutes());
-    const result = await client.callTool(callParams({ run_id: 'nope' }));
+    const result = await client.callTool(
+      callParams({ run_id: '00000000-0000-4000-8000-000000009999' }),
+    );
     expect(result.isError).toBe(true);
     expect(text(result)).toContain('Omit run_id');
   });
@@ -253,6 +256,13 @@ describe('T11 — get_findings run_id and error paths', () => {
     const result = await client.callTool(callParams({}));
     expect(result.isError).toBe(true);
     expect(text(result)).toContain('still running');
+  });
+
+  it('run_id is bounded to a UUID shape (unbounded string was echoed raw by E16/E16 agent)', () => {
+    expect(INPUT_SHAPE.run_id.safeParse(SEEDED_RUN_ID).success).toBe(true);
+    expect(INPUT_SHAPE.run_id.safeParse(undefined).success).toBe(true);
+    expect(INPUT_SHAPE.run_id.safeParse('nope').success).toBe(false);
+    expect(INPUT_SHAPE.run_id.safeParse('a'.repeat(5000)).success).toBe(false);
   });
 
   it('E17 none variant: no runs at all', async () => {
