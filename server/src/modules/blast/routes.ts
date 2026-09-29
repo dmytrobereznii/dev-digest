@@ -30,7 +30,23 @@ export default async function blastRoutes(appBase: FastifyInstance) {
     },
     async (req) => {
       const { workspaceId } = await getContext(app.container, req);
-      return service.get(workspaceId, req.params.id);
+      const blast = await service.get(workspaceId, req.params.id);
+      // Evidence the map is a read of the persisted index — no parse, no
+      // import-graph rebuild, no model call happens on this path.
+      req.log.info(
+        {
+          prId: req.params.id,
+          source: blast.index_sha ? 'repo-intel persisted index' : 'no index',
+          indexSha: blast.index_sha,
+          status: blast.status,
+          degradedReason: blast.degraded_reason,
+          stats: blast.stats,
+        },
+        blast.index_sha
+          ? 'blast radius read from the pre-built index'
+          : 'blast radius served without an index (degraded)',
+      );
+      return blast;
     },
   );
 }
