@@ -90,6 +90,22 @@ app.get<{ Params: { id: string } }>('/pulls/:id/blast', blast);
     expect(eps).toContain('GET /pulls/:id/blast');
   });
 
+  it('detects a route whose path sits on the line after the verb call', () => {
+    const src = `
+app.post(
+  '/pulls/:id/review',
+  { schema: { params: IdParams } },
+  handler,
+);
+app.get<{ Params: { id: string } }>(
+  "/pulls/:id/runs",
+  list,
+);
+`;
+    const eps = extractEndpoints(src);
+    expect(eps).toEqual(['POST /pulls/:id/review', 'GET /pulls/:id/runs']);
+  });
+
   it('detects cron expressions and background job kinds', () => {
     const src = `
 cron.schedule('*/5 * * * *', poll);
