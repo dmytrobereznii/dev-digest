@@ -1,7 +1,8 @@
 /* 404 boundary. Reached by `notFound()` from a repo-scoped page whose :repoId
    matches no known repo, and by any unrouted URL. RepoNotFound is the right
    surface for both: a dead link in this app is almost always a stale repo id,
-   and its CTA ("Add repository") is the recovery either way. */
+   and its CTA ("Add repository") is the recovery either way. Nothing imports
+   this file — Next.js renders it by convention. */
 
 /* "use client": these render AppShell and the @devdigest/ui barrel, and that
    barrel reaches recharts — a client-only library that throws
