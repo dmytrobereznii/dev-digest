@@ -83,7 +83,7 @@ standing baseline listed in that skill's *Known exceptions* table.
 
 | Check | Baseline, 2026-09-20 |
 |---|---|
-| `depcruise src` | 0 errors, 15 warnings |
+| `depcruise src` | 0 errors, 18 warnings (8 `no-circular`, 10 `persistence-in-service`; re-measured 2026-10-03) |
 | `"use client"` files | 53 |
 | deep relative imports | 51, against 20 `@/` imports |
 | `export *` barrels | 3 (`app-shell`, `showcase`, `page-shell`) |
