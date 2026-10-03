@@ -8,20 +8,23 @@
 # serves the seeded read-only data the specs exercise — no LLM is called.
 name: e2e web
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/e2e-web.yml'
-  pull_request:
-    paths:
-      - 'client/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/e2e-web.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'client/**'
+  #     - 'server/**'
+  #     - 'e2e/**'
+  #     - '.github/workflows/e2e-web.yml'
+  # pull_request:
+  #   paths:
+  #     - 'client/**'
+  #     - 'server/**'
+  #     - 'e2e/**'
+  #     - '.github/workflows/e2e-web.yml'
 
 permissions:
   contents: read

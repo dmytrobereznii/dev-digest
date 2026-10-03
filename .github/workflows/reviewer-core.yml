@@ -6,18 +6,21 @@
 # aliases @devdigest/shared to it at type-check time.
 name: reviewer-core
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'reviewer-core/**'
-      - 'server/src/vendor/shared/**'
-      - '.github/workflows/reviewer-core.yml'
-  pull_request:
-    paths:
-      - 'reviewer-core/**'
-      - 'server/src/vendor/shared/**'
-      - '.github/workflows/reviewer-core.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'reviewer-core/**'
+  #     - 'server/src/vendor/shared/**'
+  #     - '.github/workflows/reviewer-core.yml'
+  # pull_request:
+  #   paths:
+  #     - 'reviewer-core/**'
+  #     - 'server/src/vendor/shared/**'
+  #     - '.github/workflows/reviewer-core.yml'
 
 permissions:
   contents: read

@@ -136,7 +136,8 @@ cd ../client && pnpm install && pnpm dev               # web on :3000
 ## Testing & CI
 
 One test suite per package, each gated by its own GitHub Actions workflow with a
-path filter — full strategy in **[`TESTING.md`](TESTING.md)**.
+path filter — full strategy in **[`TESTING.md`](TESTING.md)**. In this fork the
+workflows are manual-only (`workflow_dispatch`); the suites run locally.
 
 | Suite | Workflow | Needs Docker |
 |-------|----------|--------------|

@@ -4,16 +4,19 @@
 # in e2e-web.yml.
 name: client
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - '.github/workflows/client.yml'
-  pull_request:
-    paths:
-      - 'client/**'
-      - '.github/workflows/client.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'client/**'
+  #     - '.github/workflows/client.yml'
+  # pull_request:
+  #   paths:
+  #     - 'client/**'
+  #     - '.github/workflows/client.yml'
 
 permissions:
   contents: read

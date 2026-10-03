@@ -8,20 +8,23 @@
 # D16) guards it.
 name: mcp
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'mcp/**'
-      - 'server/src/vendor/shared/**'
-      - '.mcp.json'
-      - '.github/workflows/mcp.yml'
-  pull_request:
-    paths:
-      - 'mcp/**'
-      - 'server/src/vendor/shared/**'
-      - '.mcp.json'
-      - '.github/workflows/mcp.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'mcp/**'
+  #     - 'server/src/vendor/shared/**'
+  #     - '.mcp.json'
+  #     - '.github/workflows/mcp.yml'
+  # pull_request:
+  #   paths:
+  #     - 'mcp/**'
+  #     - 'server/src/vendor/shared/**'
+  #     - '.mcp.json'
+  #     - '.github/workflows/mcp.yml'
 
 permissions:
   contents: read

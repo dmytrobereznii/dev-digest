@@ -5,6 +5,11 @@ as **one suite per package**, each with its own CI workflow, runner, and path
 filter. A package's suite runs only when that package (or a package it depends
 on at type-check time) changes.
 
+> **In this fork the workflows are manual-only.** Every suite runs locally
+> (`make check`, `make e2e`); each workflow's `push` / `pull_request` triggers
+> are commented out and only `workflow_dispatch` is left. Uncomment the block
+> in `.github/workflows/*.yml` to get automatic runs back.
+
 ## Philosophy — typological, not exhaustive
 
 We do **not** chase line coverage. Each suite covers the *kinds* of things that
@@ -101,6 +106,7 @@ cd e2e && npm install && npm test
   only `--url` / `--text` / `find` locators — never the AI `chat` command.
 - **CI is path-filtered per package.** Cross-package source aliases are encoded
   in each workflow's `paths:` (e.g. `reviewer-core/**` triggers `server-unit`
-  because the server type-checks against `../reviewer-core/src`).
+  because the server type-checks against `../reviewer-core/src`). The filters
+  are kept, commented out, while the workflows are manual-only.
 - **`server/clones/**` is runtime data** (git-ignored) and never collected by
   any suite.
