@@ -6,7 +6,6 @@
   "listLabel": "Documents",
   "tokens": "{count} tokens",
   "usedBy": "{count, plural, one {Used by # agent} other {Used by # agents}}",
-  "selectPrompt": "Select a document to preview it.",
   "loadError": "Couldn’t load the project documents",
   "contentError": "Couldn’t load this document",
   "contentLoading": "Loading document…",

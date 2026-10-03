@@ -73,32 +73,35 @@ describe("ProjectContextView", () => {
       "listitem",
     );
     expect(rows).toHaveLength(2);
-    expect(within(rows[0]!).getByRole("button", { name: /docs\/guide\.md/ })).toBeTruthy();
+    // File name on the first line, directory beneath, full path in the title.
+    expect(within(rows[0]!).getByTitle("docs/guide.md")).toBeTruthy();
+    expect(within(rows[0]!).getByText("guide.md")).toBeTruthy();
+    expect(within(rows[0]!).getByText("docs")).toBeTruthy();
     expect(within(rows[0]!).getByText(context.type.docs)).toBeTruthy();
-    expect(within(rows[1]!).getByRole("button", { name: /specs\/auth\.md/ })).toBeTruthy();
+    expect(within(rows[1]!).getByTitle("specs/auth.md")).toBeTruthy();
+    expect(within(rows[1]!).getByText("auth.md")).toBeTruthy();
+    expect(within(rows[1]!).getByText("specs")).toBeTruthy();
     expect(within(rows[1]!).getByText(context.type.specs)).toBeTruthy();
     expect(screen.getByRole("button", { name: context.refresh })).toBeTruthy();
+    expect(screen.getByText("docs/**/*.md")).toBeTruthy();
   });
 
-  it("selecting a document shows its content", () => {
+  it("opens with the first document selected, and a click changes it", () => {
     renderView();
-    expect(screen.getByText(context.selectPrompt)).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: /docs\/guide\.md/ }));
-
     expect(screen.getByRole("heading", { name: "Guide heading" })).toBeTruthy();
     expect(screen.getByText("Body text")).toBeTruthy();
-    expect(screen.queryByText(context.selectPrompt)).toBeNull();
+
+    fireEvent.click(screen.getByTitle("specs/auth.md"));
+
+    expect(screen.getByText("Auth spec body")).toBeTruthy();
+    expect(screen.queryByText("Body text")).toBeNull();
   });
 
   it("shows Used by N agents for the selected document", () => {
     renderView();
-    expect(screen.queryByText(/Used by/)).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: /docs\/guide\.md/ }));
     expect(screen.getByText("Used by 3 agents")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /specs\/auth\.md/ }));
+    fireEvent.click(screen.getByTitle("specs/auth.md"));
     expect(screen.getByText("Used by 1 agent")).toBeTruthy();
   });
 
