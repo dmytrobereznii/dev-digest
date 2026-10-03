@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { FsDocumentReader } from '../../../src/adapters/docs/index.js';
+import { FsDocumentReader, MAX_DOCUMENT_BYTES } from '../../../src/adapters/docs/index.js';
 import { EXCLUDED_DIRS } from '../../../src/modules/repo-intel/constants.js';
 
 const PATTERN = '**/{specs,docs,insights}/**/*.md';
@@ -81,6 +81,22 @@ describe('FsDocumentReader', () => {
     await symlink(join(outside, 'dir'), join(root, 'docs/linked-dir'));
 
     expect(await reader.listPaths(root)).toEqual(['docs/real.md']);
+  });
+
+  it('does not list a document larger than the size cap', async () => {
+    await put(root, 'docs/at-cap.md', 'a'.repeat(MAX_DOCUMENT_BYTES));
+    await put(root, 'docs/over-cap.md', 'a'.repeat(MAX_DOCUMENT_BYTES + 1));
+
+    expect(await reader.listPaths(root)).toEqual(['docs/at-cap.md']);
+  });
+
+  it('read rejects a document larger than the size cap', async () => {
+    const atCap = 'b'.repeat(MAX_DOCUMENT_BYTES);
+    await put(root, 'docs/at-cap.md', atCap);
+    await put(root, 'docs/over-cap.md', 'b'.repeat(MAX_DOCUMENT_BYTES + 1));
+
+    expect(await reader.read(root, 'docs/at-cap.md')).toBe(atCap);
+    await expect(reader.read(root, 'docs/over-cap.md')).rejects.toThrow(/cap/);
   });
 
   it('read rejects a path that resolves outside the root', async () => {

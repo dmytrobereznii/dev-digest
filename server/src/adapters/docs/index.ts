@@ -6,7 +6,7 @@
  * The walk never follows a symlink, skips the indexer's excluded directories,
  * and `read` repeats the realpath containment of `GitClient.readFile`.
  */
-import { readdir, readFile, realpath } from 'node:fs/promises';
+import { readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { join, sep } from 'node:path';
 import picomatch from 'picomatch';
 import { EXCLUDED_DIRS } from '../../modules/repo-intel/constants.js';
@@ -17,6 +17,9 @@ export interface DocumentReader {
   /** Content of a repo-relative path; throws if it resolves outside `root`. */
   read(root: string, path: string): Promise<string>;
 }
+
+/** Largest document `listPaths` lists and `read` returns: 1 MiB. */
+export const MAX_DOCUMENT_BYTES = 1_048_576;
 
 const EXCLUDED = new Set<string>(EXCLUDED_DIRS);
 
@@ -36,7 +39,8 @@ export class FsDocumentReader implements DocumentReader {
           if (EXCLUDED.has(e.name)) continue;
           await walk(join(dir, e.name), relPath);
         } else if (e.isFile() && isMatch(relPath)) {
-          out.push(relPath);
+          const { size } = await stat(join(dir, e.name));
+          if (size <= MAX_DOCUMENT_BYTES) out.push(relPath);
         }
       }
     };
@@ -49,6 +53,10 @@ export class FsDocumentReader implements DocumentReader {
     const [realBase, realTarget] = await Promise.all([realpath(root), realpath(target)]);
     if (realTarget !== realBase && !realTarget.startsWith(realBase + sep)) {
       throw new Error(`read: "${path}" resolves outside the root`);
+    }
+    const { size } = await stat(realTarget);
+    if (size > MAX_DOCUMENT_BYTES) {
+      throw new Error(`read: "${path}" is ${size} bytes, over the ${MAX_DOCUMENT_BYTES}-byte cap`);
     }
     return readFile(target, 'utf8');
   }
