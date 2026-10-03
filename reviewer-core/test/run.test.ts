@@ -136,3 +136,97 @@ describe('reviewPullRequest (engine)', () => {
     expect(seen.every((s) => s === 'sess-abc')).toBe(true);
   });
 });
+
+describe('reviewPullRequest — project documents', () => {
+  const twoFileDiff = [
+    'diff --git a/src/a.ts b/src/a.ts',
+    '--- a/src/a.ts',
+    '+++ b/src/a.ts',
+    '@@ -1,1 +1,2 @@',
+    ' a',
+    '+a2',
+    'diff --git a/src/b.ts b/src/b.ts',
+    '--- a/src/b.ts',
+    '+++ b/src/b.ts',
+    '@@ -1,1 +1,2 @@',
+    ' b',
+    '+b2',
+  ].join('\n');
+  const empty = { verdict: 'approve', summary: 'ok', score: 100, findings: [] };
+  const specs = [
+    { path: 'docs/architecture.md', content: 'ARCH' },
+    { path: 'specs/auth.md', content: 'AUTH' },
+  ];
+
+  function recorder() {
+    const calls: { content: string }[] = [];
+    const llm: LLMProvider = {
+      id: 'openrouter',
+      async completeStructured<T>(req): Promise<StructuredResult<T>> {
+        calls.push({ content: req.messages[1]!.content });
+        return {
+          data: empty as unknown as T,
+          model: req.model,
+          tokensIn: 0,
+          tokensOut: 0,
+          costUsd: 0,
+          raw: '',
+          attempts: 1,
+        };
+      },
+      async listModels() {
+        return [];
+      },
+      async complete() {
+        throw new Error('not used');
+      },
+      async embed() {
+        return [];
+      },
+    };
+    return { llm, calls };
+  }
+  const sectionOf = (user: string): string => {
+    const start = user.indexOf('## Project context');
+    return user.slice(start, user.indexOf('\n\n## ', start + 1));
+  };
+
+  it('map-reduce: every per-file prompt carries the same Project context section', async () => {
+    const diff = await new MockGitClient({ diff: twoFileDiff }).diff();
+    const { llm, calls } = recorder();
+    const outcome = await reviewPullRequest({
+      systemPrompt: 's',
+      model: 'm',
+      diff,
+      llm,
+      strategy: 'map-reduce',
+      specs,
+    });
+    expect(outcome.mode).toBe('map-reduce');
+    expect(calls).toHaveLength(2);
+    const sections = calls.map((c) => sectionOf(c.content));
+    expect(sections[0]).toContain('<untrusted source="docs/architecture.md">');
+    expect(sections[0]).toContain('<untrusted source="specs/auth.md">');
+    expect(sections[1]).toBe(sections[0]);
+    // The per-file diffs differ, so the equality above is not trivial.
+    expect(calls[0]!.content).not.toBe(calls[1]!.content);
+  });
+
+  it('documents do not change the number of LLM calls', async () => {
+    const diff = await new MockGitClient({ diff: twoFileDiff }).diff();
+    for (const strategy of ['single-pass', 'map-reduce'] as const) {
+      const without = recorder();
+      await reviewPullRequest({ systemPrompt: 's', model: 'm', diff, llm: without.llm, strategy });
+      const withDocs = recorder();
+      await reviewPullRequest({
+        systemPrompt: 's',
+        model: 'm',
+        diff,
+        llm: withDocs.llm,
+        strategy,
+        specs,
+      });
+      expect(withDocs.calls.length).toBe(without.calls.length);
+    }
+  });
+});
