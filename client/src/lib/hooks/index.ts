@@ -9,4 +9,3 @@ export * from "./intent";
 export * from "./trace";
 export * from "./repo-intel";
 export * from "./conventions";
-export * from "./project-context";

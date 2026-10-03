@@ -1,5 +1,5 @@
 /* hooks/core.ts — typed React Query hooks over the F1 API (contracts):
-   settings, secrets, repos, pulls and pulls. Scaffolding screens use
+   settings, secrets, repos and pulls. Scaffolding screens use
    these; feature-domain hooks live in the sibling files (agents/reviews/trace/…)
    and are re-exported alongside these from hooks/index.ts. */
 "use client";

@@ -59,7 +59,7 @@ function safePath(path: string): string {
 
 function wrapWithLabel(safeSource: string, content: string): string {
   // strip any attempt to close our own delimiter
-  const safe = content.replaceAll('</untrusted>', '<\\/untrusted>');
+  const safe = content.replace(/<\/untrusted\s*>/gi, '<\\/untrusted>');
   return `<untrusted source="${safeSource}">\n${safe}\n</untrusted>`;
 }
 
@@ -208,6 +208,8 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
             const section = s.trusted
               ? `## ${heading}\n${s.body}`
               : `## ${heading}\n${wrapUntrusted(`skill:${heading}`, s.body)}`;
+            // The heading and `- <path>` line format are also written by SPEC_LIST_HEADING /
+            // serializeSpecList in client/src/components/project-context/helpers.ts; change together.
             return s.specPaths && s.specPaths.length > 0
               ? `${section}\n\n## Project specifications\n${s.specPaths.map((p) => `- ${safePath(p)}`).join('\n')}`
               : section;

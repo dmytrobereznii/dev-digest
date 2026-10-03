@@ -7,7 +7,6 @@ import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
 import { isTrustedSource, taskLine } from './helpers.js';
-import type { RunDocuments } from '../project-context/service.js';
 import { loadDiff } from './diff-loader.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
@@ -214,7 +213,7 @@ export class ReviewRunExecutor {
       // Project Context — documents attached to the agent and its enabled
       // skills for THIS repository. Best-effort: a failed lookup injects
       // nothing and never fails the run.
-      let ctx: RunDocuments | undefined;
+      let ctx: Awaited<ReturnType<Container['projectContext']['resolveForRun']>> | undefined;
       try {
         ctx = await this.container.projectContext.resolveForRun(
           agent.id,
