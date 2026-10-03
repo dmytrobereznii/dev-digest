@@ -61,15 +61,51 @@ export class ProjectContextService {
     }
     if (candidates.length === 0) return { plan: { injected: [], skipped: [] }, documents: [], skillPaths: new Map() };
 
+    const { plan, contents } = await this.readAndPlan(candidates, repo.clonePath);
+    return {
+      plan,
+      documents: plan.injected.map((d) => ({ path: d.path, content: contents.get(d.path)! })),
+      skillPaths: new Map(
+        skillIds
+          .map((id) => [id, skillSpecPaths(plan, id)] as const)
+          .filter(([, paths]) => paths.length > 0),
+      ),
+    };
+  }
+
+  /**
+   * Documents a repository's agents use: every distinct path `usage()` counts
+   * (direct attachments plus enabled linked skills), sorted by code unit, then
+   * the same read-and-budget step a run uses. Throws if the lookup itself fails.
+   */
+  async resolveForRepo(repo: { id: string; clonePath: string | null }): Promise<RunDocuments> {
+    const paths = [...new Set((await this.repo.usage(repo.id)).map((u) => u.path))].sort();
+    if (paths.length === 0) return { plan: { injected: [], skipped: [] }, documents: [], skillPaths: new Map() };
+    const { plan, contents } = await this.readAndPlan(
+      paths.map((path) => ({ path, source: 'usage' })),
+      repo.clonePath,
+    );
+    return {
+      plan,
+      documents: plan.injected.map((d) => ({ path: d.path, content: contents.get(d.path)! })),
+      skillPaths: new Map(),
+    };
+  }
+
+  /** Read each candidate from the clone and plan the injection within the budget. */
+  private async readAndPlan(
+    candidates: InjectionCandidate[],
+    clonePath: string | null,
+  ): Promise<{ plan: InjectionPlan; contents: Map<string, string> }> {
     const contents = new Map<string, string>();
     let listed: string[] = [];
-    if (repo.clonePath) {
-      listed = await this.listedPaths(repo.clonePath);
+    if (clonePath) {
+      listed = await this.listedPaths(clonePath);
       const unique = [...new Set(candidates.map((c) => c.path))];
       for (const path of unique) {
         if (!listed.includes(path)) continue;
         try {
-          contents.set(path, await this.reader.read(repo.clonePath, path));
+          contents.set(path, await this.reader.read(clonePath, path));
         } catch {
           // unreadable → missing
         }
@@ -81,15 +117,7 @@ export class ProjectContextService {
       (p) => (contents.has(p) ? this.tokenizer.count(contents.get(p)!) : null),
       this.budget,
     );
-    return {
-      plan,
-      documents: plan.injected.map((d) => ({ path: d.path, content: contents.get(d.path)! })),
-      skillPaths: new Map(
-        skillIds
-          .map((id) => [id, skillSpecPaths(plan, id)] as const)
-          .filter(([, paths]) => paths.length > 0),
-      ),
-    };
+    return { plan, contents };
   }
 
   /** Clone root of a repository; 404 for an unknown repo, null when not cloned. */
