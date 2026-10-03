@@ -47,6 +47,12 @@ const EnvSchema = z.object({
     (v) => (v === '' ? undefined : v),
     z.coerce.number().int().positive().default(8000),
   ),
+  // Global per-minute request limit. Empty (as shipped in .env.example) falls
+  // through to 120. The e2e stack raises it: one browser is one client.
+  API_RATE_LIMIT_MAX: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().positive().default(120),
+  ),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   // `.env` (and .env.example) ship `LOG_LEVEL=` empty; an empty string is not a
@@ -84,6 +90,8 @@ export type AppConfig = {
   projectContextPattern: string;
   /** Token budget for documents injected into one review prompt. */
   projectContextBudget: number;
+  /** Global rate limit, requests per minute per client. Default 120. */
+  rateLimitMax: number;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -105,5 +113,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
     projectContextPattern: parsed.PROJECT_CONTEXT_GLOB,
     projectContextBudget: parsed.PROJECT_CONTEXT_BUDGET_TOKENS,
+    rateLimitMax: parsed.API_RATE_LIMIT_MAX,
   };
 }
