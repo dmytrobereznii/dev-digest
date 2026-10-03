@@ -110,7 +110,12 @@ Each package has a `.context/` directory:
   its implementation plan beside it
 - `.context/insights/` — findings worth keeping, **committed and shared**
 
-That last one is deliberately distinct from Claude Code's auto-memory, which is
+The repo-wide `.context/` also holds `retros/ledger.md`: one row per
+multi-agent run, written by the `workflow-reviewer` skill. Insights record
+what is true about the code; the ledger records whether the agents stayed on
+the task, and what it cost.
+
+`insights/` is deliberately distinct from Claude Code's auto-memory, which is
 machine-local and private. If a finding belongs to the team, it goes in
 `insights/INSIGHTS.md` — one append-only file per package, under seven fixed
 sections. The `engineering-insights` skill owns both halves of that loop.

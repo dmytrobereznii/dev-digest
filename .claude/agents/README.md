@@ -31,6 +31,7 @@ The parent runs the agents in this order; no agent starts the next one.
 | 3. How and in what order | implementation-planner | `<same name>.plan.md`: tasks `T<n> → AC-n → test`, Traceability table |
 | 4. Build | implementer, test-writer | code and tests; the parent commits and fills the Commit column |
 | 5. Final check | plan-verifier (read-only) | a status per `AC-n` and the AC → task → test → commit matrix |
+| 6. Retro | the parent, with the `workflow-reviewer` skill | asked vs did per agent, at most three actions, one row in `.context/retros/ledger.md` |
 
 - **Questions.** A subagent cannot ask the user anything. spec-creator returns
   `NEEDS_INPUT` with at most five blocking questions; the parent asks them and
@@ -56,6 +57,9 @@ The parent runs the agents in this order; no agent starts the next one.
   need. The rest load CLAUDE.md.
 - Agents that load CLAUDE.md opt out of the session-protocol wrap-up; the
   parent owns `/engineering-insights`.
+- A change to an agent starts from evidence: an action in
+  `.context/retros/ledger.md`, or a `/workflow-reviewer --last 10 --type <agent>`
+  review of what it worked on in its recent runs.
 - Status: written 2026-09-22 and not yet tried on real delegation prompts
   (checklist in the authoring rules, §10). spec-creator was added and planner
   was split into implementation-planner on 2026-10-03; neither has run yet.

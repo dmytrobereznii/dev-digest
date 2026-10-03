@@ -185,9 +185,12 @@ agent for fact-finding, 2–4 for comparisons, more only for broad research.
 
 **Measure, don't guess.** `/usage` gives session cost, but its cache line covers
 the main conversation only; the plan-tier view attributes usage to subagents.
-`/context` shows what is filling the window. OpenTelemetry
-`claude_code.token.usage` / `claude_code.cost.usage` carry `agent.name` and
-`query_source=subagent`, which is the only per-agent breakdown.
+`/context` shows what is filling the window. For a per-agent breakdown, run
+the `workflow-reviewer` skill: it reads each subagent's transcript from disk
+and reports requests, cache, context size and tool output per agent, with no
+setup. OpenTelemetry `claude_code.token.usage` / `claude_code.cost.usage`
+carry `agent.name` and `query_source=subagent`, and are the only source of
+cost in dollars per agent.
 
 ## 7. DevDigest-specific rules
 
