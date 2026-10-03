@@ -23,6 +23,8 @@ export const NAV: NavGroup[] = [
     section: "WORKSPACE",
     items: [
       { key: "pulls", label: "Pull Requests", icon: "GitPullRequest", href: "/repos/:repoId/pulls", gKey: "p" },
+      // No gKey: the design's nav entry carries no shortcut.
+      { key: "context", label: "Project Context", icon: "Folder", href: "/repos/:repoId/context" },
     ],
   },
   // Skills, Agents and Conventions are their own section, per the design's

@@ -1,24 +1,27 @@
 {
   "title": "Project Context",
-  "chunks": "{count} chunks",
-  "reindex": "Re-index",
-  "indexing": "Indexing…",
-  "resync": "Resync",
-  "resyncing": "Resyncing…",
-  "indexStatus": "Index status: {status}",
-  "loadError": "Couldn’t load specs",
-  "kb": "{kb}kb",
+  "crumbRepoFallback": "Repository",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing…",
+  "listLabel": "Documents",
+  "tokens": "{count} tokens",
+  "usedBy": "{count, plural, one {Used by # agent} other {Used by # agents}}",
+  "selectPrompt": "Select a document to preview it.",
+  "loadError": "Couldn’t load the project documents",
+  "contentError": "Couldn’t load this document",
+  "contentLoading": "Loading document…",
   "empty": {
-    "title": "No spec files yet",
-    "body": "Drop your PRDs, tech specs, and acceptance criteria under .devdigest/specs/. Every agent and the PR brief read them as grounding context."
+    "title": "No project documents found",
+    "body": "No file in this repository matches the search pattern {pattern}. Add documents that match it, then refresh."
   },
-  "mode": {
-    "preview": "preview",
-    "edit": "edit"
+  "notCloned": {
+    "title": "Repository not cloned",
+    "body": "This repository has no local clone, so there are no documents to list. Clone it first, then refresh."
   },
-  "editor": {
-    "loadError": "Couldn’t load spec",
-    "save": "Save",
-    "saving": "Saving…"
+  "type": {
+    "specs": "spec",
+    "docs": "doc",
+    "insights": "insight",
+    "other": "other"
   }
 }
