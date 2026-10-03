@@ -498,6 +498,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         raw_output: '',
         memory_pulled: [],
         specs_read: [],
+        specs_skipped: [],
         log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
       },
     });

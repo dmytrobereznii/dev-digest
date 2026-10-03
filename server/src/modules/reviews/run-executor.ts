@@ -317,6 +317,7 @@ export class ReviewRunExecutor {
         raw_output: outcome.raw,
         memory_pulled: [],
         specs_read: [],
+        specs_skipped: [],
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),
@@ -490,6 +491,7 @@ export class ReviewRunExecutor {
       raw_output: '',
       memory_pulled: [],
       specs_read: [],
+      specs_skipped: [],
       log: this.container.runBus.buffer(runId).map((e) => ({ t: e.t, kind: e.kind, msg: e.msg })),
     };
   }
