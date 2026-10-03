@@ -182,6 +182,7 @@ export class Container {
       this.documents,
       this.tokenizer,
       this.config.projectContextPattern,
+      this.config.projectContextBudget,
     );
     return this._projectContext;
   }

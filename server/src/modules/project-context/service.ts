@@ -8,8 +8,23 @@ import type { DocumentReader } from '../../adapters/docs/index.js';
 import type { Tokenizer } from '../../adapters/tokenizer/index.js';
 import { NotFoundError, ValidationError } from '../../platform/errors.js';
 import type { ContextOwner } from './constants.js';
-import { countAgentsByPath, documentType } from './helpers.js';
+import {
+  countAgentsByPath,
+  documentType,
+  planInjection,
+  skillSpecPaths,
+  type InjectionCandidate,
+  type InjectionPlan,
+} from './helpers.js';
 import type { ProjectContextRepository } from './repository.js';
+
+/** What a run injects: the plan (read/skipped) plus the document texts in prompt order. */
+export type RunDocuments = {
+  plan: InjectionPlan;
+  documents: Array<{ path: string; content: string }>;
+  /** Injected paths attached to each skill, by skill id (only non-empty entries). */
+  skillPaths: Map<string, string[]>;
+};
 
 /**
  * Project Context service: lists documents from a repository's working tree,
@@ -22,7 +37,60 @@ export class ProjectContextService {
     private readonly reader: DocumentReader,
     private readonly tokenizer: Tokenizer,
     private readonly pattern: string,
+    private readonly budget: number = Number.POSITIVE_INFINITY,
   ) {}
+
+  /**
+   * Documents for one run: the agent's attachments, then each enabled linked
+   * skill's in link order, for the PR's repository only, read from its clone.
+   * Throws if the lookup itself fails — the caller injects nothing then.
+   */
+  async resolveForRun(
+    agentId: string,
+    skillIds: string[],
+    repo: { id: string; clonePath: string | null },
+  ): Promise<RunDocuments> {
+    const candidates: InjectionCandidate[] = [];
+    for (const path of await this.repo.attachedPaths('agents', agentId, repo.id)) {
+      candidates.push({ path, source: 'agent' });
+    }
+    for (const skillId of skillIds) {
+      for (const path of await this.repo.attachedPaths('skills', skillId, repo.id)) {
+        candidates.push({ path, source: skillId });
+      }
+    }
+    if (candidates.length === 0) return { plan: { injected: [], skipped: [] }, documents: [], skillPaths: new Map() };
+
+    const contents = new Map<string, string>();
+    let listed: string[] = [];
+    if (repo.clonePath) {
+      listed = await this.listedPaths(repo.clonePath);
+      const unique = [...new Set(candidates.map((c) => c.path))];
+      for (const path of unique) {
+        if (!listed.includes(path)) continue;
+        try {
+          contents.set(path, await this.reader.read(repo.clonePath, path));
+        } catch {
+          // unreadable → missing
+        }
+      }
+    }
+    const plan = planInjection(
+      candidates,
+      listed,
+      (p) => (contents.has(p) ? this.tokenizer.count(contents.get(p)!) : null),
+      this.budget,
+    );
+    return {
+      plan,
+      documents: plan.injected.map((d) => ({ path: d.path, content: contents.get(d.path)! })),
+      skillPaths: new Map(
+        skillIds
+          .map((id) => [id, skillSpecPaths(plan, id)] as const)
+          .filter(([, paths]) => paths.length > 0),
+      ),
+    };
+  }
 
   /** Clone root of a repository; 404 for an unknown repo, null when not cloned. */
   private async root(workspaceId: string, repoId: string): Promise<string | null> {
