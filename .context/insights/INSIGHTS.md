@@ -89,6 +89,13 @@ reproduces the `agents` cycle the rule's own comment already grandfathers
 agents-identical shape was kept. A new module mirroring `agents/` will add a
 17th; that is expected, not a regression.
 
+**Updated 2026-10-03 (L05 project context):** the `depcruise` baseline is
+**0 errors / 18 warnings**: 8 `no-circular` and 10
+`persistence-in-service`. It was already 18 at `2c6c3e0`, before the L05
+build, and the build added none, so the 16 above was stale by then. Check
+a slice by rule, not by total:
+`cd server && pnpm exec depcruise src | grep -oE 'warn [a-z-]+' | sort | uniq -c`
+
 ### 2026-09-16 — Lesson features are built from scratch, never recovered from history
 
 **What:** Every README lesson feature (L01–L08) is implemented from the
@@ -177,6 +184,15 @@ that way.
   `.context/docs/custom-agents.md` §7.
 
 ## Recurring Errors & Fixes
+
+- **2026-10-03** — "The UI is down again" with the API still answering on
+  :3001 means the web server was started as a Claude session background
+  task (`pnpm dev` in `client/`) and went away when that session ended:
+  seven such starts since 2026-09-22, none survived. The API outlives them
+  only because it is an orphaned `pnpm dev` no session owns. Start the web
+  server detached and record it, so it survives and `make stop` reaps it:
+  `cd client && nohup pnpm dev >/tmp/web-dev.log 2>&1 </dev/null &` then
+  append its PID to `.dev-pids`. Never free :3000 with `kill $(lsof -ti)`.
 
 - **2026-10-03** — `(eval):1: ==== not found` from a Bash call means zsh
   expanded a bare word starting with `=` as a command path. The whole command
