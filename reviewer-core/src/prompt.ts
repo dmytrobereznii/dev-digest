@@ -46,7 +46,7 @@ function safeLabel(label: string): string {
 }
 
 function stripLabelChars(label: string): string {
-  return label.replace(/[<>"\r\n]/g, '');
+  return label.replace(/[\p{Cc}\p{Zl}\p{Zp}<>"]/gu, '');
 }
 
 /**

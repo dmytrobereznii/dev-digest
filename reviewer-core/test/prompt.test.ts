@@ -380,6 +380,39 @@ describe('assemblePrompt — ## Project context (path-labelled documents)', () =
     expect(assembly.skills!.match(/## Project specifications/g)).toHaveLength(1);
   });
 
+  it('strips control characters and Unicode line separators from a document path', () => {
+    // Tab, NEL (U+0085), LINE SEPARATOR (U+2028), PARAGRAPH SEPARATOR (U+2029), BEL.
+    const hostile = 'docs/a\tb\u0085c d e\u0007f.md';
+    const { assembly } = assemblePrompt({
+      system: 'sys',
+      diff: 'DIFF',
+      specs: [
+        { path: hostile, content: 'BODY' },
+        { path: 'docs/clean-name_1.md', content: 'OK' },
+      ],
+      skills: [
+        {
+          name: 'rubric',
+          body: 'Cap findings.',
+          trusted: true,
+          specPaths: [hostile, 'docs/clean-name_1.md'],
+        },
+      ],
+    });
+    // Block label: separators removed, the rest of the path intact.
+    expect(assembly.specs).toContain('<untrusted source="docs/abcdef.md">\nBODY\n</untrusted>');
+    // Skill list: one line per path, no forged extra line.
+    expect(assembly.skills).toContain(
+      '## Project specifications\n- docs/abcdef.md\n- docs/clean-name_1.md',
+    );
+    // Nothing left that could start a new line or act as a control character.
+    const forbidden = new RegExp('[\\t\\u0007\\u0085\\u2028\\u2029]');
+    expect(assembly.specs).not.toMatch(forbidden);
+    expect(assembly.skills).not.toMatch(forbidden);
+    // A path with none of them is unchanged.
+    expect(assembly.specs).toContain('<untrusted source="docs/clean-name_1.md">\nOK\n</untrusted>');
+  });
+
   it('Project context sits after Repo skeleton and before Callers of changed symbols', () => {
     const user = userOf({
       system: 'sys',
