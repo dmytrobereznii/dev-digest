@@ -83,7 +83,7 @@ export class ReviewService {
    * server restart) where signalling alone would do nothing.
    */
   async cancelRun(runId: string): Promise<void> {
-    this.publish(runId, 'info', 'Cancellation requested — stopping…');
+    this.publish(runId, 'info', `Cancellation requested for run ${runId} — stopping…`);
     this.container.runBus.cancel(runId);
     await this.repo.cancelRunIfRunning(runId);
     this.container.runBus.complete(runId);
