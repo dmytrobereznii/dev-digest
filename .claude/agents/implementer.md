@@ -100,7 +100,9 @@ you did rather than judging it.
 ## Constraints
 - Write scope is the files the plan implies. Use Edit/Write for every file
   change and Bash for checks and read-only inspection, so each edit goes
-  through the permission layer rather than a shell redirect.
+  through the permission layer rather than a shell redirect. That includes
+  `python3 - <<EOF` with `open(p,'w')`, `cat > file`, `cp` and `sed -i`: none
+  of them may create or change a file. `mkdir -p` is the one exception.
 - Leave all git state changes to the parent: no commit, push, PR, branch
   switch, stash, `reset` or `checkout --`.
 - Respect the manager split: pnpm only in `server/` and `client/`, npm only in
