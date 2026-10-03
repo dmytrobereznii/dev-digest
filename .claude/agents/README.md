@@ -10,14 +10,44 @@ none can spawn further agents. Authoring rules:
 | Agent | Does | Model | Tools | Writes | Skills reused |
 |---|---|---|---|---|---|
 | [researcher](researcher.md) | Answers a question from code and primary sources; cited, dated, verified vs. inferred | sonnet | Read, Grep, Glob, WebFetch, WebSearch, Bash (read-only) | nothing | reads SKILL.md of the topic's skill |
-| [planner](planner.md) | Writes one implementation spec, `NN-kebab-slug.md` | opus, effort high | Read, Grep, Glob, Write, Edit, Bash (read-only), Skill, WebFetch, WebSearch | `.context/specs/`, `<pkg>/.context/specs/` | onion-architecture, frontend-architecture, design-reference, postgresql-table-design, drizzle-orm-patterns, dev-env |
+| [spec-creator](spec-creator.md) | Writes one feature spec (the what and the why): blocking questions first, EARS criteria `AC-n`, design gap analysis, `[NEEDS CLARIFICATION]` instead of assumptions | opus, effort high | Read, Grep, Glob, Write, Edit, Bash (read-only), Skill, WebFetch, AskUserQuestion (main-session runs only), `devdigest` MCP read tools | one `YYYY-MM-DD-feature-slug.md` in `.context/specs/` or `<pkg>/.context/specs/` | design-reference |
+| [implementation-planner](implementation-planner.md) | Reviews an approved spec, then writes its plan (the how and the order): every task cites an `AC-n` and a test; returns the single-agent or multi-agent question | opus, effort high | Read, Grep, Glob, Write, Edit, Bash (read-only), Skill, WebFetch, WebSearch | one `.plan.md` beside its spec | onion-architecture, frontend-architecture, design-reference, postgresql-table-design, drizzle-orm-patterns, dev-env |
 | [implementer](implementer.md) | Implements a plan/spec, runs the `make` checks, reports deviations | sonnet | Read, Edit, Write, Bash, Grep, Glob, Skill | source code (no migrations, lockfiles, `server/clones/**`) | dev-env (preloaded); architecture and stack skills on demand |
 | [brainstormer](brainstormer.md) | Compares options before implementation, recommends one | opus | Read, Grep, Glob, WebSearch, WebFetch, Skill | nothing | design-reference, onion-/frontend-architecture, stack skills on demand |
 | [test-writer](test-writer.md) | Writes and runs tests; reports source bugs instead of fixing them | sonnet | Read, Grep, Glob, Write, Edit, Bash, Skill | test files, `server/test/helpers/**`, `e2e/specs/*.flow.json`, additive `mocks.ts` | dev-env, react-testing-library |
 | [architecture-reviewer](architecture-reviewer.md) | Layer boundaries, coupling, abstraction leaks; findings ≥ 80 confidence | sonnet | Read, Grep, Glob, Bash (read-only) | nothing | onion-architecture, frontend-architecture (read directly) |
 | [security-reviewer](security-reviewer.md) | Exploitable issues with severity; local-first threat model | sonnet | Read, Grep, Glob, Bash (read-only), Skill | nothing | security |
-| [plan-verifier](plan-verifier.md) | Checks each requirement of the finished diff against the spec: Met / Partial / Missing / Deviated / Unverifiable / Deferred | sonnet | Read, Grep, Glob, Bash (read-only), Skill | nothing | dev-env, design-reference |
+| [plan-verifier](plan-verifier.md) | Checks each requirement of the finished diff against the spec and plan: Met / Partial / Missing / Deviated / Unverifiable / Deferred, plus the AC → task → test → commit matrix | sonnet | Read, Grep, Glob, Bash (read-only), Skill | nothing | dev-env, design-reference |
 | [doc-writer](doc-writer.md) | Updates `docs/**`, Mermaid diagrams, claims cited to source | sonnet | Read, Grep, Glob, Write, Edit | `docs/**` | mermaid-diagram |
+
+## Spec-driven pipeline
+
+The parent runs the agents in this order; no agent starts the next one.
+
+| Step | Who | Produces |
+|---|---|---|
+| 1. What and why | spec-creator | `YYYY-MM-DD-feature-slug.md`, `Status: draft`, criteria `AC-n` |
+| 2. Approval | the user | `Status: approved`, once no `[NEEDS CLARIFICATION]` marker remains |
+| 3. How and in what order | implementation-planner | `<same name>.plan.md`: tasks `T<n> → AC-n → test`, Traceability table |
+| 4. Build | implementer, test-writer | code and tests; the parent commits and fills the Commit column |
+| 5. Final check | plan-verifier (read-only) | a status per `AC-n` and the AC → task → test → commit matrix |
+
+- **Questions.** A subagent cannot ask the user anything. spec-creator returns
+  `NEEDS_INPUT` with at most five blocking questions; the parent asks them and
+  resumes it with the answers. Everything else it marks inline. Under
+  `claude --agent spec-creator` it can ask directly.
+- **Single-agent or multi-agent.** implementation-planner always returns that
+  question with a recommendation. The parent asks the user before starting any
+  implementer.
+- **Feedback goes backwards, edits do not.** implementation-planner and
+  plan-verifier report spec problems; only spec-creator edits a spec.
+- **Lifecycle.** The parent sets `Status: implemented` when plan-verifier
+  returns `CONFORMS`. The spec and its plan are deleted once merged.
+- Specs written before 2026-10-03 are named `NN-kebab-slug.md` and carry
+  their plan inside them. They keep their names, and plan-verifier still reads
+  their `D#`, `§x.y`, `T<row>` and `A#` keys.
+
+## Notes
 
 - Write scopes and "read-only" Bash are enforced by each agent's prompt, not by
   hooks or permissions.
@@ -27,7 +57,8 @@ none can spawn further agents. Authoring rules:
 - Agents that load CLAUDE.md opt out of the session-protocol wrap-up; the
   parent owns `/engineering-insights`.
 - Status: written 2026-09-22 and not yet tried on real delegation prompts
-  (checklist in the authoring rules, §10).
+  (checklist in the authoring rules, §10). spec-creator was added and planner
+  was split into implementation-planner on 2026-10-03; neither has run yet.
 
 ## Resources
 
@@ -49,7 +80,12 @@ Anthropic engineering and exemplars:
 
 By agent:
 
-- **planner / plan-verifier:** [GitHub Spec Kit](https://github.com/github/spec-kit) (`/analyze`),
+- **spec-creator:** [EARS, Alistair Mavin](https://alistairmavin.com/ears/) (the six patterns and clause order),
+  [Spec Kit `/clarify`](https://raw.githubusercontent.com/github/spec-kit/main/templates/commands/clarify.md) (ambiguity taxonomy, the five-question cap),
+  [Spec Kit `/specify`](https://raw.githubusercontent.com/github/spec-kit/main/templates/commands/specify.md) (`[NEEDS CLARIFICATION]`, what and why only),
+  [Kiro, deep spec analysis](https://kiro.dev/blog/deep-spec-analysis/) (solution-free criteria, "what could prevent success?"),
+  [Böckeler, SDD tools](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html) (review burden, sizing the spec to the task)
+- **implementation-planner / plan-verifier:** [GitHub Spec Kit](https://github.com/github/spec-kit) (`/analyze`, tasks traced to requirements),
   [Kiro correctness](https://kiro.dev/docs/specs/correctness/),
   [traceSDD](https://arxiv.org/abs/2606.30689)
 - **brainstormer:** [MADR 4.0](https://adr.github.io/madr/),

@@ -7,7 +7,7 @@ description: >-
   "document how Y works", "add a sequence diagram of Z to docs/", "check
   docs/agent-prompts against the engine". Not for READMEs, CLAUDE.md, .context/**
   or INSIGHTS.md (the parent or /engineering-insights owns those), code comments,
-  or specs and plans (use planner). Not for researching external facts (use
+  or specs and plans (use spec-creator or implementation-planner). Not for researching external facts (use
   researcher).
 model: sonnet
 tools: Read, Grep, Glob, Write, Edit

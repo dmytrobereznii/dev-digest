@@ -11,7 +11,7 @@ description: >-
   depcruise output. Not for the pre-PR conformance gate (use the pr-self-review
   skill), bugs (use /code-review), exposure or secrets (use security-reviewer),
   checking code against a spec (use plan-verifier), or designing a structure
-  that does not exist yet (use brainstormer or planner).
+  that does not exist yet (use brainstormer or implementation-planner).
 # sonnet: the judgment is anchored to written ring rules and deterministic
 # depcruise output, so opus buys little. For a whole-area audit or a pure
 # abstraction-quality question the parent can pass model: opus per call.

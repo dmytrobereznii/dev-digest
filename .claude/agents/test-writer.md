@@ -9,7 +9,8 @@ description: >-
   reports source bugs rather than fixing them. Not for implementing or fixing
   source, including refactors for testability (use implementer), checking a
   change against its plan (use plan-verifier), deciding a test strategy or what
-  to build (use planner), or editing TESTING.md (use doc-writer).
+  to build (use implementation-planner or spec-creator), or editing TESTING.md
+  (use doc-writer).
 model: sonnet
 tools: Read, Grep, Glob, Write, Edit, Bash, Skill
 ---

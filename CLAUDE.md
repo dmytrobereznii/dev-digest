@@ -93,7 +93,7 @@ it.
 | Tests | `*.test.ts(x)` next to the code; DB-backed `*.it.test.ts` | `helpers.test.ts` |
 | E2E flows | `NN-kebab.flow.json`, sequential | `e2e/specs/04-pr-findings.flow.json` |
 | Claude Code agents | `.claude/agents/<kebab-role>.md`, `name` = filename | `.claude/agents/plan-verifier.md` |
-| `.context/` files | kebab-case; specs `NN-kebab-slug.md` | `.context/specs/01-run-cost.md` |
+| `.context/` files | kebab-case; specs `YYYY-MM-DD-feature-slug.md`, the plan beside it as `.plan.md` | `.context/specs/2026-10-03-run-cost.md` |
 | Commit subjects | `type(area): summary` | `fix(db): …`, `feat(conventions): …` |
 
 ## Conventions
@@ -106,7 +106,8 @@ it.
 Each package has a `.context/` directory:
 
 - `.context/docs/` — reference material for that package
-- `.context/specs/` — one file per planned or in-flight change
+- `.context/specs/` — one feature spec per planned or in-flight change, with
+  its implementation plan beside it
 - `.context/insights/` — findings worth keeping, **committed and shared**
 
 That last one is deliberately distinct from Claude Code's auto-memory, which is
@@ -116,8 +117,12 @@ sections. The `engineering-insights` skill owns both halves of that loop.
 
 Repo-wide material goes in this directory's `.context/`; anything scoped to one
 package goes in that package's — a change spanning two packages is repo-wide.
-One topic per file, kebab-case; specs are `NN-kebab-slug.md` and get deleted
-once merged, because a stale spec that contradicts the code is worse than none.
+One topic per file, kebab-case. A spec is `YYYY-MM-DD-feature-slug.md` with a
+`Spec ID: SPEC-NN` header, written by the `spec-creator` agent; its plan is
+`YYYY-MM-DD-feature-slug.plan.md`, written by `implementation-planner`. Specs
+named `NN-kebab-slug.md` predate that and keep their names. A spec and its
+plan get deleted once merged, because a stale spec that contradicts the code
+is worse than none.
 Nothing goes in `docs/` that `README.md`, `TESTING.md` or `docs/agent-prompts/`
 already covers.
 

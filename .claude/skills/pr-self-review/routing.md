@@ -41,7 +41,7 @@ unless marked otherwise.
 | Runtime data | anything under `server/clones/**` |
 | Integration-test suffix | a test importing `test/helpers/pg.ts` without the `.it.test.ts` suffix — it would run in the no-Docker lane |
 | Contract drift | a file changed in one `vendor/shared` copy and not the other |
-| Naming (`WARNING`) | component folder + file PascalCase under `_components/`; support files exactly `helpers.ts` `constants.ts` `styles.ts` `index.ts`; server module folders kebab-case with `routes.ts` `service.ts` `repository.ts`; API JSON fields `snake_case`; i18n keys camelCase; specs `NN-kebab-slug.md` |
+| Naming (`WARNING`) | component folder + file PascalCase under `_components/`; support files exactly `helpers.ts` `constants.ts` `styles.ts` `index.ts`; server module folders kebab-case with `routes.ts` `service.ts` `repository.ts`; API JSON fields `snake_case`; i18n keys camelCase; specs `YYYY-MM-DD-feature-slug.md` with the plan beside it as `.plan.md` (specs created before 2026-10-03 keep `NN-kebab-slug.md`) |
 | Commit subjects (`WARNING`) | every subject in `git log --format=%s $BASE..HEAD` matches `type(area): summary` |
 | Secrets | a key, token or `.env` value in the diff |
 
