@@ -1,6 +1,6 @@
 # Spec: Project Context Folder
 Spec ID: SPEC-11
-Status: draft
+Status: implemented
 Supersedes: —
 
 ## Problem and user
