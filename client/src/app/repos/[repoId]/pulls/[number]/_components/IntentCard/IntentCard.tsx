@@ -13,8 +13,20 @@ import { usePrIntent, useDeriveIntent } from "@/lib/hooks/intent";
 import { confidenceTokens, formatSignals, sourceIcon } from "./helpers";
 import { s } from "./styles";
 
-export function IntentCard({ prId }: { prId: string | null }) {
+interface IntentCardProps {
+  prId: string | null;
+  /** Rendered after a divider inside the card in every state (Risk areas). */
+  children?: React.ReactNode;
+}
+
+export function IntentCard({ prId, children }: IntentCardProps) {
   const t = useTranslations("brief");
+  const tail = children ? (
+    <>
+      <div style={s.divider} />
+      {children}
+    </>
+  ) : null;
   const { data, isLoading } = usePrIntent(prId);
   const derive = useDeriveIntent(prId);
   const intent = data?.intent ?? null;
@@ -27,6 +39,7 @@ export function IntentCard({ prId }: { prId: string | null }) {
           <Skeleton height={16} width="70%" />
           <Skeleton height={90} />
         </div>
+        {tail}
       </Card>
     );
   }
@@ -42,6 +55,7 @@ export function IntentCard({ prId }: { prId: string | null }) {
           onCta={() => derive.mutate({ force: false })}
           ctaLoading={derive.isPending}
         />
+        {tail}
       </Card>
     );
   }
@@ -138,6 +152,7 @@ export function IntentCard({ prId }: { prId: string | null }) {
           {derive.isPending ? t("intent.deriving") : t("intent.rederive")}
         </Button>
       </div>
+      {tail}
     </Card>
   );
 }
