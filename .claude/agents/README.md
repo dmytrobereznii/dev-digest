@@ -22,7 +22,10 @@ none can spawn further agents. Authoring rules:
 
 ## Spec-driven pipeline
 
-The parent runs the agents in this order; no agent starts the next one.
+The parent runs the agents in this order; no agent starts the next one. Steps
+3 to 6 are executed by the
+[`implement-spec`](../skills/implement-spec/SKILL.md) skill, which also holds
+the brief for each delegation and the routing for a `BLOCKED` return.
 
 | Step | Who | Produces |
 |---|---|---|
