@@ -1,6 +1,6 @@
 # Spec: PR Why + Risk Brief
 Spec ID: SPEC-12
-Status: approved
+Status: implemented
 Supersedes: —
 
 ## Problem and user
@@ -282,15 +282,16 @@ five stories, so a priority marked † is inferred.
 - AC-77 (US-3, P2): The Review focus block shall show the number of entries
   beside its label.
 - AC-53 (US-3, P2): While a stored brief has zero Review focus entries, the
-  Review focus block shall show one line stating that no starting point was
-  suggested.
+  Review focus block shall show the line "No starting point was suggested.".
 - AC-54 (US-6, P1): While a stored brief's `missing_inputs` is not empty, the
-  PR Brief section shall show one line naming each missing input as "Intent",
-  "Blast radius" or "Project context documents".
+  PR Brief section shall show one line reading "Generated without: {inputs}",
+  where `{inputs}` names each missing input as "Intent", "Blast radius" or
+  "Project context documents".
 - AC-55 (US-6, P2): While a stored brief's `specs_used` is not empty, the PR
-  Brief section shall list those paths.
-- AC-56 (US-5, P1): While a brief is stored, the PR Brief section shall show a
-  refresh control with the accessible name "Refresh brief".
+  Brief section shall list those paths under the label "Documents used".
+- AC-56 (US-5, P1): While a brief is stored and no generation is pending, the
+  PR Brief section shall show a refresh control with the accessible name
+  "Refresh brief".
 - AC-57 (US-5, P1): When the user activates the refresh control, the PR Brief
   section shall send one generation request.
 - AC-58 (US-5, P1†): While a refresh is pending, the PR Brief section shall
@@ -304,7 +305,8 @@ five stories, so a priority marked † is inferred.
 - AC-61 (US-4, P2): While the brief is being read, the PR Brief section shall
   show a skeleton in place of the summary.
 - AC-62 (US-4, P2): If reading the brief fails, then the PR Brief section
-  shall show an error state with a retry control.
+  shall show an error state reading "Could not load the brief." with a retry
+  control.
 - AC-63 (US-5, P2): While the brief is stale, the PR Brief section shall show
   "Stale — the PR has changed since this was generated" beside the refresh
   control.
@@ -334,8 +336,8 @@ five stories, so a priority marked † is inferred.
 - AC-72 (US-3, P2): If the target line is not rendered in the file's diff,
   then the tab shall scroll to the file's card and mark no line.
 - AC-73 (US-3, P1†): If the target file is not among the PR's current files,
-  then the Files changed tab shall open with no target and show a notice
-  naming the path.
+  then the Files changed tab shall open with no target and show the notice
+  "{path} is not in this PR's files.", where `{path}` is the target file.
 - AC-74 (US-3, P2): When a Review focus entry is activated, the page URL shall
   identify the Files changed tab, the target file and the target line, so
   that a reload shows the same target.
@@ -364,17 +366,34 @@ PR #482 is seeded with four changed files and these new-side ranges:
   then the seed shall leave that brief unchanged.
 - AC-91 (US-4, P2†): The seeded brief shall carry the head SHA that PR #482's
   row holds when the seed runs.
-- AC-92 (US-2, P2†): The seeded brief shall hold the two risks of the design
-  fixture whose file is seeded, "Auth surface touched" and "Adds Redis
-  round-trip per request", with the fixture's kind, severity, explanation and
-  file reference (`.context/docs/design/src/data.jsx:43,45`).
-- AC-93 (US-3, P2†): The seeded brief shall hold, in this order, the three
-  Review focus entries of screenshot 2 that lie in a seeded changed range,
-  `src/config.ts:12`, `src/middleware/ratelimit.ts:52` and
-  `src/api/users.ts:46`, each with the screenshot's reason.
-- AC-94 (US-1, P2†): The seeded brief shall hold a fixed summary of at most
-  400 characters that shares no sentence with the seeded review's summary
-  (`server/src/db/seed.ts:183-184`).
+- AC-92 (US-2, P2†): The seeded brief shall hold these two risks, in this
+  order, each true of the seeded patch:
+  1. kind `security`, severity `high`, title "Auth surface touched",
+     explanation "The webhook route now verifies the Stripe signature:
+     verifySignature builds an HMAC from config.stripeSecretKey and compares
+     it with crypto.timingSafeEqual. A bug here changes which webhook payloads
+     are trusted.", file reference `src/api/public/webhooks.ts:9-19`.
+  2. kind `perf`, severity `medium`, title "In-process buckets grow without
+     bound", explanation "The limiter keeps one bucket per client key in a
+     module-level Map and removes entries only in the test seam
+     resetRateLimiter, so memory grows with the number of distinct keys. The
+     key comes from the x-forwarded-for header when present, which the caller
+     controls.", file reference `src/middleware/ratelimit.ts:16`.
+- AC-93 (US-3, P2†): The seeded brief shall hold these three Review focus
+  entries, in this order, each on a line the seeded patch renders on the new
+  side:
+  1. `src/config.ts:12` — "live Stripe key (sk_live_…) committed in plaintext"
+  2. `src/middleware/ratelimit.ts:71` — "429 branch sends the reply with no
+     return after it"
+  3. `src/api/users.ts:46` — "N+1 query — one orgs lookup and one prefs lookup
+     per user"
+- AC-94 (US-1, P2†): The seeded brief shall hold this summary, which is 298
+  characters long and shares no sentence with the seeded review's summary
+  (`server/src/db/seed.ts:183-184`): "Adds a token-bucket rate limiter in
+  front of the public API and applies it to the Stripe webhook route, so
+  unauthenticated clients can no longer flood those endpoints. Limiter
+  settings are added to the shared config, and the user list endpoint now
+  returns each user's organisations and preferences."
 - AC-95 (US-6, P2†): The seeded brief shall list `blast` and `specs` in
   `missing_inputs`.
 
@@ -439,12 +458,13 @@ PR #482 is seeded with four changed files and these new-side ranges:
 | The user generated or refreshed a brief on PR #482, then the seed runs | The user's brief is kept | AC-90 |
 | The seeded brief's JSON shape is changed by a later release | A row already seeded keeps the old JSON and is read as no brief if it no longer fits the contract; the seed does not rewrite it | AC-10, AC-90 |
 | Design fixture entries that cannot ground on the seeded files: the risk "New dependency: ioredis" (`package.json` is not seeded) and the entry `src/api/public/webhooks.ts:61` (the seeded range ends at 39) | Left out of the seeded brief | AC-92, AC-93, non-goal (extending the seeded patches) |
+| The design's texts describe its own mock code where the seeded patch differs: the risk "Adds Redis round-trip per request" (the seeded limiter is in-process, `server/src/db/seed-diffs.ts:31`); the explanation of "Auth surface touched" (the seeded limiter reads no `Authorization` header; the seeded auth change is the webhook signature check, `seed-diffs.ts:127-138`); the reason at `ratelimit.ts:52` (line 52 is blank and the seeded 429 branch sets `Retry-After`, `seed-diffs.ts:93`); "one posts lookup per user" and "hit harder under the new limiter" at `users.ts:46` (the seeded loop reads orgs and prefs, `seed-diffs.ts:180-181`, and no seeded patch puts the users route behind the limiter) | The seeded texts follow the seeded patch, by the user's decision of 2026-10-03: the same entries are kept, the Redis risk is replaced by one true of the in-process limiter, and the ratelimit entry moves to the 429 branch's `send` at line 71 (`seed-diffs.ts:94`) | AC-92, AC-93 |
 | Provider error, timeout, or output still invalid after the adapter's own reprompts | 502 `brief_failed`; the previous brief stays | AC-33, AC-34, AC-60 |
 | The model names a file outside the PR | The entry or reference is removed and counted | AC-26, AC-28, AC-31 |
 | The model names a line outside the changed ranges | Review focus entry omitted; a risk reference keeps its path | AC-27, AC-30 |
 | A changed file has no stored patch (binary or too large) | It has no changed range, so no Review focus entry can name it | AC-15, AC-27 |
 | Every risk is removed, or the model returns none | "No notable risks flagged." | AC-29, AC-51 |
-| Every Review focus entry is removed | The block says no starting point was suggested | AC-53 |
+| Every Review focus entry is removed | The block shows "No starting point was suggested." | AC-53 |
 | Double click on Generate or refresh | The control is disabled after the first click; one request is sent | AC-41, AC-42 |
 | Two generation requests reach the API together | The second gets 409 and no second model call is made | AC-36 |
 | Reload while a generation is running | The section shows the generating state, then the brief | AC-37, AC-64, AC-78 |
@@ -485,6 +505,12 @@ PR #482 is seeded with four changed files and these new-side ranges:
   pass with their steps unchanged.
 - NFR-10 (e2e): `e2e/.context/docs/seed-contract.md` lists each seeded value
   the brief flow waits for.
+- NFR-11 (security): The generation request and the PR Brief section follow
+  every rule of the Untrusted inputs section: delimiter blocks for PR text,
+  intent text and document text; removal of delimiter-forging and line-break
+  characters from paths, symbol names and caller files; model output rendered
+  as plain text; a model file reference used for navigation only after an
+  exact match with a changed file.
 
 ## External contracts
 
@@ -546,7 +572,7 @@ both copies) changes its default from `openai` / `gpt-4.1` to `openrouter` /
 | D14 | Caps: summary 400 characters, 6 risks, 6 Review focus items, in the output schema only (AC-84 to AC-88). Output over a cap is invalid output. **These three numbers are assumptions the user can adjust.** | User, 2026-10-03 (Q6): cap in the output schema, sizes left open, about 6 and 6 offered. 400 characters is about three lines of the summary block at the 1080 px content width; the screenshot's banner text is about 180 characters. |
 | D15 | A risk's file reference does not navigate. | User, 2026-10-03 (Q7, not selected). |
 | D16 | A Review focus click adds no browser history entry. | User, 2026-10-03 (Q8, not selected). |
-| D17 | PR #482 gets a seeded, hand-authored brief, insert-only, holding the design fixture's entries that ground on the seeded files; one browser flow covers it (AC-89 to AC-98). | User, 2026-10-03 (Q5). Insert-only is the intent seed's rule (`server/src/db/seed-intent.ts:113-115`); the seed skips rows that exist (`server/.context/insights/INSIGHTS.md`, 2026-09-21). |
+| D17 | PR #482 gets a seeded, hand-authored brief, insert-only, holding the design fixture's entries that ground on the seeded files; one browser flow covers it (AC-89 to AC-98). Where the fixture's text and the seeded patch disagree, the seeded text follows the seeded patch (AC-92, AC-93). | User, 2026-10-03 (Q5), and the user's decision of 2026-10-03 to reword the seeded texts to fit the seed. Insert-only is the intent seed's rule (`server/src/db/seed-intent.ts:113-115`); the seed skips rows that exist (`server/.context/insights/INSIGHTS.md`, 2026-09-21). |
 | D18 | The seeded brief lists `blast` and `specs` as missing (AC-95). | The seeded repository has no clone (`e2e/.context/docs/seed-contract.md:19-20`), so a real generation there would have neither. |
 
 ## Starter claims checked against this fork
@@ -574,7 +600,7 @@ both copies) changes its default from `openai` / `gpt-4.1` to `openrouter` /
 | Generate button and the empty, loading, error and stale states | Absent | Absent | Button mandatory | AC-38, AC-42, AC-59, AC-61 to AC-63; no artboard exists |
 | Refresh control | Absent | Icon in the banner, left of the score | Mandatory | AC-56; placed in the summary block, not the banner (AC-80, D12) |
 | Banner text | The review's summary (`findings.jsx:93`) | The review's summary | The brief's summary | The banner keeps the review's summary, as the design draws it; the brief's summary gets its own block below the banner, which neither the design nor the screenshot shows (AC-45, AC-46, D11). The lesson's placement is not followed; its requirement that the summary is shown is |
-| Seeded brief for PR #482 | 3 risks (`data.jsx:42-46`) | 4 Review focus entries | — | 2 risks and 3 entries: the rest name a file or line the seed does not hold (AC-92, AC-93) |
+| Seeded brief for PR #482 | 3 risks (`data.jsx:42-46`) | 4 Review focus entries | — | 2 risks and 3 entries: the rest name a file or line the seed does not hold. Their texts follow the seeded patch, not the fixture, where the two disagree, by the user's decision of 2026-10-03 (AC-92, AC-93, D17) |
 | List sizes | 3 risks | 3 risks, 4 entries | Not stated | At most 6 and 6; summary at most 400 characters (D14) |
 | Verdict and score | Drawn | Drawn | P3 | Already shipped; non-goal |
 | Risk row | Pill with icon and title; file refs only after expanding (`:27-36`) | Title with the file ref beneath, and a chevron | Name and file mandatory; expanding is P3 | AC-48; expanding is a non-goal |
