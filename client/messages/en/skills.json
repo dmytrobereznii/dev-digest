@@ -107,9 +107,16 @@
   "editor": {
     "tabs": {
       "config": "Config",
+      "context": "Context",
       "versions": "Versions",
       "preview": "Preview"
     }
+  },
+  "context": {
+    "title": "Project context to use",
+    "attachedCount": "{count} attached",
+    "inherit": "Any agent using this skill inherits these documents.",
+    "serializesAs": "Serializes as"
   },
   "config": {
     "heading": "Configuration",

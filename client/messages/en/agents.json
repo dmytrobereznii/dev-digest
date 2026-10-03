@@ -58,6 +58,7 @@
     "tabs": {
       "config": "Config",
       "skills": "Skills",
+      "context": "Context",
       "evals": "Evals",
       "stats": "Stats",
       "ci": "CI"
@@ -98,6 +99,11 @@
     "saving": "Saving…",
     "saved": "Saved (v{version})",
     "savedToast": "Agent saved (v{version})"
+  },
+  "context": {
+    "title": "Project context",
+    "attachedCount": "{attached} of {total} attached",
+    "hint": "Attached documents are injected as an untrusted ## Project context block into runs on the active repository’s pull requests."
   },
   "skills": {
     "title": "Skills",

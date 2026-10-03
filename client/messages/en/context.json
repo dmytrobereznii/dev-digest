@@ -18,6 +18,18 @@
     "title": "Repository not cloned",
     "body": "This repository has no local clone, so there are no documents to list. Clone it first, then refresh."
   },
+  "list": {
+    "filterPlaceholder": "Filter documents…",
+    "tokenTotal": "≈ {count} tokens",
+    "preview": "Preview",
+    "missing": "Missing — no longer in the repository",
+    "detach": "Detach",
+    "detachNamed": "Detach {name}",
+    "noRepo": {
+      "title": "Select a repository",
+      "body": "Select a repository to see its project documents."
+    }
+  },
   "type": {
     "specs": "spec",
     "docs": "doc",
