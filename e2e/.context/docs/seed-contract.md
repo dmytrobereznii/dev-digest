@@ -17,6 +17,7 @@ this table before touching the seed.
 | `src/config.ts` | seeded file patch | diff viewer | 05 |
 | `Security Reviewer` | built-in agent name | agents list | 03 |
 | `This repository has no index yet` | acme clone_path null → repo-intel no_data | BlastRadiusCard status notice | 12 |
+| `Repository not cloned` | acme clone_path null → project-context `not_cloned` | Project Context page and the agent editor's Context tab | 13 |
 
 Flows 01, 06 and 07 assert only static UI copy.
 
