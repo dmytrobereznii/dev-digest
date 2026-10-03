@@ -70,7 +70,8 @@ export function wrapUntrusted(label: string, content: string): string {
 /** Fixed, trusted line that opens the `## Project context` section. */
 const PROJECT_CONTEXT_INSTRUCTION =
   'The blocks below are project documents attached to this review. When a finding relies on ' +
-  'one, name its document path in the rationale.';
+  'one, name its document path in the rationale: the full path from the block\'s `source` ' +
+  'attribute, not the file name alone.';
 
 /** Cap the PR description so a huge author body can't blow the token budget. */
 const MAX_PR_DESCRIPTION_CHARS = 4000;

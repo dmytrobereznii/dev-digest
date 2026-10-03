@@ -359,7 +359,7 @@ Files: `e2e/specs/13-project-context.flow.json`,
 `e2e/.context/docs/seed-contract.md` (one row). Depends on: D, E, F.
 
 - [x] T25 flow on seed data: sidebar entry → not-cloned page; Security Reviewer → Context tab → not-cloned state (`wait --load networkidle` before each tab click) → AC-12, AC-20, AC-21, AC-40 → E1
-- [ ] T26 run the spec's manual scenario with a live model and record the finding and the trace → AC-74 → manual (spec, "Verification scenario")
+- [x] T26 run the spec's manual scenario with a live model and record the finding and the trace → AC-74 → manual (spec, "Verification scenario")
 
 Test — E1 `e2e/specs/13-project-context.flow.json`
 "Project Context shows the not-cloned state on the seeded repo".
