@@ -25,6 +25,7 @@ import { ApiError } from "../../../../../lib/api";
 import { githubPrUrl } from "../../../../../lib/github-urls";
 import type { FindingRecord } from "@devdigest/shared";
 import { s as styles } from "./styles";
+import { focusTargetQuery, getTabChangeQuery, parseDiffTarget } from "./helpers";
 
 export default function PRDetailPage() {
   const t = useTranslations("prReview");
@@ -74,7 +75,13 @@ export default function PRDetailPage() {
     else sp.set(key, val);
     router.replace(`/repos/${repoId}/pulls/${number}${sp.toString() ? `?${sp.toString()}` : ""}`);
   };
-  const setTab = (t: string) => setParam("tab", t);
+  const replaceQuery = (sp: URLSearchParams) =>
+    router.replace(`/repos/${repoId}/pulls/${number}${sp.toString() ? `?${sp.toString()}` : ""}`);
+  // A tab change drops the Files changed target (D15).
+  const setTab = (t: string) => replaceQuery(getTabChangeQuery(new URLSearchParams(search.toString()), t));
+  const openFile = (file: string, line: number) =>
+    replaceQuery(focusTargetQuery(new URLSearchParams(search.toString()), file, line));
+  const diffTarget = parseDiffTarget(search);
 
   // Reviews come newest-first; each is its own run (grouped into accordions).
   const runs = reviews ?? [];
@@ -143,6 +150,7 @@ export default function PRDetailPage() {
             runs={prRuns}
             repoFullName={repoFullName}
             headSha={pr.head_sha}
+            onOpenFile={openFile}
           />
         )}
 
@@ -179,6 +187,7 @@ export default function PRDetailPage() {
             filesCount={pr.files_count}
             files={pr.files}
             canComment={pr.status === "open"}
+            target={diffTarget}
           />
         )}
       </div>

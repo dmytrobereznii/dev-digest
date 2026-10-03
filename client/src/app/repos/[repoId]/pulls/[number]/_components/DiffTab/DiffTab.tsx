@@ -6,7 +6,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { SectionLabel, Button, Skeleton } from "@devdigest/ui";
-import { DiffViewer, type DiffCommentApi } from "@/components/diff-viewer";
+import { DiffViewer, type DiffCommentApi, type DiffTarget } from "@/components/diff-viewer";
 import {
   usePrComments,
   useCreatePrComment,
@@ -31,10 +31,13 @@ interface DiffTabProps {
   files: PrFile[];
   /** Inline commenting is offered only on open PRs (GitHub rejects otherwise). */
   canComment?: boolean;
+  /** File (and line) to open and scroll to, from the page URL. */
+  target?: DiffTarget | null;
 }
 
-export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
+export function DiffTab({ prId, filesCount, files, canComment, target }: DiffTabProps) {
   const t = useTranslations("prReview");
+  const tb = useTranslations("brief");
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
   const { data: smartDiff, isLoading: sdLoading, isError: sdError } = useSmartDiff(prId);
@@ -46,6 +49,20 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
   // Not URL state, as in the design (D11) — a route error also forces this view.
   const [order, setOrder] = React.useState<DiffOrder>("smart");
   const effectiveOrder: DiffOrder = sdError ? "original" : order;
+
+  // Exact path match against the PR's current files (NFR-11): an unknown
+  // path applies no target and shows a notice instead.
+  const targetKnown = !!target && files.some((f) => f.path === target.file);
+  const resolvedTarget = targetKnown ? target : null;
+  // Key of the target the user has moved on from (an order change clears the
+  // local copy, so a manual collapse is not undone by the old target).
+  const [clearedKey, setClearedKey] = React.useState<string | null>(null);
+  const targetKey = resolvedTarget ? `${resolvedTarget.file}:${resolvedTarget.line ?? ""}` : null;
+  const activeTarget = targetKey !== null && targetKey !== clearedKey ? resolvedTarget : null;
+  const changeOrder = (next: DiffOrder) => {
+    setClearedKey(targetKey);
+    setOrder(next);
+  };
 
   const commentCount = comments?.length ?? 0;
 
@@ -152,10 +169,15 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
           })}
         </span>
         <div style={s.toggleSlot}>
-          <OrderToggle value={effectiveOrder} onChange={setOrder} smartDisabled={sdError} />
+          <OrderToggle value={effectiveOrder} onChange={changeOrder} smartDisabled={sdError} />
         </div>
       </div>
 
+      {target && !targetKnown && (
+        <div role="status" style={s.unavailable}>
+          {tb("targetMissing", { path: target.file })}
+        </div>
+      )}
       {sdError && <div style={s.unavailable}>{t("smartDiff.unavailable")}</div>}
       {!sdError && noReviewYet && <div style={s.noReview}>{t("smartDiff.noReview")}</div>}
 
@@ -168,11 +190,17 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
       ) : showGroups ? (
         <div style={s.groups}>
           {groups.map((g) => (
-            <RoleGroup key={g.role} role={g.role} files={g.files} commenting={commenting} annotations={annotations} />
+            <RoleGroup key={g.role} role={g.role} files={g.files} commenting={commenting} annotations={annotations} target={activeTarget} />
           ))}
         </div>
       ) : (
-        <DiffViewer files={flatFiles} commenting={commenting} annotations={annotations} flaggedPaths={flaggedPaths} />
+        <DiffViewer
+          files={flatFiles}
+          commenting={commenting}
+          annotations={annotations}
+          flaggedPaths={flaggedPaths}
+          target={activeTarget}
+        />
       )}
     </section>
   );

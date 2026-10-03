@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import type { PrFile } from "@/lib/types";
 import { type DiffCommentApi } from "../comments";
 import type { LineAnnotation } from "../annotations";
+import type { DiffTarget } from "../helpers";
 import { s } from "../styles";
 import { FileCard } from "../FileCard";
 
@@ -18,7 +19,10 @@ export function DiffViewer({
   annotations,
   flaggedPaths,
   startClosed,
+  target,
 }: {
+  /** File (and line) to open and scroll to. */
+  target?: DiffTarget | null;
   files: PrFile[];
   commenting?: DiffCommentApi;
   /** Per-file annotations, keyed by path (D7). */
@@ -42,6 +46,7 @@ export function DiffViewer({
           annotations={annotations?.get(f.path)}
           flagged={flaggedPaths?.has(f.path)}
           startClosed={startClosed}
+          target={target}
         />
       ))}
     </div>

@@ -90,6 +90,12 @@ export function lineRowFor(kind: Line["kind"]): CSSProperties {
   return { display: "flex", alignItems: "stretch", fontSize: 13, lineHeight: "20px", background };
 }
 
+/** Outline marking the target line (paired with aria-current). */
+export const targetLineStyle: CSSProperties = {
+  outline: "2px solid var(--accent)",
+  outlineOffset: -2,
+};
+
 /** Gutter sign colour per line kind. */
 export function lineSignFor(kind: Line["kind"]): CSSProperties {
   return {

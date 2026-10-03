@@ -6,7 +6,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon } from "@devdigest/ui";
-import { DiffViewer, type DiffCommentApi, type LineAnnotation } from "@/components/diff-viewer";
+import { DiffViewer, type DiffCommentApi, type DiffTarget, type LineAnnotation } from "@/components/diff-viewer";
 import type { SmartDiffRole } from "@devdigest/shared";
 import { ROLE_UI } from "../../constants";
 import type { ViewGroupFile } from "../../helpers";
@@ -17,7 +17,10 @@ export function RoleGroup({
   files,
   commenting,
   annotations,
+  target,
 }: {
+  /** A target inside this group's files opens the group. */
+  target?: DiffTarget | null;
   role: SmartDiffRole;
   files: ViewGroupFile[];
   commenting?: DiffCommentApi;
@@ -25,7 +28,12 @@ export function RoleGroup({
 }) {
   const t = useTranslations("prReview");
   const ui = ROLE_UI[role];
-  const [open, setOpen] = React.useState(ui.groupOpen);
+  const holdsTarget = !!target && files.some((f) => f.file.path === target.file);
+  const [open, setOpen] = React.useState(ui.groupOpen || holdsTarget);
+
+  React.useEffect(() => {
+    if (holdsTarget) setOpen(true);
+  }, [holdsTarget, target?.file, target?.line]);
 
   const flaggedPaths = React.useMemo(
     () => new Set(files.filter((f) => f.findingLines.length > 0).map((f) => f.file.path)),
@@ -60,6 +68,7 @@ export function RoleGroup({
           commenting={commenting}
           annotations={annotations}
           flaggedPaths={flaggedPaths}
+          target={target}
         />
       )}
     </div>
