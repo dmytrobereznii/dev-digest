@@ -212,6 +212,16 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
   );
 
   app.get(
+    '/repos/:id/pulls/:number/title',
+    { schema: { params: RepoPullParams } },
+    async (req) => {
+      const { workspaceId } = await getContext(container, req);
+      const pr = await service.getByNumber(workspaceId, req.params.id, req.params.number);
+      return { number: pr.number, title: pr.title };
+    },
+  );
+
+  app.get(
     '/pulls/:id',
     { schema: { params: IdParams, response: { 200: PrDetailSchema, ...ApiErrors, ...NotFound } } },
     async (req): Promise<PrDetail> => {
