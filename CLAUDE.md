@@ -4,7 +4,7 @@ Local-first AI pull-request review. Architecture and package map: @README.md
 
 ## Repo shape
 
-Four standalone packages — **not** a workspace. Each has its own `package.json`
+Five standalone packages — **not** a workspace. Each has its own `package.json`
 and lockfile; cross-package imports resolve through tsconfig path aliases, not
 published modules. Run every script from inside its package directory.
 
@@ -16,8 +16,9 @@ Everything is TypeScript on Node ≥ 22, with Zod contracts at every boundary.
 | `client/` | Next.js 15 (App Router), React, TanStack Query, next-intl, Tailwind · vitest + React Testing Library (jsdom) | pnpm | `dev` `build` `test` `typecheck` |
 | `reviewer-core/` | Pure engine, `openai` SDK (OpenRouter) + Zod, no runtime deps beyond them · vitest | **npm** | `test` `typecheck` |
 | `e2e/` | Vercel agent-browser driven by a `tsx` runner, JSON flow specs | **npm** | `test` `typecheck` `e2e:hermetic` |
+| `mcp/` | Local stdio MCP server, `@modelcontextprotocol/sdk` + Zod, thin HTTP client of the API · vitest | **npm** | `start` `test` `typecheck` |
 
-Never run pnpm in `reviewer-core/` or `e2e/`, or npm in `server/`/`client/`.
+Never run pnpm in `reviewer-core/`, `e2e/` or `mcp/`, or npm in `server/`/`client/`.
 
 `reviewer-core` emits no JS — the server imports its **TypeScript source**
 through an alias, so `reviewer-core/node_modules` must exist or the API crashes
@@ -69,7 +70,7 @@ far from the diff.
 |---|---|
 | `server/src/db/migrations/**`, incl. `meta/_journal.json` | Edit `server/src/db/schema/`, then `pnpm db:generate` in `server/`. A merged migration is never edited; add a new one |
 | `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml` | `pnpm install` / `pnpm add` in that package |
-| `reviewer-core/package-lock.json`, `e2e/package-lock.json` | `npm install` in that package |
+| `reviewer-core/package-lock.json`, `e2e/package-lock.json`, `mcp/package-lock.json` | `npm install` in that package |
 | `server/clones/**` | Runtime data written by the server; git-ignored |
 
 A lockfile appears in a diff only as the by-product of a dependency change made

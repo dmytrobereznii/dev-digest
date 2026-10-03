@@ -12,7 +12,7 @@ description: >-
 
 A loop over the `INSIGHTS.md` files: **read** at the start of a task, **record**
 at the end. Insights are package-local by design — a session working in
-`client/` reads `client/.context/insights/INSIGHTS.md`, not all five. Knowledge
+`client/` reads `client/.context/insights/INSIGHTS.md`, not all six. Knowledge
 lives next to the code it is about.
 
 Worked examples of every entry format: [`examples.md`](examples.md).
@@ -40,6 +40,7 @@ code.
 | `client/**` | `client/.context/insights/INSIGHTS.md` |
 | `reviewer-core/**` | `reviewer-core/.context/insights/INSIGHTS.md` |
 | `e2e/**`, `scripts/e2e.sh` | `e2e/.context/insights/INSIGHTS.md` |
+| `mcp/**` | `mcp/.context/insights/INSIGHTS.md` |
 | `scripts/`, `.github/`, `docker-compose.yml`, root docs, the pnpm/npm split, **or ≥2 packages** | `.context/insights/INSIGHTS.md` (root) |
 
 Three routings that get misfiled:

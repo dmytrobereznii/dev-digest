@@ -182,12 +182,13 @@ export function extractReferences(content: string, symbol: string): ExtractedRef
 export function extractEndpoints(content: string): string[] {
   const out = new Set<string>();
   const lines = content.split('\n');
+  // Matched over the whole file, not per line: `\s` spans newlines, so the
+  // common `app.get(\n  '/path',` layout is caught as well as the one-liner.
   const verbRe =
-    /\b(?:app|router|fastify|server|api)\.(get|post|put|patch|delete|options|head)\s*(?:<[^>]*>)?\s*\(\s*(['"`])([^'"`]+)\2/i;
+    /\b(?:app|router|fastify|server|api)\.(get|post|put|patch|delete|options|head)\s*(?:<[^>]*>)?\s*\(\s*(['"`])([^'"`]+)\2/gi;
+  for (const m of content.matchAll(verbRe)) out.add(`${m[1]!.toUpperCase()} ${m[3]}`);
   const routeObjRe = /method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`][\s\S]*?url\s*:\s*['"`]([^'"`]+)['"`]/i;
   for (const raw of lines) {
-    const m = raw.match(verbRe);
-    if (m) out.add(`${m[1]!.toUpperCase()} ${m[3]}`);
     const r = raw.match(routeObjRe);
     if (r) out.add(`${r[1]!.toUpperCase()} ${r[2]}`);
   }

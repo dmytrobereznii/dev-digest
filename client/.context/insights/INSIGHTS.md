@@ -90,6 +90,16 @@ regression here. It only becomes right if the pages ever fetch on the server.
 
 ## Recurring Errors & Fixes
 
+- **2026-09-24** — `pr-self-review`'s react-testing-library subagent flags
+  every `fireEvent` / native `.click()` in a new test as CRITICAL ("ALWAYS
+  userEvent, NEVER fireEvent"), but `@testing-library/user-event` is not a
+  `client/` dependency, and a majority of test files on `main` use `fireEvent`
+  and none use `userEvent` — check the live count rather than trusting a
+  number here, since it only grows as new tests land. Treat it as WARNING —
+  house convention, not a broken rule — until user-event is adopted repo-wide
+  as its own change.
+  `grep -rl fireEvent client/src --include='*.test.tsx'`
+
 - **2026-09-21** — A `messages/en/*.json` namespace is shared by every surface
   in a feature, so adding keys to one can silently overwrite another surface's
   copy. Writing a `preview` block for the new skill Preview TAB replaced the

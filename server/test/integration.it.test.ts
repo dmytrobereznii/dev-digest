@@ -120,11 +120,40 @@ d('Testcontainers: DB-backed routes via app.inject', () => {
       overrides: { git: new MockGitClient(), github: new MockGitHubClient() },
     });
     const repos = await app.inject({ method: 'GET', url: '/repos' });
-    const repoId = repos.json()[0]!.id;
+    // `GET /repos` has no ORDER BY — `[0]` is an earlier test's `acme/widgets`
+    // as easily as the seeded repo. Select by `full_name` instead of relying
+    // on row order.
+    const repoId = repos
+      .json()
+      .find((r: { full_name: string }) => r.full_name === 'acme/payments-api')!.id;
 
     const first = await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` });
     expect(first.statusCode).toBe(200);
     expect(first.json().length).toBeGreaterThan(0);
+    // The list map now spreads `toPrMeta(r, now)` (D5's refactor) — pin the
+    // seeded #482 row's shape so that stays byte-for-byte unchanged. `opened_at`
+    // is asserted loosely (omitted, via toMatchObject) rather than pinned to
+    // `null`: the GitHub sync's `onConflictDoUpdate` never touches `opened_at`
+    // on an existing row, so it stays whatever the seed left it as — that is
+    // an artefact of a sync bug, not a shape this test should pin.
+    const pr482 = first.json().find((p: { number: number }) => p.number === 482);
+    expect(pr482).toMatchObject({
+      id: pr482.id,
+      number: 482,
+      title: 'Add rate limiting to public API endpoints',
+      author: 'marisa.koch',
+      branch: 'feat/rate-limit-public',
+      base: 'main',
+      head_sha: 'a1b2c3d4',
+      additions: 247,
+      deletions: 38,
+      files_count: 9,
+      status: 'needs_review',
+      updated_at: '2026-06-01T03:00:00.000Z',
+      score: 61,
+      cost_usd: 0.014,
+      findings: { CRITICAL: 1, WARNING: 1, SUGGESTION: 0 },
+    });
     // import again → still idempotent (unique repo_id+number)
     const second = await app.inject({ method: 'GET', url: `/repos/${repoId}/pulls` });
     expect(second.json().length).toBe(first.json().length);

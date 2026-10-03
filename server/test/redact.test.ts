@@ -9,7 +9,10 @@ import { describe, it, expect } from 'vitest';
 import { redactUrlCredentials } from '../src/platform/redact.js';
 import { withGitHubToken } from '../src/modules/repos/helpers.js';
 
-const PAT = 'ghp_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8';
+// Built at runtime rather than as one `ghp_<36 chars>` literal — that shape
+// is a real GitHub PAT and can trip push protection / secret scanners even
+// though this one was never live (mcp INSIGHTS 2026-09-25 / pr-self-review).
+const PAT = 'ghp_' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8'.slice(0, 36);
 
 describe('redactUrlCredentials', () => {
   it('strips the PAT from a real-shaped clone failure', () => {

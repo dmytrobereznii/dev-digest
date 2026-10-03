@@ -1,0 +1,18 @@
+{
+  "name": "PR Overview shows the blast radius card",
+  "description": "PR #482's seeded repo (acme/payments-api) has clone_path: null, so repo-intel has no index and GET /pulls/:id/blast returns status:'degraded', degraded_reason:'no_data' (spec 10). The Overview tab (the default tab, no ?tab= needed) renders BlastRadiusCard: the SectionLabel, the degraded notice (a substring, which avoids the apostrophe), and the disabled Graph button.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list data settles — `wait --url` matches on navigation, while the list is still a Skeleton until its TanStack Query resolves" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["wait", "--text", "BLAST RADIUS"], "label": "Overview tab renders the Blast radius card (SectionLabel uppercases; innerText applies text-transform)" },
+    {
+      "cmd": ["wait", "--text", "This repository has no index yet"],
+      "label": "degraded no_data notice renders (substring — avoids the apostrophe in 'yet; callers')"
+    },
+    { "cmd": ["wait", "--text", "Graph"], "label": "the disabled Graph toggle button renders" }
+  ]
+}

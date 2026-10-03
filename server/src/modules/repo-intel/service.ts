@@ -311,6 +311,18 @@ export class RepoIntelService implements RepoIntel {
    * Callers are PRECISE: only references whose `decl_file` resolved to a changed
    * file count. That favours precision over recall — an ambiguous
    * (NULL decl_file) reference is not asserted as a caller.
+   *
+   * Traversal depth is 1 (direct references only) — `BFS_DEPTH` is only used by
+   * `getCriticalPaths`; blast never chases a caller's own callers.
+   *
+   * The `MAX_CALLERS_PER_SYMBOL` cap applies PER changed symbol (spec 10 D2):
+   * callers are deduped, grouped by `viaSymbol`, then each group is sorted by
+   * rank DESC and cut at the cap independently. A single busy symbol can no
+   * longer push every other changed symbol's callers out of the map the way a
+   * global slice did. `truncated` is set when any group actually lost a caller
+   * to the cap, and `factsByFile`/`impactedEndpoints` are computed only from
+   * the KEPT callers' files, so a cut caller's file never contributes a chip
+   * for a caller the map doesn't show.
    */
   private async tryPersistentBlast(
     repoId: string,
@@ -351,7 +363,7 @@ export class RepoIntelService implements RepoIntel {
       else symsByFile.set(s.path, [s]);
     }
 
-    const callers: BlastCallerRow[] = [];
+    const dedupedCallers: BlastCallerRow[] = [];
     const seenCaller = new Set<string>();
     for (const c of callerRows) {
       const enclosing =
@@ -361,7 +373,7 @@ export class RepoIntelService implements RepoIntel {
       const key = `${c.fromPath}|${enclosing}|${c.toSymbol}`;
       if (seenCaller.has(key)) continue;
       seenCaller.add(key);
-      callers.push({
+      dedupedCallers.push({
         file: c.fromPath,
         symbol: enclosing,
         viaSymbol: c.toSymbol,
@@ -369,11 +381,30 @@ export class RepoIntelService implements RepoIntel {
         rank: c.rank,
       });
     }
+
+    // Per-symbol cap (D2): group by viaSymbol, sort each group by rank DESC,
+    // then cut at MAX_CALLERS_PER_SYMBOL independently — a global slice would
+    // drop whole low-rank symbols whenever one busy symbol has many callers.
+    const byViaSymbol = new Map<string, BlastCallerRow[]>();
+    for (const c of dedupedCallers) {
+      const group = byViaSymbol.get(c.viaSymbol);
+      if (group) group.push(c);
+      else byViaSymbol.set(c.viaSymbol, [c]);
+    }
+    const callers: BlastCallerRow[] = [];
+    let truncated = false;
+    for (const group of byViaSymbol.values()) {
+      group.sort((a, b) => b.rank - a.rank);
+      if (group.length > MAX_CALLERS_PER_SYMBOL) truncated = true;
+      callers.push(...group.slice(0, MAX_CALLERS_PER_SYMBOL));
+    }
     callers.sort((a, b) => b.rank - a.rank);
 
-    // Precomputed facts per caller file (endpoints + crons), so consumers can
-    // attribute them to the changed symbol whose callers live in that file.
-    const facts = await this.repo.getFileFacts(repoId, callerFiles);
+    // Precomputed facts per caller file (endpoints + crons) — from the KEPT
+    // callers' files only, so consumers can attribute them to the changed
+    // symbol whose (surviving) callers live in that file.
+    const keptCallerFiles = [...new Set(callers.map((c) => c.file))];
+    const facts = await this.repo.getFileFacts(repoId, keptCallerFiles);
     const endpoints = new Set<string>();
     const factsByFile: Record<string, { endpoints: string[]; crons: string[] }> = {};
     for (const f of facts) {
@@ -383,10 +414,11 @@ export class RepoIntelService implements RepoIntel {
 
     return {
       changedSymbols,
-      callers: callers.slice(0, MAX_CALLERS_PER_SYMBOL),
+      callers,
       impactedEndpoints: [...endpoints],
       factsByFile,
       degraded: false,
+      truncated: truncated ? true : undefined,
     };
   }
 

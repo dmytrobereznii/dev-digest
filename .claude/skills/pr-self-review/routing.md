@@ -22,6 +22,7 @@ more packages changed, the package's own command when one did.
 | `client/src/vendor/shared/**`, `server/src/vendor/shared/**` | [`zod`](../zod/SKILL.md), `onion-architecture` | `diff -r client/src/vendor/shared server/src/vendor/shared` — **the two-copy rule** |
 | `client/src/vendor/ui/**` | — | `client/src/vendor/ui/README.md` read first; otherwise `WARNING` |
 | `reviewer-core/src/**` | `onion-architecture` (ring 1 — engine), `zod` | `cd reviewer-core && npm run typecheck && npm test` · no `node:*`, `fs`, or direct network import |
+| `mcp/**` | [`typescript-expert`](../typescript-expert/SKILL.md), [`zod`](../zod/SKILL.md), [`security`](../security/SKILL.md) | `cd mcp && npm run typecheck && npm test && node scripts/check-mcp-json.mjs` |
 | `e2e/specs/*.flow.json`, `e2e/src/**` | — | each file parses as JSON · named `NN-kebab.flow.json`, sequential · **no AI `chat` command** |
 | settings, tokens, env reads, file writes, uploads, auth; `server/src/modules/settings/**` | [`security`](../security/SKILL.md) | secret scan over the diff (below) |
 | `Makefile`, `scripts/**`, `docker-compose.yml`, `.github/**` | [`dev-env`](../dev-env/SKILL.md) | `make help` still lists every target |

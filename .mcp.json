@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "devdigest": {
+      "type": "stdio",
+      "command": "sh",
+      "args": ["-c", "cd \"$(git rev-parse --show-toplevel)/mcp\" && exec node_modules/.bin/tsx src/index.ts"],
+      "env": {
+        "DEVDIGEST_API_URL": "${DEVDIGEST_API_URL:-http://127.0.0.1:3001}",
+        "DEVDIGEST_WEB_URL": "${DEVDIGEST_WEB_URL:-http://localhost:3000}",
+        "DEVDIGEST_MCP_MAX_WAIT_S": "${DEVDIGEST_MCP_MAX_WAIT_S:-900}"
+      }
+    }
+  }
+}

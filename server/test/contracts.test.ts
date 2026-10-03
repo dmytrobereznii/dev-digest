@@ -4,6 +4,7 @@ import {
   Finding,
   Intent,
   BlastRadius,
+  BlastRadiusResponse,
   Risks,
   PrHistory,
   SmartDiff,
@@ -102,6 +103,39 @@ describe('AI contracts parse fixtures', () => {
             notes: 'n',
           },
         ],
+      }),
+    ).not.toThrow();
+  });
+
+  it('BlastRadiusResponse (spec 10 D3) parses a full sample and rejects an unknown degraded_reason; BlastRadius still parses without the new fields', () => {
+    const full = {
+      changed_symbols: [{ name: 'rateLimit', file: 'a.ts', kind: 'function' }],
+      downstream: [
+        {
+          symbol: 'rateLimit',
+          callers: [{ name: 'publicRouter', file: 'b.ts', line: 23 }],
+          endpoints_affected: ['GET /x'],
+          crons_affected: ['c'],
+        },
+      ],
+      summary: 's',
+      status: 'ok',
+      degraded_reason: null,
+      index_sha: 'deadbeef',
+      stats: { symbols: 1, callers: 1, endpoints: 1, crons: 1 },
+      truncated: false,
+    };
+    const parsed = BlastRadiusResponse.parse(full);
+    expect(parsed.status).toBe('ok');
+    expect(parsed.stats.callers).toBe(1);
+
+    expect(() => BlastRadiusResponse.parse({ ...full, degraded_reason: 'bogus_reason' })).toThrow();
+
+    expect(() =>
+      BlastRadius.parse({
+        changed_symbols: [{ name: 'rateLimit', file: 'a.ts', kind: 'function' }],
+        downstream: [],
+        summary: 's',
       }),
     ).not.toThrow();
   });

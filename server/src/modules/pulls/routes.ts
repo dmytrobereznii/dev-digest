@@ -14,14 +14,26 @@ import * as t from '../../db/schema.js';
 import { getContext } from '../_shared/context.js';
 import { ApiErrors, IdParams, NotFound } from '../_shared/schemas.js';
 import { AppError, NotFoundError } from '../../platform/errors.js';
-import { deriveReviewStatus } from './status.js';
+import { toPrMeta } from './helpers.js';
+import { PullsService } from './service.js';
+
+/** `/repos/:id/pulls/:number` — id is a uuid, number the GitHub PR number. */
+const RepoPullParams = z.object({
+  id: z.string().uuid(),
+  // `pull_requests.number` is a Postgres int4 column — cap the accepted range
+  // to it so an oversized value 422s here instead of 500ing at the DB.
+  number: z.coerce.number().int().positive().max(2147483647),
+});
 
 /**
  * F1 — pulls module. PR import via Octokit (list + per-PR detail).
- *   GET /repos/:id/pulls → list PRs for a repo (open + recently merged/closed,
- *                          synced from GitHub, persisted). `status` is GitHub's
- *                          merge state (open/merged/closed).
- *   GET /pulls/:id       → full PR detail (diff/files, commits, body, linked issue)
+ *   GET /repos/:id/pulls         → list PRs for a repo (open + recently
+ *                                  merged/closed, synced from GitHub,
+ *                                  persisted). `status` is GitHub's merge
+ *                                  state (open/merged/closed).
+ *   GET /repos/:id/pulls/:number → one PR by its GitHub-native number,
+ *                                  Postgres only (D4) — 404 if not imported
+ *   GET /pulls/:id               → full PR detail (diff/files, commits, body, linked issue)
  *
  * Import is idempotent (unique repo_id+number). Review trigger is MANUAL
  * and owned by A2 — this module only imports/reads.
@@ -29,6 +41,7 @@ import { deriveReviewStatus } from './status.js';
 export default async function pullsRoutes(appBase: FastifyInstance) {
   const app = appBase.withTypeProvider<ZodTypeProvider>();
   const { container } = app;
+  const service = new PullsService(app.container);
 
   app.get(
     '/repos/:id/pulls',
@@ -180,30 +193,21 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
       return rows.map((r) => {
         const review = latestReviewByPr.get(r.id);
         return {
-          id: r.id,
-          number: r.number,
-          title: r.title,
-          author: r.author,
-          branch: r.branch,
-          base: r.base,
-          head_sha: r.headSha,
-          additions: r.additions,
-          deletions: r.deletions,
-          files_count: r.filesCount,
-          status: deriveReviewStatus({
-            ghStatus: r.status,
-            lastReviewedSha: r.lastReviewedSha,
-            headSha: r.headSha,
-            updatedAt: r.updatedAt,
-            now,
-          }),
-          opened_at: r.openedAt?.toISOString() ?? null,
-          updated_at: r.updatedAt?.toISOString() ?? null,
+          ...toPrMeta(r, now),
           score: review ? review.score : null,
           cost_usd: costByPr.get(r.id) ?? null,
           findings: review ? (findingsByReview.get(review.id) ?? null) : null,
         };
       });
+    },
+  );
+
+  app.get(
+    '/repos/:id/pulls/:number',
+    { schema: { params: RepoPullParams, response: { 200: PrMetaSchema, ...ApiErrors, ...NotFound } } },
+    async (req): Promise<PrMeta> => {
+      const { workspaceId } = await getContext(container, req);
+      return service.getByNumber(workspaceId, req.params.id, req.params.number);
     },
   );
 
