@@ -126,6 +126,14 @@ that way.
 
 ## Codebase Patterns
 
+- **2026-10-03** — The starter ships dormant scaffolding for lesson features,
+  so grep for the slot before speccing one as new. For L05 Project Context the
+  trace field and its drawer row already exist and the executor hard-codes
+  `specs_read: []`; the client has hooks calling `GET /repos/:id/context`,
+  which no server route serves.
+  `server/src/modules/reviews/run-executor.ts:319`,
+  `client/src/lib/hooks/core.ts:122`
+
 - **2026-09-20** — The conventions→skill **merge format is transcribed in TWO
   places and must stay byte-identical**: the design's `conventionsToDraft` +
   `slugifyRule` (`.context/docs/design/src/screen_conv_conf.jsx:4`) and the
