@@ -18,7 +18,10 @@ export function RoleGroup({
   commenting,
   annotations,
   target,
+  applyTarget = true,
 }: {
+  /** False once the target has been applied: no more forced open or scroll. */
+  applyTarget?: boolean;
   /** A target inside this group's files opens the group. */
   target?: DiffTarget | null;
   role: SmartDiffRole;
@@ -29,11 +32,12 @@ export function RoleGroup({
   const t = useTranslations("prReview");
   const ui = ROLE_UI[role];
   const holdsTarget = !!target && files.some((f) => f.file.path === target.file);
-  const [open, setOpen] = React.useState(ui.groupOpen || holdsTarget);
+  const opensForTarget = holdsTarget && applyTarget;
+  const [open, setOpen] = React.useState(ui.groupOpen || opensForTarget);
 
   React.useEffect(() => {
-    if (holdsTarget) setOpen(true);
-  }, [holdsTarget, target?.file, target?.line]);
+    if (opensForTarget) setOpen(true);
+  }, [opensForTarget, target?.file, target?.line]);
 
   const flaggedPaths = React.useMemo(
     () => new Set(files.filter((f) => f.findingLines.length > 0).map((f) => f.file.path)),
@@ -69,6 +73,7 @@ export function RoleGroup({
           annotations={annotations}
           flaggedPaths={flaggedPaths}
           target={target}
+          applyTarget={applyTarget}
         />
       )}
     </div>

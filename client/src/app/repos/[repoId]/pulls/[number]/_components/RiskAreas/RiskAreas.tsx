@@ -21,7 +21,9 @@ export function RiskAreas({ risks }: { risks: Risk[] }) {
       ) : (
         <ul style={s.list}>
           {risks.map((risk, i) => {
-            const RiskIcon = Icon[RISK_ICON[risk.kind] ?? DEFAULT_RISK_ICON];
+            const iconName =
+              (Object.hasOwn(RISK_ICON, risk.kind) ? RISK_ICON[risk.kind] : undefined) ?? DEFAULT_RISK_ICON;
+            const RiskIcon = Icon[iconName];
             return (
               <li key={i} style={s.item}>
                 <RiskIcon size={14} style={s.icon(RISK_SEV[risk.severity])} />

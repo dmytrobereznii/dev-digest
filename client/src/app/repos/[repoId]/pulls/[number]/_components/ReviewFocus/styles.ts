@@ -3,8 +3,16 @@ import type { CSSProperties } from "react";
 /** Co-located styles for ReviewFocus. */
 export const s = {
   count: {
-    fontSize: 11.5,
-    color: "var(--text-muted)",
+    marginLeft: 8,
+    letterSpacing: 0,
+  } satisfies CSSProperties,
+  bullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 99,
+    background: "var(--accent)",
+    flexShrink: 0,
+    alignSelf: "center",
   } satisfies CSSProperties,
   list: {
     margin: 0,

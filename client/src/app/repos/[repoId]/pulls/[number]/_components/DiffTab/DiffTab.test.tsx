@@ -13,7 +13,6 @@ import { NextIntlClientProvider } from "next-intl";
 import type { PrFile } from "@/lib/types";
 import type { FindingRecord, ReviewRecord, SmartDiffResponse } from "@devdigest/shared";
 import { brief, prReview, shell } from "@/test/messages";
-
 let smartDiffData: SmartDiffResponse | undefined;
 let reviewsData: ReviewRecord[] | undefined;
 let smartDiffError = false;
@@ -608,5 +607,52 @@ describe("DiffTab — target file / line", () => {
     expect(container.querySelector('[aria-current="true"]')).toBeNull();
     // No group was force-opened by the rejected target.
     expect(screen.queryByText(/ioredis: 5\.4\.1/)).not.toBeInTheDocument();
+  });
+
+  const LOCK_TARGET = { file: "pnpm-lock.yaml", line: 40 };
+  // retry.ts is over the auto-expand cap, so only the target opens it; its group (core) is open by default.
+  const BIG_TARGET = { file: "src/api/payouts/retry.ts", line: 3 };
+
+  it("after the target was applied, re-expanding its group does not re-open the file or scroll again", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const { container } = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={BIG_FILES} target={BIG_TARGET} />,
+    );
+    // First arrival: card opened, line marked and scrolled once.
+    expect(screen.getByText(/retry_window_exhausted/)).toBeInTheDocument();
+    expect(container.querySelectorAll('[aria-current="true"]')).toHaveLength(1);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+    // Collapse the target file, then collapse and re-expand its role group.
+    fireEvent.click(screen.getByText("src/api/payouts/retry.ts"));
+    expect(screen.queryByText(/retry_window_exhausted/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(prReview.smartDiff.coreLabel));
+    fireEvent.click(screen.getByText(prReview.smartDiff.coreLabel));
+
+    // The file stays collapsed and nothing scrolled again.
+    expect(screen.queryByText(/retry_window_exhausted/)).not.toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+    // The line mark stays: opening the file by hand shows it, still without a scroll.
+    fireEvent.click(screen.getByText("src/api/payouts/retry.ts"));
+    const marked = container.querySelectorAll('[aria-current="true"]');
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.textContent).toContain("retry_window_exhausted");
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it("a remount of DiffTab with the same target applies it again", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const first = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={FILES} target={LOCK_TARGET} />,
+    );
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    renderWithIntl(<DiffTab prId="pr-499" filesCount={7} files={FILES} target={LOCK_TARGET} />);
+    expect(screen.getByText(/ioredis: 5\.4\.1/)).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
 });

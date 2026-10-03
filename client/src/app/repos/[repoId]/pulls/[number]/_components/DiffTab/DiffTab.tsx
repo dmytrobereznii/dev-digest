@@ -59,6 +59,16 @@ export function DiffTab({ prId, filesCount, files, canComment, target }: DiffTab
   const [clearedKey, setClearedKey] = React.useState<string | null>(null);
   const targetKey = resolvedTarget ? `${resolvedTarget.file}:${resolvedTarget.line ?? ""}` : null;
   const activeTarget = targetKey !== null && targetKey !== clearedKey ? resolvedTarget : null;
+  // Key of the target already applied (group opened, card opened, scrolled).
+  // It lives here because RoleGroup/DiffViewer remount on a re-expand and would
+  // otherwise apply it again. A mount is a new arrival, so a reload re-applies.
+  const [appliedKey, setAppliedKey] = React.useState<string | null>(null);
+  const applyTarget = activeTarget !== null && targetKey !== appliedKey;
+  const targetRendered = !sdLoading;
+  React.useEffect(() => {
+    // Parent effects run after the children's, so they have applied it by now.
+    if (activeTarget && targetRendered) setAppliedKey(targetKey);
+  }, [activeTarget, targetKey, targetRendered]);
   const changeOrder = (next: DiffOrder) => {
     setClearedKey(targetKey);
     setOrder(next);
@@ -190,7 +200,7 @@ export function DiffTab({ prId, filesCount, files, canComment, target }: DiffTab
       ) : showGroups ? (
         <div style={s.groups}>
           {groups.map((g) => (
-            <RoleGroup key={g.role} role={g.role} files={g.files} commenting={commenting} annotations={annotations} target={activeTarget} />
+            <RoleGroup key={g.role} role={g.role} files={g.files} commenting={commenting} annotations={annotations} target={activeTarget} applyTarget={applyTarget} />
           ))}
         </div>
       ) : (
@@ -200,6 +210,7 @@ export function DiffTab({ prId, filesCount, files, canComment, target }: DiffTab
           annotations={annotations}
           flaggedPaths={flaggedPaths}
           target={activeTarget}
+          applyTarget={applyTarget}
         />
       )}
     </section>

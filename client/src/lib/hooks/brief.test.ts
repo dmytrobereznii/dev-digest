@@ -132,4 +132,57 @@ describe("brief hooks", () => {
     expect(result.current.error?.message).toBe("Model unavailable");
     expect(qc.getQueryData(["pr-brief", PR_ID])).toEqual(before);
   });
+
+  it("a read that resolves after a successful generation does not overwrite the fresh brief", async () => {
+    const stale: PrBriefResponse = { brief: makeBrief("Old."), generating: true };
+    let releaseRead!: () => void;
+    const readGate = new Promise<void>((r) => (releaseRead = r));
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === "POST") return json(makeBrief("Fresh."));
+      await readGate; // a poll sent before the server finished
+      return json(stale);
+    });
+
+    const { result } = renderHook(() => ({ read: usePrBrief(PR_ID), gen: useGenerateBrief(PR_ID) }), {
+      wrapper,
+    });
+    await waitFor(() => expect(result.current.read.isFetching).toBe(true));
+
+    await act(async () => {
+      await result.current.gen.mutateAsync();
+    });
+    // The late read now lands.
+    releaseRead();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    const cached = qc.getQueryData<PrBriefResponse>(["pr-brief", PR_ID]);
+    expect(cached?.brief?.summary).toBe("Fresh.");
+    expect(cached?.generating).toBe(false);
+  });
+
+  it("a failed generation refetches the brief, so a 409 picks up generating true", async () => {
+    qc.setQueryData(["pr-brief", PR_ID], { brief: null, generating: false });
+    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return json({ error: { code: "brief_in_progress", message: "Already generating" } }, 409);
+      }
+      return json({ brief: null, generating: true });
+    });
+
+    const read = renderHook(() => usePrBrief(PR_ID), { wrapper });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    fetchMock.mockClear();
+    const { result } = renderHook(() => useGenerateBrief(PR_ID), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync().catch(() => undefined);
+    });
+
+    await waitFor(() => expect(read.result.current.data?.generating).toBe(true));
+    expect(calls()).toEqual([
+      ["POST", `/pulls/${PR_ID}/brief`],
+      ["GET", `/pulls/${PR_ID}/brief`],
+    ]);
+  });
 });

@@ -18,6 +18,7 @@ export function CodeLine({
   annotations,
   commenting,
   isTarget,
+  scrollToTarget = true,
 }: {
   ln: Line;
   path: string;
@@ -26,14 +27,16 @@ export function CodeLine({
   commenting?: DiffCommentApi;
   /** This is the line a navigation targeted: mark it and scroll it into view. */
   isTarget?: boolean;
+  /** False once the target has already scrolled: the mark stays, the scroll does not repeat. */
+  scrollToTarget?: boolean;
 }) {
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
   const rowRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (isTarget) rowRef.current?.scrollIntoView?.({ block: "center" });
-  }, [isTarget]);
+    if (isTarget && scrollToTarget) rowRef.current?.scrollIntoView?.({ block: "center" });
+  }, [isTarget, scrollToTarget]);
 
   if (ln.kind === "hunk") {
     return (

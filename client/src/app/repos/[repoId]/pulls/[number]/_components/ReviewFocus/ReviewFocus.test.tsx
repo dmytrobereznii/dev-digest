@@ -40,6 +40,36 @@ describe("ReviewFocus", () => {
     expect(within(label.parentElement!).getByText("3")).toBeInTheDocument();
   });
 
+  it("the count is a badge directly after the label", () => {
+    renderFocus(ITEMS);
+    const label = screen.getByText(messages.focus.title);
+    // The label text node is followed immediately by the count, nothing between.
+    const count = screen.getByText("3");
+    expect(label.contains(count)).toBe(true);
+    expect(count.closest("li")).toBeNull();
+    const text = label.textContent ?? "";
+    expect(text.startsWith(messages.focus.title)).toBe(true);
+    expect(text).toBe(`${messages.focus.title}3`);
+    // The label's own children: text node then the badge wrapper, in that order.
+    const last = label.lastElementChild as HTMLElement;
+    expect(last).toContainElement(count);
+    expect(label.firstChild?.nodeType).toBe(Node.TEXT_NODE);
+  });
+
+  it("each row starts with a decorative bullet", () => {
+    renderFocus(ITEMS);
+    for (const row of screen.getAllByRole("listitem")) {
+      const first = row.firstElementChild as HTMLElement;
+      expect(first.tagName).toBe("SPAN");
+      expect(first).toHaveAttribute("aria-hidden", "true");
+      expect(first).toBeEmptyDOMElement();
+      expect(first.nextElementSibling?.tagName).toBe("BUTTON");
+    }
+    const row = screen.getAllByRole("listitem")[0]!;
+    expect(within(row).getByRole("button", { name: "src/b.ts:12" })).toBeInTheDocument();
+    expect(within(row).getByText("Second file, first in order")).toBeInTheDocument();
+  });
+
   it("zero entries shows the no-starting-point line", () => {
     renderFocus([]);
     expect(screen.getByText(messages.focus.empty)).toBeInTheDocument();

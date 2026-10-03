@@ -30,8 +30,17 @@ export function useGenerateBrief(prId: string | null | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.post(`/pulls/${prId}/brief`, {}, PrBriefRecord),
-    onSuccess: (data) => {
-      if (prId) qc.setQueryData(["pr-brief", prId], { brief: data, generating: false });
+    onSuccess: async (data) => {
+      if (!prId) return;
+      // A poll sent before the server finished must not land after this write.
+      await qc.cancelQueries({ queryKey: ["pr-brief", prId] });
+      qc.setQueryData(["pr-brief", prId], { brief: data, generating: false });
+    },
+    // A 409 brief_in_progress (another tab generating) or any other failure:
+    // re-read so `generating` is picked up and the poll takes over. The read
+    // keeps the previous brief on failure, so the old brief stays on screen.
+    onError: () => {
+      if (prId) void qc.invalidateQueries({ queryKey: ["pr-brief", prId] });
     },
   });
 }

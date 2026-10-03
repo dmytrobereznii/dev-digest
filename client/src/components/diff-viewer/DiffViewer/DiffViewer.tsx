@@ -20,7 +20,10 @@ export function DiffViewer({
   flaggedPaths,
   startClosed,
   target,
+  applyTarget,
 }: {
+  /** False once the target has been applied (see FileCard). */
+  applyTarget?: boolean;
   /** File (and line) to open and scroll to. */
   target?: DiffTarget | null;
   files: PrFile[];
@@ -47,6 +50,7 @@ export function DiffViewer({
           flagged={flaggedPaths?.has(f.path)}
           startClosed={startClosed}
           target={target}
+          applyTarget={applyTarget}
         />
       ))}
     </div>

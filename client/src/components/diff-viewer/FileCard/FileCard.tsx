@@ -53,8 +53,11 @@ export function FileCard({
   flagged,
   startClosed,
   target,
+  applyTarget = true,
 }: {
   file: PrFile;
+  /** False once the target has been applied: it still marks the line, but no longer opens or scrolls. */
+  applyTarget?: boolean;
   /** When set and naming this file: open the card and scroll to it (or its line). */
   target?: DiffTarget | null;
   commenting?: DiffCommentApi;
@@ -70,7 +73,7 @@ export function FileCard({
   // size cap; otherwise startClosed wins, then the auto-expand size rule.
   const isTargetFile = !!target && target.file === file.path;
   const [open, setOpen] = React.useState(
-    flagged || isTargetFile
+    flagged || (isTargetFile && applyTarget)
       ? true
       : startClosed
         ? false
@@ -84,12 +87,13 @@ export function FileCard({
     targetLine != null && lines.some((ln) => ln.kind !== "hunk" && ln.newNo === targetLine);
 
   React.useEffect(() => {
-    if (isTargetFile) setOpen(true);
-  }, [isTargetFile, target?.line]);
+    if (isTargetFile && applyTarget) setOpen(true);
+  }, [isTargetFile, applyTarget, target?.line]);
 
   React.useEffect(() => {
-    if (isTargetFile && !targetLineRendered) cardRef.current?.scrollIntoView?.({ block: "start" });
-  }, [isTargetFile, targetLineRendered, target?.line]);
+    if (isTargetFile && applyTarget && !targetLineRendered)
+      cardRef.current?.scrollIntoView?.({ block: "start" });
+  }, [isTargetFile, applyTarget, targetLineRendered, target?.line]);
 
   const renderedKeys = React.useMemo(() => {
     const keys = new Set<string>();
@@ -155,6 +159,7 @@ export function FileCard({
                 annotations={annotationsForLine(ln, annMatched)}
                 commenting={commenting}
                 isTarget={targetLineRendered && ln.kind !== "hunk" && ln.newNo === targetLine}
+                scrollToTarget={applyTarget}
               />
             ))
           )}

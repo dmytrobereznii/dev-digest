@@ -114,6 +114,27 @@ describe("RiskAreas", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
+  it.each(["constructor", "toString", "valueOf", "other"])(
+    "a kind that is an Object.prototype key renders the default icon and does not throw (%s)",
+    (kind) => {
+      const { container } = renderRisks([risk({ kind })]);
+      expect(screen.getAllByRole("listitem")).toHaveLength(1);
+      expect(firstIconMarkup(container)).toBe(iconMarkup("AlertTriangle"));
+    },
+  );
+
+  it("each risk is a bordered pill with its file references in the accent colour, as text", () => {
+    renderRisks([risk({ file_refs: ["src/auth/token.ts"] })]);
+    const pill = screen.getByRole("listitem");
+    expect(pill.style.padding).toBe("5px 10px");
+    expect(pill.style.borderRadius).toBe("6px");
+    expect(pill.style.border).toBe("1px solid var(--border)");
+    const ref = screen.getByText("src/auth/token.ts");
+    expect(ref.style.color).toBe("var(--accent-text)");
+    expect(ref).toHaveClass("mono");
+    expect(ref.closest("a,button")).toBeNull();
+  });
+
   it("a plain file reference is not a link either", () => {
     renderRisks([risk({ file_refs: ["src/auth/token.ts"] })]);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();

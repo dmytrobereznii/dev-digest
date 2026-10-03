@@ -5,7 +5,7 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Card, SectionLabel } from "@devdigest/ui";
+import { Badge, Card, SectionLabel } from "@devdigest/ui";
 import type { ReviewFocusItem } from "@devdigest/shared";
 import { s } from "./styles";
 
@@ -18,11 +18,13 @@ export function ReviewFocus({ items, onOpen }: ReviewFocusProps) {
   const t = useTranslations("brief");
   return (
     <Card>
-      <SectionLabel
-        icon="Target"
-        right={<span style={s.count}>{t("focus.count", { count: items.length })}</span>}
-      >
+      <SectionLabel icon="ListChecks">
         {t("focus.title")}
+        <span style={s.count}>
+          <Badge color="var(--accent-text)" bg="var(--accent-bg)">
+            {t("focus.count", { count: items.length })}
+          </Badge>
+        </span>
       </SectionLabel>
       {items.length === 0 ? (
         <p style={s.none}>{t("focus.empty")}</p>
@@ -32,6 +34,7 @@ export function ReviewFocus({ items, onOpen }: ReviewFocusProps) {
             const ref = `${item.file}:${item.line}`;
             return (
               <li key={i} style={s.item}>
+                <span aria-hidden="true" style={s.bullet} />
                 <button
                   type="button"
                   className="mono"
