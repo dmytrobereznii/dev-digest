@@ -126,6 +126,15 @@ that way.
 
 ## Codebase Patterns
 
+- **2026-10-03** — The skill path list (`## Project specifications`, then
+  one `- <path>` line each) is written in TWO places: the prompt, at
+  `reviewer-core/src/prompt.ts:212`, and the skill Context tab's
+  "Serializes as" preview, `SPEC_LIST_HEADING` and `serializeSpecList` in
+  `client/src/components/project-context/helpers.ts:4`. No type or test
+  ties one to the other, so a change to the heading or the line format in
+  the engine leaves the preview wrong with every lane green. Change both
+  together.
+
 - **2026-10-03** — The starter ships dormant scaffolding for lesson features,
   so grep for the slot before speccing one as new. For L05 Project Context the
   trace field and its drawer row already exist and the executor hard-codes
