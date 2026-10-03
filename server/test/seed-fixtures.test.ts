@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { DEMO_PRS, type DemoPr } from '../src/db/seed-prs/index.js';
 import { parseUnifiedDiff } from '../src/adapters/git/diff-parser.js';
+import { PrBriefStored } from '@devdigest/shared';
+import { DEMO_PR_FILES, DEMO_REVIEW_SUMMARY } from '../src/db/seed.js';
+import { seedBrief482 } from '../src/db/seed-brief.js';
+import { groundBrief } from '../src/modules/brief/helpers.js';
 
 /**
  * Invariants over the demo PR fixtures (`src/db/seed-prs/`).
@@ -159,5 +163,88 @@ describe.each(DEMO_PRS.map((fx) => [fx.number, fx] as const))('demo PR #%i', (_n
         `${finding.title}: ${finding.file}:${finding.startLine}-${finding.endLine} is outside every hunk (${ranges.join(', ')})`,
       ).toBe(true);
     }
+  });
+});
+
+describe('the #482 brief fixture (seed-brief.ts)', () => {
+  const brief = seedBrief482({ id: '00000000-0000-4000-8000-000000000482', headSha: 'a1b2c3d4e5f6' });
+
+  const REVIEW_SUMMARY = DEMO_REVIEW_SUMMARY;
+  const sentences = (s: string) =>
+    s
+      .split(/(?<=[.!?])\s+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  it('the #482 brief fixture passes groundBrief against the seeded patches unchanged', () => {
+    const grounded = groundBrief(
+      { risks: brief.risks.risks, review_focus: brief.review_focus },
+      DEMO_PR_FILES.map((f) => ({ path: f.path, patch: f.patch })),
+    );
+    expect(grounded.dropped).toEqual({ risks: 0, review_focus: 0 });
+    expect(grounded.review_focus).toEqual(brief.review_focus);
+    expect(grounded.risks).toEqual(brief.risks.risks);
+  });
+
+  it('the #482 brief fixture holds the two risks AC-92 quotes, in order, with kind, severity, title, explanation and file reference', () => {
+    expect(brief.risks.risks).toEqual([
+      {
+        kind: 'security',
+        severity: 'high',
+        title: 'Auth surface touched',
+        explanation:
+          'The webhook route now verifies the Stripe signature: verifySignature builds an HMAC from config.stripeSecretKey and compares it with crypto.timingSafeEqual. A bug here changes which webhook payloads are trusted.',
+        file_refs: ['src/api/public/webhooks.ts:9-19'],
+      },
+      {
+        kind: 'perf',
+        severity: 'medium',
+        title: 'In-process buckets grow without bound',
+        explanation:
+          'The limiter keeps one bucket per client key in a module-level Map and removes entries only in the test seam resetRateLimiter, so memory grows with the number of distinct keys. The key comes from the x-forwarded-for header when present, which the caller controls.',
+        file_refs: ['src/middleware/ratelimit.ts:16'],
+      },
+    ]);
+  });
+
+  it('the #482 brief fixture holds the three Review focus entries AC-93 quotes, in order, each on a new-side line of its seeded patch', () => {
+    expect(brief.review_focus).toEqual([
+      { file: 'src/config.ts', line: 12, reason: 'live Stripe key (sk_live_…) committed in plaintext' },
+      { file: 'src/middleware/ratelimit.ts', line: 71, reason: '429 branch sends the reply with no return after it' },
+      { file: 'src/api/users.ts', line: 46, reason: 'N+1 query — one orgs lookup and one prefs lookup per user' },
+    ]);
+    // Independent of groundBrief: each line must be a `+` or context line on the new side.
+    for (const item of brief.review_focus) {
+      const patch = DEMO_PR_FILES.find((f) => f.path === item.file)?.patch;
+      expect(patch, `${item.file} has no seeded patch`).toBeTruthy();
+      let newLine = 0;
+      let found = false;
+      for (const line of patch!.split('\n')) {
+        const m = HUNK_RE.exec(line);
+        if (m) {
+          newLine = Number(m[3]) - 1;
+          continue;
+        }
+        if (line.startsWith('-')) continue;
+        newLine++;
+        if (newLine === item.line) found = true;
+      }
+      expect(found, `${item.file}:${item.line} is not on the new side`).toBe(true);
+    }
+  });
+
+  it('the #482 brief summary is the text AC-94 quotes, at most 400 characters, and shares no sentence with the seeded review summary', () => {
+    expect(brief.summary).toBe(
+      "Adds a token-bucket rate limiter in front of the public API and applies it to the Stripe webhook route, so unauthenticated clients can no longer flood those endpoints. Limiter settings are added to the shared config, and the user list endpoint now returns each user's organisations and preferences.",
+    );
+    expect(brief.summary.length).toBe(298);
+    expect(brief.summary.length).toBeLessThanOrEqual(400);
+    const reviewSentences = new Set(sentences(REVIEW_SUMMARY));
+    expect(sentences(brief.summary).filter((s) => reviewSentences.has(s))).toEqual([]);
+  });
+
+  it('the #482 brief fixture satisfies PrBriefStored and lists blast and specs as missing', () => {
+    expect(PrBriefStored.safeParse(brief).success).toBe(true);
+    expect(brief.missing_inputs).toEqual(['blast', 'specs']);
   });
 });

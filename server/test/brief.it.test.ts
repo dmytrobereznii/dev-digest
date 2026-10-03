@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { PrBriefRecord, PrBriefResponse } from '@devdigest/shared';
+import { PrBriefRecord, PrBriefResponse, PrBriefStored } from '@devdigest/shared';
 import { startPg, dockerAvailable, type PgFixture } from './helpers/pg.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig, type AppConfig } from '../src/platform/config.js';
@@ -563,5 +563,31 @@ d('brief module (Testcontainers pg)', () => {
     expect(codes.slice(0, 10)).toEqual(Array(10).fill(404));
     expect(codes[10]).toBe(429);
     expect(mock.calls).toHaveLength(0);
+  });
+
+  const demoPr = async () => {
+    const [pr] = await pg.handle.db.select().from(t.pullRequests).where(eq(t.pullRequests.number, 482));
+    return pr!;
+  };
+
+  it("seeded #482 has a brief with the PR's head_sha", async () => {
+    const pr = await demoPr();
+    const [row] = await rows(pr.id);
+    expect(row).toBeDefined();
+    expect(row!.json).toMatchObject({ pr_id: pr.id, head_sha: pr.headSha });
+    expect(PrBriefStored.safeParse(row!.json).success).toBe(true);
+  });
+
+  it('re-running the seed keeps a brief the user generated', async () => {
+    const pr = await demoPr();
+    const [seeded] = await rows(pr.id);
+    const generated = { ...(seeded!.json as object), summary: 'A summary the user generated.', head_sha: 'user-sha' };
+    await pg.handle.db.update(t.prBrief).set({ json: generated }).where(eq(t.prBrief.prId, pr.id));
+
+    await seed(pg.handle.db);
+
+    const after = await rows(pr.id);
+    expect(after).toHaveLength(1);
+    expect(after[0]!.json).toEqual(generated);
   });
 });
