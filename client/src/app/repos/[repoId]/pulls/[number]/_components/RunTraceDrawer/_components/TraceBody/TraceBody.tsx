@@ -57,12 +57,23 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
               ) : (
                 trace.specs_read.map((sp, i) => (
                   <span key={i} className="mono" style={s.spec}>
-                    {sp.path}
+                    {sp.path} · {t("trace.config.specTokens", { count: sp.tokens })}
                   </span>
                 ))
               )}
             </div>
           </Row>
+          {(trace.specs_skipped ?? []).length > 0 && (
+            <Row label={t("trace.config.specsSkipped")}>
+              <div style={s.specsWrap}>
+                {(trace.specs_skipped ?? []).map((sp, i) => (
+                  <span key={i} className="mono" style={s.spec}>
+                    {sp.path} · {t(`trace.config.skipReason.${sp.reason}`)}
+                  </span>
+                ))}
+              </div>
+            </Row>
+          )}
         </div>
       </TraceSection>
 

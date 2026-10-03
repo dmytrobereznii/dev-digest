@@ -34,6 +34,12 @@
       "skillsLoaded": "Skills loaded",
       "memoryPulled": "Memory pulled",
       "specsRead": "Specs read",
+      "specTokens": "{count, number} tokens",
+      "specsSkipped": "Specs skipped",
+      "skipReason": {
+        "missing": "missing",
+        "over_budget": "over budget"
+      },
       "items": "{count, plural, one {# item} other {# items}}",
       "none": "none"
     },
@@ -48,7 +54,7 @@
       "skills": "Skills (dynamic)",
       "memory": "Memory (dynamic)",
       "repoMap": "Repo skeleton — repo-intel (dynamic)",
-      "specs": "Project context (dynamic)",
+      "specs": "Project context — attached specs (untrusted)",
       "callers": "Callers of changed symbols — repo-intel (dynamic)",
       "user": "User / diff (dynamic)",
       "tokens": "~{count, number} tokens",
