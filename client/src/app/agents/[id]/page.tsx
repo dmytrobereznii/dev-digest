@@ -11,6 +11,7 @@ import { AgentCard } from "../_components/AgentCard";
 import { AgentEditor } from "./_components/AgentEditor";
 import { useAgents, useAgent, useUpdateAgent } from "../../../lib/hooks/agents";
 import { ApiError } from "../../../lib/api";
+import { useActiveRepo } from "@/lib/repo-context";
 
 const VALID_TABS = ["config", "skills", "context"];
 
@@ -23,6 +24,9 @@ export default function AgentEditorPage() {
   const { data: agents } = useAgents();
   const { data: agent, isLoading, isError, error, refetch } = useAgent(id);
   const update = useUpdateAgent();
+  // The Context tab attaches documents per active repository, so "Run on a
+  // PR…" opens that repository's PR list — not `/`, which picks the first repo.
+  const { activeRepo } = useActiveRepo();
 
   const tab = VALID_TABS.includes(search.get("tab") ?? "") ? search.get("tab")! : "config";
   const setTab = (t: string) => {
@@ -108,7 +112,7 @@ export default function AgentEditorPage() {
               </Badge>
               {!agent.enabled && <Badge color="var(--text-muted)">disabled</Badge>}
               <div style={{ marginLeft: "auto" }}>
-                <Button kind="secondary" size="sm" icon="GitPullRequest" onClick={() => router.push("/")}>
+                <Button kind="secondary" size="sm" icon="GitPullRequest" onClick={() => router.push(activeRepo ? `/repos/${activeRepo.id}/pulls` : "/")}>
                   Run on a PR…
                 </Button>
               </div>
