@@ -5,10 +5,15 @@ import { wrapUntrusted } from '../../platform/prompt.js';
 import { renderPrompt } from '../../platform/prompts.js';
 import {
   BRIEF_PROMPT_TEMPLATE,
+  MAX_DESCRIPTION_CHARS,
+  MAX_LISTED_FILES,
   MAX_REVIEW_FOCUS,
   MAX_RISKS,
   MAX_SUMMARY_CHARS,
+  RISK_KINDS,
+  RISK_KIND_OTHER,
 } from './constants.js';
+import { sanitizeInline } from './helpers.js';
 import type { LineRange } from './helpers.js';
 
 /**
@@ -44,10 +49,7 @@ export interface BriefPromptInput {
   documents: Array<{ path: string; content: string }>;
 }
 
-/** Same character class `reviewer-core/prompt.ts` strips from a label: controls, line breaks, `<`, `>`, `"`. */
-export function sanitizeInline(text: string): string {
-  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}<>"]/gu, '');
-}
+export { sanitizeInline };
 
 function fileLine(f: BriefFileInput): string {
   const ranges = f.ranges.length
@@ -87,12 +89,19 @@ export async function buildBriefMessages(input: BriefPromptInput): Promise<ChatM
     max_summary_chars: String(MAX_SUMMARY_CHARS),
     max_risks: String(MAX_RISKS),
     max_review_focus: String(MAX_REVIEW_FOCUS),
+    risk_kinds: [...RISK_KINDS, RISK_KIND_OTHER].map((k) => `\`${k}\``).join(', '),
   });
+
+  const listed = input.files.slice(0, MAX_LISTED_FILES);
+  const omitted = input.files.length - listed.length;
+  const fileList = listed.map(fileLine).join('\n');
+  const omittedNote =
+    omitted > 0 ? `\n(${omitted} more changed files not listed; do not reference files outside this list)` : '';
 
   const sections: string[] = [
     `## PR title\n${wrapUntrusted('pr-title', input.title)}`,
-    `## PR description\n${wrapUntrusted('pr-description', input.description ?? '')}`,
-    `## Changed files\n${input.files.map(fileLine).join('\n')}`,
+    `## PR description\n${wrapUntrusted('pr-description', (input.description ?? '').slice(0, MAX_DESCRIPTION_CHARS))}`,
+    `## Changed files\n${wrapUntrusted('changed-files', fileList)}${omittedNote}`,
   ];
   if (input.intent) sections.push(`## PR intent\n${wrapUntrusted('pr-intent', intentBody(input.intent))}`);
   if (input.blast) sections.push(`## Blast radius\n${wrapUntrusted('blast-radius', blastBody(input.blast))}`);

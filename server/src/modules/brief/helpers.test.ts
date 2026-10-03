@@ -5,6 +5,7 @@ import {
   changedRanges,
   groundBrief,
   isBlastAvailable,
+  normalizeRiskKind,
   parseFileRef,
   toRecord,
 } from './helpers.js';
@@ -163,6 +164,73 @@ describe('groundBrief', () => {
       FILES,
     );
     expect(exact.review_focus).toHaveLength(1);
+  });
+
+  it('stores a normalised kind on every risk it keeps', () => {
+    const withKind = (kind: string, title: string): Risk => ({ ...risk(['src/a.ts'], title), kind });
+    const out = groundBrief(
+      {
+        risks: [withKind(' Perf ', 'padded'), withKind('bogus', 'unknown'), withKind('db_migration', 'exact')],
+        review_focus: [],
+      },
+      FILES,
+    );
+    expect(out.risks.map((r) => [r.title, r.kind])).toEqual([
+      ['padded', 'perf'],
+      ['unknown', 'other'],
+      ['exact', 'db_migration'],
+    ]);
+  });
+
+  it('resolves the spelling the model was shown back to the real path', () => {
+    const real = 'src/we"ird<name>\u0001.ts';
+    const shown = 'src/weirdname.ts';
+    const files = [{ path: real, patch: PATCH }, ...FILES];
+    const out = groundBrief(
+      {
+        risks: [risk([`${shown}:11`], 'with line'), risk([shown], 'bare')],
+        review_focus: [{ file: shown, line: 11, reason: 'focus' }],
+      },
+      files,
+    );
+    expect(out.risks.map((r) => [r.title, r.file_refs])).toEqual([
+      ['with line', [`${real}:11`]],
+      ['bare', [real]],
+    ]);
+    expect(out.review_focus).toEqual([{ file: real, line: 11, reason: 'focus' }]);
+    expect(out.dropped).toEqual({ risks: 0, review_focus: 0 });
+  });
+
+  it('a sanitised spelling shared by two changed files matches neither', () => {
+    const files = [
+      { path: 'src/x"y.ts', patch: PATCH },
+      { path: 'src/x<y.ts', patch: PATCH },
+      ...FILES,
+    ];
+    const out = groundBrief(
+      {
+        risks: [risk(['src/xy.ts', 'src/xy.ts:11'], 'ambiguous'), risk(['src/a.ts'], 'unambiguous')],
+        review_focus: [{ file: 'src/xy.ts', line: 11, reason: 'ambiguous' }],
+      },
+      files,
+    );
+    expect(out.risks.map((r) => r.title)).toEqual(['unambiguous']);
+    expect(out.review_focus).toEqual([]);
+    expect(out.dropped).toEqual({ risks: 1, review_focus: 1 });
+  });
+});
+
+describe('normalizeRiskKind', () => {
+  it('keeps the five design kinds and maps anything else to other', () => {
+    for (const k of ['security', 'db_migration', 'breaking_api', 'perf', 'deps']) {
+      expect(normalizeRiskKind(k)).toBe(k);
+    }
+    expect(normalizeRiskKind('  Security ')).toBe('security');
+    expect(normalizeRiskKind('DB_Migration')).toBe('db_migration');
+    expect(normalizeRiskKind('performance')).toBe('other');
+    expect(normalizeRiskKind('')).toBe('other');
+    expect(normalizeRiskKind('constructor')).toBe('other');
+    expect(normalizeRiskKind('other')).toBe('other');
   });
 });
 

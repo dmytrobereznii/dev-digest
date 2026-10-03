@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { PrBriefRecord, PrBriefResponse, PrBriefStored } from '@devdigest/shared';
 import { startPg, dockerAvailable, type PgFixture } from './helpers/pg.js';
@@ -13,6 +13,7 @@ import {
   MockSecretsProvider,
 } from '../src/adapters/mocks.js';
 import { TiktokenTokenizer } from '../src/adapters/tokenizer/index.js';
+import { BRIEF_TIMEOUT_MS } from '../src/modules/brief/constants.js';
 import type { RepoIntel } from '../src/modules/repo-intel/types.js';
 
 /**
@@ -111,7 +112,13 @@ d('brief module (Testcontainers pg)', () => {
 
   async function appWith(
     mock: MockLLMProvider,
-    opts: { config?: Partial<AppConfig>; repoIntel?: RepoIntel; secrets?: Record<string, string>; noLlm?: boolean } = {},
+    opts: {
+      config?: Partial<AppConfig>;
+      repoIntel?: RepoIntel;
+      secrets?: Record<string, string>;
+      noLlm?: boolean;
+      github?: MockGitHubClient;
+    } = {},
   ) {
     const app = await buildApp({
       config: { ...baseConfig(), ...opts.config },
@@ -119,7 +126,7 @@ d('brief module (Testcontainers pg)', () => {
       overrides: {
         secrets: new MockSecretsProvider(opts.secrets ?? {}),
         ...(opts.noLlm ? {} : { llm: { openrouter: mock, openai: mock } }),
-        github: github.client,
+        github: opts.github ?? github.client,
         documents: reader,
         ...(opts.repoIntel ? { repoIntel: opts.repoIntel } : {}),
       },
@@ -529,6 +536,114 @@ d('brief module (Testcontainers pg)', () => {
     expect(mock.started).toBe(1);
     expect(structuredCalls(mock)).toHaveLength(1);
     expect((await get(app, pr.id)).json().generating).toBe(false);
+  });
+
+  it('a model call that outlasts the timeout is 502 brief_failed, stores nothing and releases the in-flight lock', async () => {
+    // The first call never settles; later ones answer normally.
+    class HangOnce extends MockLLMProvider {
+      private n = 0;
+      override async completeStructured<T>(req: Parameters<MockLLMProvider['completeStructured']>[0]) {
+        if (this.n++ === 0) return new Promise<never>(() => {});
+        return super.completeStructured(req as never) as Promise<never>;
+      }
+    }
+    const hang = new HangOnce('openai', { structuredBySchema: { pr_brief: FIXTURE } });
+    const app = await appWith(hang);
+    const { pr } = await setupPr();
+
+    // Shorten only the brief's own timer so the test does not wait the real 90 seconds.
+    const realSetTimeout = globalThis.setTimeout;
+    const spy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(((fn: () => void, ms?: number, ...args: unknown[]) =>
+      realSetTimeout(fn, ms === BRIEF_TIMEOUT_MS ? 20 : ms, ...args)) as never);
+    let res;
+    try {
+      res = await post(app, pr.id);
+      expect(spy.mock.calls.some((c) => c[1] === BRIEF_TIMEOUT_MS)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(res.statusCode).toBe(502);
+    expect(res.json().error.code).toBe('brief_failed');
+    expect(await rows(pr.id)).toHaveLength(0);
+    expect((await get(app, pr.id)).json()).toEqual({ brief: null, generating: false });
+
+    // Same app, so the same in-flight set: a second POST is not 409.
+    expect((await post(app, pr.id)).statusCode).toBe(200);
+  });
+
+  it('grounding runs against every changed file when more than 200 are listed', async () => {
+    const { pr } = await setupPr();
+    const extra = Array.from({ length: 203 }, (_, i) => ({
+      prId: pr.id,
+      path: `src/gen/f-${String(i).padStart(4, '0')}.ts`,
+      additions: 1,
+      deletions: 0,
+      patch: '@@ -1,1 +1,2 @@\n ctx\n+x',
+    }));
+    await pg.handle.db.insert(t.prFiles).values(extra);
+    const all = (await pg.handle.db.select().from(t.prFiles).where(eq(t.prFiles.prId, pr.id))).map((f) => f.path);
+    expect(all).toHaveLength(205);
+
+    // Which files fall outside the 200 listed depends on row order, so read it back from the request.
+    const probe = new GatedMock('openai', { structuredBySchema: { pr_brief: FIXTURE } });
+    probe.release();
+    const probeApp = await appWith(probe);
+    await post(probeApp, pr.id);
+    const prompt = userMessage(probe);
+    const unlisted = all.filter((p) => !prompt.includes(`- ${p} [`));
+    expect(unlisted).toHaveLength(5);
+    expect(prompt).toContain('(5 more changed files not listed');
+
+    const target = unlisted[0]!;
+    const mock = okMock({
+      summary: 'S',
+      risks: [],
+      review_focus: [{ file: target, line: 2, reason: 'beyond the cap' }],
+    });
+    const res = await post(await appWith(mock), pr.id);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().review_focus).toEqual([{ file: target, line: 2, reason: 'beyond the cap' }]);
+    expect(res.json().dropped).toEqual({ risks: 0, review_focus: 0 });
+  });
+
+  it('the pr_files refresh never shows a reader zero rows', async () => {
+    const { pr } = await setupPr();
+    const sql = pg.handle.sql;
+    const app = await appWith(okMock(), { github: new MockGitHubClient() });
+
+    // Hold a row lock on the PR: the refresh's insert needs a KEY SHARE lock on it for the
+    // pr_files foreign key, so it parks right after its delete and before its insert.
+    let locked!: () => void;
+    const hasLock = new Promise<void>((r) => (locked = r));
+    let unlock!: () => void;
+    const hold = new Promise<void>((r) => (unlock = r));
+    const blocker = sql.begin(async (tx) => {
+      await tx`select id from pull_requests where id = ${pr.id} for update`;
+      locked();
+      await hold;
+    });
+    await hasLock;
+
+    const refresh = app.inject({ method: 'GET', url: `/pulls/${pr.id}` });
+    try {
+      const deadline = Date.now() + 5000;
+      for (;;) {
+        const [w] = await sql`select count(*)::int as n from pg_stat_activity
+          where wait_event_type = 'Lock' and query ilike 'insert into "pr_files"%'`;
+        if (w!.n > 0) break;
+        if (Date.now() > deadline) throw new Error('refresh never reached its insert');
+        await sleep(10);
+      }
+      const [seen] = await sql`select count(*)::int as n from pr_files where pr_id = ${pr.id}`;
+      expect(seen!.n).toBe(2);
+    } finally {
+      unlock();
+      await blocker;
+    }
+    const res = await refresh;
+    expect(res.statusCode).toBe(200);
+    const after = await pg.handle.db.select().from(t.prFiles).where(eq(t.prFiles.prId, pr.id));
+    expect(after.map((f) => f.path)).toEqual(['src/config.ts']);
   });
 
   it('reading and generating make no GitHub request', async () => {

@@ -236,18 +236,21 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         const gh = await container.github();
         const detail = await gh.getPullRequest({ owner: repo.owner, name: repo.name }, pr.number);
 
-        await container.db.delete(t.prFiles).where(eq(t.prFiles.prId, pr.id));
-        if (detail.files.length > 0) {
-          await container.db.insert(t.prFiles).values(
-            detail.files.map((f) => ({
-              prId: pr.id,
-              path: f.path,
-              additions: f.additions,
-              deletions: f.deletions,
-              patch: f.patch ?? null,
-            })),
-          );
-        }
+        // One transaction: a concurrent reader sees the old rows or the new ones, never none.
+        await container.db.transaction(async (tx) => {
+          await tx.delete(t.prFiles).where(eq(t.prFiles.prId, pr.id));
+          if (detail.files.length > 0) {
+            await tx.insert(t.prFiles).values(
+              detail.files.map((f) => ({
+                prId: pr.id,
+                path: f.path,
+                additions: f.additions,
+                deletions: f.deletions,
+                patch: f.patch ?? null,
+              })),
+            );
+          }
+        });
         await container.db.delete(t.prCommits).where(eq(t.prCommits.prId, pr.id));
         if (detail.commits.length > 0) {
           await container.db.insert(t.prCommits).values(

@@ -1,10 +1,16 @@
 import type { PrBriefRecord, PrBriefStored, Risk, ReviewFocusItem } from '@devdigest/shared';
 import type { BlastRadiusResponse } from '@devdigest/shared';
+import { RISK_KINDS, RISK_KIND_OTHER } from './constants.js';
 
 /**
  * Pure half of the brief module: patch ranges, file-reference parsing, the
  * grounding gate, and the stored-row → API-record mapping. No I/O.
  */
+
+/** Same character class `reviewer-core/prompt.ts` strips from a label: controls, line breaks, `<`, `>`, `"`. */
+export function sanitizeInline(text: string): string {
+  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}<>"]/gu, '');
+}
 
 /** An inclusive new-side line range. */
 export interface LineRange {
@@ -70,6 +76,12 @@ function overlaps(ranges: LineRange[], start: number, end: number): boolean {
   return ranges.some((r) => lo <= r.end && hi >= r.start);
 }
 
+/** A kind outside the known set becomes `other`, so the client never meets an unmapped one. */
+export function normalizeRiskKind(kind: string): string {
+  const k = kind.trim().toLowerCase();
+  return (RISK_KINDS as readonly string[]).includes(k) ? k : RISK_KIND_OTHER;
+}
+
 /**
  * Drop everything the model made up. Paths match exactly. A `review_focus` item
  * needs a changed file and a line inside one of its ranges; a risk keeps only
@@ -79,10 +91,20 @@ function overlaps(ranges: LineRange[], start: number, end: number): boolean {
 export function groundBrief(raw: RawBrief, files: ReadonlyArray<ChangedFile>): GroundedBrief {
   const ranges = new Map(files.map((f) => [f.path, changedRanges(f.patch)]));
 
+  // The model sees sanitised spellings; resolve them back to real paths. A spelling
+  // two different files share is ambiguous and matches nothing.
+  const bySpelling = new Map<string, string | null>();
+  for (const f of files) {
+    const shown = sanitizeInline(f.path);
+    bySpelling.set(shown, bySpelling.has(shown) && bySpelling.get(shown) !== f.path ? null : f.path);
+  }
+  const resolve = (spelling: string): string | null => bySpelling.get(spelling) ?? null;
+
   const focus: ReviewFocusItem[] = [];
   for (const item of raw.review_focus) {
-    const r = ranges.get(item.file);
-    if (r && overlaps(r, item.line, item.line)) focus.push(item);
+    const real = resolve(item.file);
+    const r = real === null ? undefined : ranges.get(real);
+    if (real !== null && r && overlaps(r, item.line, item.line)) focus.push({ ...item, file: real });
   }
 
   const risks: Risk[] = [];
@@ -90,18 +112,22 @@ export function groundBrief(raw: RawBrief, files: ReadonlyArray<ChangedFile>): G
     const refs: string[] = [];
     for (const ref of risk.file_refs) {
       let kept: string | null = null;
-      if (ranges.has(ref)) {
-        kept = ref;
+      const whole = resolve(ref);
+      if (whole !== null) {
+        kept = whole;
       } else {
         const parsed = parseFileRef(ref);
-        const r = ranges.get(parsed.path);
-        if (r) {
-          kept = parsed.start !== null && overlaps(r, parsed.start, parsed.end ?? parsed.start) ? ref : parsed.path;
+        const real = resolve(parsed.path);
+        const r = real === null ? undefined : ranges.get(real);
+        if (real !== null && r) {
+          kept = parsed.start !== null && overlaps(r, parsed.start, parsed.end ?? parsed.start)
+            ? `${real}${ref.slice(parsed.path.length)}`
+            : real;
         }
       }
       if (kept !== null && !refs.includes(kept)) refs.push(kept);
     }
-    if (refs.length > 0) risks.push({ ...risk, file_refs: refs });
+    if (refs.length > 0) risks.push({ ...risk, kind: normalizeRiskKind(risk.kind), file_refs: refs });
   }
 
   return {

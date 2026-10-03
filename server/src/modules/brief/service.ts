@@ -9,6 +9,7 @@ import type {
 import { classifyFile } from '@devdigest/reviewer-core';
 import type { Container } from '../../platform/container.js';
 import { AppError, NotFoundError } from '../../platform/errors.js';
+import { withTimeout } from '../../platform/resilience.js';
 import { resolveFeatureModel } from '../settings/feature-models.js';
 import { BriefRepository } from './repository.js';
 import { changedRanges, groundBrief, isBlastAvailable, toRecord } from './helpers.js';
@@ -96,14 +97,18 @@ export class BriefService {
       let result;
       try {
         const llm = await this.container.llm(provider);
-        result = await llm.completeStructured({
-          model,
-          schema: BriefOutput,
-          schemaName: BRIEF_SCHEMA_NAME,
-          messages,
-          timeoutMs: BRIEF_TIMEOUT_MS,
-          sessionId: `${repoRow.owner}/${repoRow.name}#${pull.number}:brief`,
-        });
+        // The provider may ignore timeoutMs (OpenRouter takes it at construction), so bound it here too.
+        result = await withTimeout(
+          llm.completeStructured({
+            model,
+            schema: BriefOutput,
+            schemaName: BRIEF_SCHEMA_NAME,
+            messages,
+            timeoutMs: BRIEF_TIMEOUT_MS,
+            sessionId: `${repoRow.owner}/${repoRow.name}#${pull.number}:brief`,
+          }),
+          BRIEF_TIMEOUT_MS,
+        );
       } catch (err) {
         throw new BriefFailedError((err as Error).message);
       }
