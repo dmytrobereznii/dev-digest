@@ -38,7 +38,7 @@ d('Settings: feature models + secrets status (Testcontainers pg)', () => {
       model: 'deepseek/deepseek-v4-flash',
     });
     // L03 D12 — 'review_intent' defaults to a CHEAP model, distinct from
-    // 'onboarding'/'risk_brief', and specifically not deepseek-v4-flash
+    // 'onboarding', and specifically not deepseek-v4-flash
     // (reviewer-core INSIGHTS: it hangs on long prompts).
     expect(await resolveFeatureModel(app.container, workspaceId, 'review_intent')).toEqual({
       provider: 'openrouter',
@@ -68,8 +68,8 @@ d('Settings: feature models + secrets status (Testcontainers pg)', () => {
     });
     // An unset feature still resolves to its own registry default.
     expect(await resolveFeatureModel(app.container, workspaceId, 'risk_brief')).toEqual({
-      provider: 'openai',
-      model: 'gpt-4.1',
+      provider: 'openrouter',
+      model: 'anthropic/claude-haiku-4.5',
     });
 
     await app.close();

@@ -2,7 +2,7 @@
   "block": {
     "intent": "Intent",
     "blast": "Blast radius",
-    "risks": "Risks",
+    "risks": "Risk areas",
     "history": "PR history"
   },
   "noRisks": "No notable risks flagged.",
@@ -10,6 +10,33 @@
   "overlap": "{count} overlap",
   "unavailable": "Brief not available yet.",
   "unavailableHint": "Run a review or open the PR to compute it.",
+  "generate": "Generate brief",
+  "generating": "Generating…",
+  "refresh": "Refresh brief",
+  "stale": "Stale — the PR has changed since this was generated",
+  "readError": "Could not load the brief.",
+  "retry": "Retry",
+  "missing": {
+    "label": "Generated without: {inputs}",
+    "intent": "Intent",
+    "blast": "Blast radius",
+    "specs": "Project context documents"
+  },
+  "specsUsed": "Documents used",
+  "modelCost": "{model} · {cost}",
+  "focus": {
+    "title": "Review focus — read these first",
+    "count": "{count}",
+    "empty": "No starting point was suggested."
+  },
+  "risk": {
+    "severity": {
+      "high": "High severity",
+      "medium": "Medium severity",
+      "low": "Low severity"
+    }
+  },
+  "targetMissing": "{path} is not in this PR's files.",
   "intent": {
     "title": "Intent",
     "inScope": "IN SCOPE",

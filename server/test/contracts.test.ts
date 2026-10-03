@@ -21,6 +21,10 @@ import {
   ProjectDocumentList,
   ProjectDocumentContent,
   ContextAttachments,
+  PrBrief,
+  PrBriefRecord,
+  PrBriefResponse,
+  FEATURE_MODELS,
 } from '@devdigest/shared';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -382,6 +386,80 @@ describe('project-context contracts', () => {
     expect(spec(read('client', 'contracts/trace.ts'))).toBe(spec(read('server', 'contracts/trace.ts')));
     const lines = (src: string) => src.split('\n').filter((l) => /specs_(read|skipped):/.test(l));
     expect(lines(read('client', 'contracts/trace.ts'))).toEqual(lines(read('server', 'contracts/trace.ts')));
+  });
+});
+
+describe('PR brief contracts (slice A)', () => {
+  const uuid = '11111111-1111-4111-8111-111111111111';
+  const base = {
+    summary: 'Adds a cache.',
+    intent: null,
+    blast: null,
+    risks: { risks: [] },
+    review_focus: [{ file: 'src/a.ts', line: 12, reason: 'new branch' }],
+    history: { history: [] },
+  };
+  const record = {
+    ...base,
+    pr_id: uuid,
+    head_sha: 'abc123',
+    generated_at: '2026-10-03T10:00:00.000Z',
+    model: 'anthropic/claude-haiku-4.5',
+    tokens_in: 100,
+    tokens_out: 20,
+    cost_usd: 0.002,
+    missing_inputs: ['intent', 'blast', 'specs'],
+    specs_used: ['specs/a.md'],
+    dropped: { risks: 1, review_focus: 2 },
+    stale: false,
+  };
+
+  it('PrBrief carries summary and review_focus items with file, line and reason', () => {
+    const parsed = PrBrief.parse(base);
+    expect(parsed.summary).toBe('Adds a cache.');
+    expect(parsed.review_focus).toEqual([{ file: 'src/a.ts', line: 12, reason: 'new branch' }]);
+    expect(() => PrBrief.parse({ ...base, summary: undefined })).toThrow();
+    expect(() => PrBrief.parse({ ...base, review_focus: [{ file: 'a', line: 0, reason: 'r' }] })).toThrow();
+    expect(() => PrBrief.parse({ ...base, review_focus: [{ file: 'a', line: 1.5, reason: 'r' }] })).toThrow();
+    expect(() => PrBrief.parse({ ...base, review_focus: [{ file: 'a', line: 1 }] })).toThrow();
+    expect(() => PrBrief.parse({ ...base, review_focus: [{ line: 1, reason: 'r' }] })).toThrow();
+  });
+
+  it('PrBrief accepts null intent and null blast', () => {
+    const parsed = PrBrief.parse({ ...base, intent: null, blast: null });
+    expect(parsed.intent).toBeNull();
+    expect(parsed.blast).toBeNull();
+    expect(() => PrBrief.parse({ ...base, intent: undefined })).toThrow();
+    expect(() => PrBrief.parse({ ...base, blast: undefined })).toThrow();
+  });
+
+  it('brief.ts and platform.ts are byte-identical in both vendored copies', () => {
+    const read = (root: 'server' | 'client', f: string) =>
+      readFileSync(fileURLToPath(new URL(`../../${root}/src/vendor/shared/${f}`, import.meta.url)), 'utf8');
+    expect(read('client', 'contracts/brief.ts')).toBe(read('server', 'contracts/brief.ts'));
+    expect(read('client', 'contracts/platform.ts')).toBe(read('server', 'contracts/platform.ts'));
+  });
+
+  it('PrBriefRecord and PrBriefResponse parse the External contracts shapes', () => {
+    const parsed = PrBriefRecord.parse(record);
+    expect(parsed.head_sha).toBe('abc123');
+    expect(parsed.stale).toBe(false);
+    expect(parsed.dropped).toEqual({ risks: 1, review_focus: 2 });
+    expect(PrBriefRecord.parse({ ...record, cost_usd: null }).cost_usd).toBeNull();
+    expect(() => PrBriefRecord.parse({ ...record, stale: undefined })).toThrow();
+    expect(() => PrBriefRecord.parse({ ...record, pr_id: 'nope' })).toThrow();
+    expect(() => PrBriefRecord.parse({ ...record, missing_inputs: ['diff'] })).toThrow();
+    expect(() => PrBriefRecord.parse({ ...record, tokens_in: 1.5 })).toThrow();
+
+    expect(PrBriefResponse.parse({ brief: record, generating: true }).brief?.pr_id).toBe(uuid);
+    expect(PrBriefResponse.parse({ brief: null, generating: false })).toEqual({ brief: null, generating: false });
+    expect(() => PrBriefResponse.parse({ brief: null })).toThrow();
+  });
+
+  it('risk_brief defaults to openrouter and anthropic/claude-haiku-4.5', () => {
+    const def = FEATURE_MODELS.find((f) => f.id === 'risk_brief');
+    expect(def?.defaultProvider).toBe('openrouter');
+    expect(def?.defaultModel).toBe('anthropic/claude-haiku-4.5');
   });
 });
 
