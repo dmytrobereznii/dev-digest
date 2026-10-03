@@ -133,6 +133,21 @@ that way.
 
 ## Codebase Patterns
 
+- **2026-10-03** — The design fixtures for demo PR #482
+  (`.context/docs/design/src/data.jsx`, and the screenshots drawn from
+  them) describe different code from the seeded patches in
+  `server/src/db/seed-diffs.ts`. The fixture's "Adds Redis round-trip per
+  request" risk, its "429 omits Retry-After" reason at `ratelimit.ts:52`
+  and its "posts lookup per user" are all false of the seed: the seeded
+  limiter is in-process, the 429 branch sets `Retry-After` and its defect
+  is a missing `return` at line 71, and the loop reads orgs and prefs. A
+  line-range check passes on text that is wrong, so anything quoted from a
+  fixture into a seed, a spec criterion or an e2e wait has to be read
+  against the patch body. SPEC-12 quoted three such texts and needed two
+  spec rounds to undo them.
+  `server/src/db/seed-brief.ts`,
+  `server/src/db/seed-diffs.ts:31,93-94,180-181`
+
 - **2026-10-03** — The skill path list (`## Project specifications`, then
   one `- <path>` line each) is written in TWO places: the prompt, at
   `reviewer-core/src/prompt.ts:212`, and the skill Context tab's

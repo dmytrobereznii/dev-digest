@@ -98,7 +98,11 @@ yourself once the wave's agents are back.
 
 For each slice:
 
-1. Spawn `implementer` with the slice brief. Keep its agent id.
+1. Spawn `implementer` with the slice brief. Keep its agent id. A task whose
+   only output is a test file or an e2e flow has no implementer step: leave
+   it out of the implementer's brief and give it to `test-writer` with the
+   slice's tests. A task whose only output is prose under a `.context/`
+   directory goes to `implementer`.
 2. On `DONE`, spawn `test-writer` for the tests the slice's task lines name
    and that do not exist yet. A slice with none skips this.
 3. Read the returns:

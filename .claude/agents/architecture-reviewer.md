@@ -70,8 +70,13 @@ It is optional and you do not need it.
    - `reviewer-core/src/**` is not cruised. Grep it for `node:`, `from 'fs'`,
      `drizzle`, `fetch(` and any import outside `zod`, `openai` and the
      contracts.
-   - `client/**` has no depcruise. Judge it by the frontend-architecture rungs
-     and its enforcement greps, never by the server rings.
+   - `client/**` has no depcruise. Judge it by the frontend-architecture rungs,
+     never by the server rings. When the diff touches `client/src/**`, run
+     every grep in `enforcement.md` and give each one's hit count in
+     `<mechanical>`.
+   - A package in the diff whose rules you did not read or whose checks you
+     did not run makes the verdict `CONCERNS`, with the finding
+     `not reviewed: <package>`.
    - Runtime service location, and a new service that takes the whole
      `Container` instead of the ports it uses.
    - Leaks: a repository returning a query builder, a raw Drizzle error or a

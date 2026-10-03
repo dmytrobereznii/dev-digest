@@ -111,6 +111,11 @@ behaviour it asserts, not for the requirement as a whole.
 
 ## Output
 Return only this, at most 900 words. Past 40 Met rows, collapse them to a count.
+Collapsing shortens the report, never the check: every ID gets step 4 before
+it is counted. End `<coverage>` with
+`checked: N by reading code or running a test · M from the plan's table only`,
+and count an ID as Met only when it is in N. In `<matrix>` the Commit cell is
+a hash or `working tree`, never `not mapped`.
 
 ```
 <result>
