@@ -36,6 +36,17 @@ const EnvSchema = z.object({
   // Set API_HOST=0.0.0.0 to opt back in, deliberately.
   API_HOST: z.string().default('127.0.0.1'),
   WEB_PORT: z.coerce.number().int().default(3000),
+  // Project Context: which repo files are offered as attachable documents, and
+  // the token budget for the documents injected into one review prompt. Empty
+  // values (as shipped in .env.example) fall through to the defaults.
+  PROJECT_CONTEXT_GLOB: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().default('**/{specs,docs,insights}/**/*.md'),
+  ),
+  PROJECT_CONTEXT_BUDGET_TOKENS: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().positive().default(8000),
+  ),
   DEVDIGEST_CLONE_DIR: z.string().optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   // `.env` (and .env.example) ship `LOG_LEVEL=` empty; an empty string is not a
@@ -69,6 +80,10 @@ export type AppConfig = {
    * EXACTLY like the ripgrep-only baseline.
    */
   repoIntelEnabled: boolean;
+  /** Glob (picomatch, comma braces) selecting Project Context documents. */
+  projectContextPattern: string;
+  /** Token budget for documents injected into one review prompt. */
+  projectContextBudget: number;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -88,5 +103,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     webOrigin: `http://localhost:${parsed.WEB_PORT}`,
     embeddingsEnabled: parsed.EMBEDDINGS_ENABLED === 'true',
     repoIntelEnabled: parsed.REPO_INTEL_ENABLED !== 'false',
+    projectContextPattern: parsed.PROJECT_CONTEXT_GLOB,
+    projectContextBudget: parsed.PROJECT_CONTEXT_BUDGET_TOKENS,
   };
 }

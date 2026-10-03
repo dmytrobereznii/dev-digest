@@ -32,6 +32,9 @@ import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { IntentService } from '../modules/intent/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
+import { type DocumentReader, FsDocumentReader } from '../adapters/docs/index.js';
+import { ProjectContextRepository } from '../modules/project-context/repository.js';
+import { ProjectContextService } from '../modules/project-context/service.js';
 import { type Tokenizer, TiktokenTokenizer } from '../adapters/tokenizer/index.js';
 
 /**
@@ -55,6 +58,8 @@ export interface ContainerOverrides {
   /** repo-intel T3 adapters — only the indexer pipeline reads these. */
   depgraph?: DepGraph;
   tokenizer?: Tokenizer;
+  /** Project Context document reader — tests inject MockDocumentReader. */
+  documents?: DocumentReader;
 }
 
 export class Container {
@@ -83,6 +88,8 @@ export class Container {
   private _intent?: IntentService;
   private _depgraph?: DepGraph;
   private _tokenizer?: Tokenizer;
+  private _documents?: DocumentReader;
+  private _projectContext?: ProjectContextService;
   private _priceBook?: PriceBook;
 
   constructor(config: AppConfig, db: Db, private overrides: ContainerOverrides = {}) {
@@ -159,6 +166,24 @@ export class Container {
     if (this.overrides.tokenizer) return this.overrides.tokenizer;
     this._tokenizer ??= new TiktokenTokenizer();
     return this._tokenizer;
+  }
+
+  /** Reads Project Context documents from a clone's working tree. */
+  get documents(): DocumentReader {
+    if (this.overrides.documents) return this.overrides.documents;
+    this._documents ??= new FsDocumentReader(this.config.projectContextPattern);
+    return this._documents;
+  }
+
+  /** Project Context service — reviews reach it here, never by importing the module. */
+  get projectContext(): ProjectContextService {
+    this._projectContext ??= new ProjectContextService(
+      new ProjectContextRepository(this.db),
+      this.documents,
+      this.tokenizer,
+      this.config.projectContextPattern,
+    );
+    return this._projectContext;
   }
 
   /**
