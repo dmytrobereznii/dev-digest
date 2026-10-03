@@ -663,7 +663,7 @@ function trace(unit, opts) {
     const at = `+${dur(step.ts - unit.start)}`;
     if (step.say) {
       if (step.say.trim() && step.say !== unit.report) out.push(`${at} > ${oneLine(step.say, opts.full ? 2000 : 300)}`);
-    } else if (step.use.name !== HANDBACK_TOOL) {
+    } else if (step.use && step.use.name !== HANDBACK_TOOL) {
       const { use } = step;
       out.push(`${at} ${use.isError ? 'ERR ' : ''}${use.name} ${oneLine(use.summary, 110)} → ${approxTok(use.chars)}`);
     }
