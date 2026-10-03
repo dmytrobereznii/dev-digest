@@ -1,8 +1,5 @@
 import type { ProjectDocument } from "@devdigest/shared";
-
-/** Heading of the section a skill's attached paths are serialized under. */
-// reviewer-core/src/prompt.ts writes the same heading and `- <path>` lines (its `## Project specifications` list); change both together.
-export const SPEC_LIST_HEADING = "## Project specifications";
+import { SPEC_LIST_HEADING } from "./constants";
 
 /** Documents whose path contains `text`, ignoring case. Blank text keeps all. */
 export function filterDocuments(docs: readonly ProjectDocument[], text: string): ProjectDocument[] {

@@ -121,7 +121,7 @@ describe("ProjectContextView", () => {
     expect(screen.queryByRole("list", { name: context.listLabel })).toBeNull();
     expect(screen.queryByText(context.loadError)).toBeNull();
     expect(screen.queryByText(context.empty.title)).toBeNull();
-    expect(document.body.querySelectorAll(".skeleton").length).toBeGreaterThan(0);
+    expect(screen.getByRole("status", { name: context.loading })).toBeTruthy();
   });
 
   it("shows the error in place of the list", () => {

@@ -1,6 +1,5 @@
 /* ContextTab — the agent side of Project Context: which of the active
    repository's documents are injected into this agent's runs. */
-"use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";

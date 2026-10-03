@@ -1,7 +1,6 @@
 /* ContextTab — the skill side of Project Context. Attached documents are
    inherited by every agent that uses the skill; the "Serializes as" box shows
    the path list appended to the skill's prompt section. */
-"use client";
 
 import React from "react";
 import { useTranslations } from "next-intl";

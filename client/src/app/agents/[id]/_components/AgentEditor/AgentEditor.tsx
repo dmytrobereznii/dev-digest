@@ -22,13 +22,9 @@ export function AgentEditor({ agent, tab, onTab }: { agent: Agent; tab: string; 
         <Tabs tabs={tabs} value={tab} onChange={onTab} pad="0 24px" />
       </div>
       <div style={s.body}>
-        {tab === "skills" ? (
-          <SkillsTab agent={agent} />
-        ) : tab === "context" ? (
-          <ContextTab agent={agent} />
-        ) : (
-          <ConfigTab agent={agent} />
-        )}
+        {tab === "skills" && <SkillsTab agent={agent} />}
+        {tab === "context" && <ContextTab agent={agent} />}
+        {tab !== "skills" && tab !== "context" && <ConfigTab agent={agent} />}
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ export function ProjectContextView() {
   if (isLoading) {
     return (
       <AppShell crumb={crumb}>
-        <div style={s.skeletonStack}>
+        <div style={s.skeletonStack} role="status" aria-label={t("loading")}>
           {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
             <Skeleton key={i} height={28} />
           ))}

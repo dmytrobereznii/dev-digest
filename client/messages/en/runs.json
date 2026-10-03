@@ -38,7 +38,7 @@
       "specsSkipped": "Specs skipped",
       "skipReason": {
         "missing": "missing",
-        "over_budget": "over budget"
+        "overBudget": "over budget"
       },
       "items": "{count, plural, one {# item} other {# items}}",
       "none": "none"

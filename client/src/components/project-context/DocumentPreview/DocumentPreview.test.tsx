@@ -38,13 +38,16 @@ describe("DocumentPreview", () => {
   });
 
   it("raw HTML in a document is not rendered as elements", () => {
-    const { container } = renderPreview(
+    renderPreview(
       'before <script>window.__pwned = 1</script> <img src="x" onerror="alert(1)"> <b id="raw">raw</b> after',
     );
 
-    expect(container.querySelector("script")).toBeNull();
-    expect(container.querySelector("img")).toBeNull();
-    expect(container.querySelector("#raw")).toBeNull();
+    // The document's own text is still shown, only the markup is not live.
+    expect(screen.getByText(/before/)).toBeTruthy();
+    expect(screen.getByText(/after/)).toBeTruthy();
+    expect(screen.queryByRole("img")).toBeNull();
+    // A rendered <b> would split "raw" into its own element.
+    expect(screen.queryByText("raw", { selector: "b" })).toBeNull();
     expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined();
   });
 });

@@ -10,6 +10,12 @@ export const LOG_HEIGHT = 420;
 export const TABS = ["trace", "log"] as const;
 export type TraceTab = (typeof TABS)[number];
 
+/** API spec-skip reason → its `runs` message key under `trace.config.skipReason`. */
+export const SKIP_REASON_KEYS = {
+  missing: "missing",
+  over_budget: "overBudget",
+} as const;
+
 /** Prompt-assembly block accent colours (by leg). */
 export const PROMPT_COLORS = {
   system: "var(--text-muted)",

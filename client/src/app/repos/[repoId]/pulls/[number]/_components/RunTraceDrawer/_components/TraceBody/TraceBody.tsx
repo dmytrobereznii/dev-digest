@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Badge, formatUsd } from "@devdigest/ui";
 import type { RunTrace, FindingRecord } from "@devdigest/shared";
-import { PROMPT_COLORS } from "../../constants";
+import { PROMPT_COLORS, SKIP_REASON_KEYS } from "../../constants";
 import { formatSeconds, formatTokens } from "../../helpers";
 import { s } from "../../styles";
 import { TraceSection } from "../TraceSection";
@@ -55,8 +55,8 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
               {trace.specs_read.length === 0 ? (
                 <span style={s.specsNone}>{t("trace.config.none")}</span>
               ) : (
-                trace.specs_read.map((sp, i) => (
-                  <span key={i} className="mono" style={s.spec}>
+                trace.specs_read.map((sp) => (
+                  <span key={sp.path}className="mono" style={s.spec}>
                     {sp.path} · {t("trace.config.specTokens", { count: sp.tokens })}
                   </span>
                 ))
@@ -66,9 +66,9 @@ export function TraceBody({ trace, findings }: { trace: RunTrace; findings: Find
           {(trace.specs_skipped ?? []).length > 0 && (
             <Row label={t("trace.config.specsSkipped")}>
               <div style={s.specsWrap}>
-                {(trace.specs_skipped ?? []).map((sp, i) => (
-                  <span key={i} className="mono" style={s.spec}>
-                    {sp.path} · {t(`trace.config.skipReason.${sp.reason}`)}
+                {(trace.specs_skipped ?? []).map((sp) => (
+                  <span key={sp.path} className="mono" style={s.spec}>
+                    {sp.path} · {t(`trace.config.skipReason.${SKIP_REASON_KEYS[sp.reason]}`)}
                   </span>
                 ))}
               </div>

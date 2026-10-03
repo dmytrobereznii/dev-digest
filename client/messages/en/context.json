@@ -2,7 +2,7 @@
   "title": "Project Context",
   "crumbRepoFallback": "Repository",
   "refresh": "Refresh",
-  "refreshing": "Refreshing…",
+  "loading": "Loading project documents…",
   "listLabel": "Documents",
   "tokens": "{count} tokens",
   "usedBy": "{count, plural, one {Used by # agent} other {Used by # agents}}",
