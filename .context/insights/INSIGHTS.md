@@ -161,4 +161,10 @@ that way.
 
 ## Recurring Errors & Fixes
 
+- **2026-10-03** — `(eval):1: ==== not found` from a Bash call means zsh
+  expanded a bare word starting with `=` as a command path. The whole command
+  aborts there, so everything after the separator is lost. Quote separators:
+  `echo '-----'`, never `echo =====`. Hit twice in one session and once by a
+  researcher subagent in session `18b85d39`.
+
 ## Open Questions
