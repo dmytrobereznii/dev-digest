@@ -1,0 +1,24 @@
+{
+  "name": "PR Overview shows the seeded brief, keeps it on reload and opens a Review focus entry on Files changed",
+  "description": "PR #482 carries a seeded brief row (server/src/db/seed-brief.ts), so the Overview tab renders the summary, the risk areas and the Review focus list with no model call. Reloading keeps the summary and shows no 'Generate brief' button (absence is asserted with `wait --fn`, the suite has no negative locator). Activating the seeded `src/config.ts:12` entry lands on `?tab=diff&file=src/config.ts&line=12` and renders the src/config.ts patch (`rateLimitWindowMs: 60_000` is an added line there). Deterministic commands only, no model key.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list data settles — the list is a Skeleton until its TanStack Query resolves" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail and brief data settle" },
+    { "cmd": ["wait", "--text", "Adds a token-bucket rate limiter in front of the public API"], "label": "the seeded summary renders on Overview" },
+    { "cmd": ["wait", "--text", "Auth surface touched"], "label": "the first seeded risk title renders" },
+    { "cmd": ["wait", "--text", "src/config.ts:12"], "label": "the first seeded Review focus entry renders" },
+    { "cmd": ["reload"], "label": "reload the page" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "brief data settles again after the reload" },
+    { "cmd": ["wait", "--text", "Adds a token-bucket rate limiter in front of the public API"], "label": "the seeded summary is still there after the reload" },
+    { "cmd": ["wait", "--fn", "!document.body.innerText.includes('Generate brief')"], "label": "no 'Generate brief' button after the reload (D18 absence check)" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "settle before locating the entry button" },
+    { "cmd": ["find", "role", "button", "click", "--name", "src/config.ts:12"], "label": "activate the seeded Review focus entry" },
+    { "cmd": ["wait", "--url", "tab=diff"], "label": "Files changed tab is in the URL" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "diff data settles" },
+    { "cmd": ["wait", "--text", "rateLimitWindowMs: 60_000"], "label": "the src/config.ts diff content renders" }
+  ]
+}
