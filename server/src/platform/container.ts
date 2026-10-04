@@ -31,6 +31,8 @@ import { PullsRepository } from '../modules/pulls/repository.js';
 import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { IntentService } from '../modules/intent/service.js';
+import { BlastRepository } from '../modules/blast/repository.js';
+import { BlastService } from '../modules/blast/service.js';
 import { type DepGraph, DepCruiseGraph } from '../adapters/depgraph/index.js';
 import { type DocumentReader, FsDocumentReader } from '../adapters/docs/index.js';
 import { ProjectContextRepository } from '../modules/project-context/repository.js';
@@ -86,6 +88,7 @@ export class Container {
   private _pullsRepo?: PullsRepository;
   private _repoIntel?: RepoIntel;
   private _intent?: IntentService;
+  private _blast?: BlastService;
   private _depgraph?: DepGraph;
   private _tokenizer?: Tokenizer;
   private _documents?: DocumentReader;
@@ -152,6 +155,16 @@ export class Container {
    */
   get intent(): IntentService {
     return (this._intent ??= new IntentService(this));
+  }
+
+  /** The blast-radius read — the blast route and the brief module share it. */
+  get blast(): BlastService {
+    this._blast ??= new BlastService(
+      new BlastRepository(this.db),
+      this.repoIntel,
+      this.config.repoIntelEnabled,
+    );
+    return this._blast;
   }
 
   /** Import-graph builder (dependency-cruiser). T3 indexer pipeline only. */
