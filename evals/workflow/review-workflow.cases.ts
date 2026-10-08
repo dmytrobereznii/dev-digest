@@ -25,14 +25,16 @@ export const cases: WorkflowCase[] = [
 
   // --- activation pair (2 sessions) -------------------------------------------------------------
   {
-    kind: "activation",
+    // `trace` with `expectSkills`, not `activation`: it asserts the same thing (a Skill call or a
+    // read of the SKILL.md) but stops the session the moment the skill engages. `activation` let
+    // the session run on to its turn cap, where it went on to try to write the insight.
+    kind: "trace",
     name: "engineering-insights activates on a just-found bug cause",
     prompt:
       "I just found why the pgvector query returned zero rows: the column dimension did not match " +
-      "after we changed the embedding model. This was non-obvious and I want to record it so " +
-      "nobody trips on it again.",
-    skill: "engineering-insights",
-    shouldActivate: true,
+      "after we changed the embedding model. This was non-obvious, so before we wrap up, record " +
+      "it as an insight so nobody trips on it again.",
+    expectSkills: ["engineering-insights"],
     maxTurns: 4,
   },
   {
