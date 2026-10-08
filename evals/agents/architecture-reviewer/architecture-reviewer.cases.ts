@@ -38,7 +38,7 @@ export const cases: AgentCase[] = [
     kind: "quality",
     prompt: prompt("reviewer-core-fs.diff"),
     practices: [
-      "reports a finding on the added `import { readFileSync } from 'node:fs'` (or the `readFileSync(...)` call) in reviewer-core/src/review/run.ts, quoting it, as a breach of reviewer-core's no-I/O purity",
+      "reports a finding that reviewer-core/src/review/run.ts now imports `node:fs` (or calls `readFileSync`), as a breach of reviewer-core's no-I/O purity",
       "labels that fs-import finding with severity CRITICAL",
       "the result's verdict value is BLOCKING",
     ],
