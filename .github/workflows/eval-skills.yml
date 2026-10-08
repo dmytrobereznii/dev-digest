@@ -5,9 +5,10 @@
 # run (selected by evals/scripts/ci-detect.mjs). A changed skill without evals is a
 # visible "SKIP <name> (no evals)" line, never a failure.
 #
-# Content tier => direct OpenRouter call, no proxy, cheap model. Model names come from
+# Content tier => direct OpenRouter call, no proxy. Defaults match the local runs (Haiku
+# under test, Sonnet as judge). Model names come from
 # repository variables (Settings > Secrets and variables > Actions > Variables):
-#   EVAL_MODEL_SKILLS / EVAL_JUDGE_MODEL_SKILLS   (default deepseek/deepseek-chat)
+#   EVAL_MODEL_SKILLS / EVAL_JUDGE_MODEL_SKILLS   (defaults anthropic/claude-haiku-4.5 / anthropic/claude-sonnet-5)
 #
 # Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: model
 # jobs are skipped for fork PRs, and the trigger is `pull_request`, never
@@ -152,8 +153,8 @@ jobs:
         working-directory: evals
     env:
       EVAL_BACKEND: openrouter
-      EVAL_MODEL: ${{ vars.EVAL_MODEL_SKILLS || 'deepseek/deepseek-chat' }}
-      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_SKILLS || 'deepseek/deepseek-chat' }}
+      EVAL_MODEL: ${{ vars.EVAL_MODEL_SKILLS || 'anthropic/claude-haiku-4.5' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_SKILLS || 'anthropic/claude-sonnet-5' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
       - uses: actions/checkout@v4

@@ -39,7 +39,7 @@ If a test wouldn't catch a class of regression we care about, we don't write it.
 | reviewer-core | `reviewer-core/` | unit (engine) | vitest | `reviewer-core.yml` | no |
 | mcp | `mcp/` | unit (hermetic) | vitest | `mcp.yml` | no |
 | e2e web | `e2e/` | browser e2e (deterministic) | agent-browser + `run.ts` | `e2e-web.yml` | yes (stack) |
-| harness evals | `evals/` | static gate + live model evals | tsx + vitest + Claude Agent SDK | `eval-skills.yml` `eval-agents.yml` `eval-workflow.yml` | CI only (LiteLLM proxy) |
+| harness evals | `evals/` | static gate + live model evals | tsx + vitest + Claude Agent SDK | `eval-skills.yml` `eval-agents.yml` `eval-workflow.yml` | CI only, and only for a non-Anthropic model (LiteLLM proxy) |
 
 ## What each suite covers
 

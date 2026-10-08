@@ -5,10 +5,11 @@
 # run (selected by evals/scripts/ci-detect.mjs). A changed agent without evals is a
 # visible "SKIP <name> (no evals)" line, never a failure.
 #
-# Tool tier => the Agent SDK speaks the Anthropic protocol, so cheap non-Anthropic
-# models go through the bundled LiteLLM proxy (evals/proxy, Docker, :4000). Model names
+# Tool tier => the Agent SDK speaks the Anthropic protocol. anthropic/* models go to
+# OpenRouter directly; any other model goes through the bundled LiteLLM proxy
+# (evals/proxy, Docker, :4000). Model names
 # come from repository variables (Settings > Secrets and variables > Actions > Variables):
-#   EVAL_MODEL_TOOLS / EVAL_JUDGE_MODEL_TOOLS   (default google/gemini-2.5-flash)
+#   EVAL_MODEL_TOOLS / EVAL_JUDGE_MODEL_TOOLS   (defaults anthropic/claude-haiku-4.5 / anthropic/claude-sonnet-5)
 #
 # Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: model
 # jobs are skipped for fork PRs, and the trigger is `pull_request`, never
@@ -151,9 +152,8 @@ jobs:
         working-directory: evals
     env:
       EVAL_BACKEND: openrouter
-      OPENROUTER_BASE_URL: http://localhost:4000
-      EVAL_MODEL: ${{ vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
-      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
+      EVAL_MODEL: ${{ vars.EVAL_MODEL_TOOLS || 'anthropic/claude-haiku-4.5' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_TOOLS || 'anthropic/claude-sonnet-5' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -179,12 +179,26 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # The engine: LiteLLM proxy reads OPENROUTER_API_KEY from the job env.
+      # anthropic/* models speak the Agent SDK's protocol on OpenRouter directly. Any other
+      # model needs the bundled LiteLLM proxy to translate, and then every tier is pointed at it.
+      - name: Choose the route
+        id: route
+        run: |
+          case "$EVAL_MODEL" in
+            anthropic/*) echo "proxy=false" >> "$GITHUB_OUTPUT"; echo "route: direct to OpenRouter ($EVAL_MODEL)" ;;
+            *) echo "proxy=true" >> "$GITHUB_OUTPUT"
+               echo "OPENROUTER_BASE_URL=http://localhost:4000" >> "$GITHUB_ENV"
+               echo "route: LiteLLM proxy ($EVAL_MODEL)" ;;
+          esac
+
+      # The proxy reads OPENROUTER_API_KEY from the job env.
       - name: Start LiteLLM proxy
         id: proxy
+        if: steps.route.outputs.proxy == 'true'
         run: docker compose -f proxy/docker-compose.yml up -d
 
       - name: Wait for proxy
+        if: steps.route.outputs.proxy == 'true'
         run: pnpm proxy:wait
 
       - name: Run agent evals
