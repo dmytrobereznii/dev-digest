@@ -28,7 +28,9 @@ export async function runOpenRouter(prompt: string, opts: RunOptions = {}): Prom
     "Answer directly and completely from the information given in the prompt.";
   const system = (opts.systemPrompt ?? "") + directive;
 
-  const client = new OpenAI({ apiKey: key, baseURL: BASE_URL, timeout: 90_000, maxRetries: 2 });
+  // 5 retries, not the SDK's 2: OpenRouter's cheap providers answer `429 Provider returned error`
+  // in bursts, and an exhausted retry comes back as the "answer" the judge then scores as a miss.
+  const client = new OpenAI({ apiKey: key, baseURL: BASE_URL, timeout: 90_000, maxRetries: 5 });
 
   const started = Date.now();
   let text = "";
