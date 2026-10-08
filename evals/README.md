@@ -181,10 +181,8 @@ workflow cases:
    model invokes the Skill tool, so it passes.)
 
 > **Isolation note.** `workflowTask` runs with `settingSources:["project"]` + `bypassPermissions`
-> against the live repo. A model that decides to `Write` can touch real files (e.g. your local
-> memory dir) even though `WORKFLOW_ALLOWED_TOOLS` is a read-only list. In CI this is harmless (the
-> checkout is disposable); locally, prefer the Anthropic path or a throwaway clone for the workflow
-> tier.
+> against the live repo. It can read anything in the checkout but has no tool that writes or runs
+> commands — see [Safety](#safety) for how that is enforced.
 
 ### Wiring it into GitHub Actions (per-PR)
 
@@ -571,9 +569,18 @@ tokens > 125% of baseline), `missing_data` (a config has zero records for a test
 
 ## Safety
 
-Sessions run with `permissionMode: "bypassPermissions"`, so `workflowTask` keeps a **read-only
-allow-list** (`Read, Grep, Glob, Task, Agent, Skill` — no `Bash`/`Write`/`Edit`). Don't copy the
-bypass pattern into a context that grants write tools.
+Sessions run with `permissionMode: "bypassPermissions"`, and under that mode `allowedTools` alone
+restricts nothing: a session given `Read, Grep, Glob` was observed running `Bash` and calling a
+claude.ai connector. `runClaude` therefore enforces the list itself:
+
+- `tools` is set to the allow-list, so it is the session's whole toolbox (`workflowTask`:
+  `Read, Grep, Glob, Task, Agent, Skill`; `agentTask`: the agent's declared read-only tools;
+  `skillTask`: none).
+- `Bash`, `Write`, `Edit`, `NotebookEdit` and every `mcp__*` tool are in `disallowedTools`.
+- `mcpServers: {}` with `strictMcpConfig`, plus `ENABLE_CLAUDEAI_MCP_SERVERS=false`, keep the
+  project's `.mcp.json` and the account's claude.ai connectors out of the session.
+
+Don't copy the bypass pattern into a context that grants write tools.
 
 ## Deferred (recorded so it isn't rediscovered)
 

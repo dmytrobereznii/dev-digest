@@ -45,6 +45,8 @@ export interface RunOptions {
   stopWhen?: (partial: Pick<Result, "subagents" | "filesRead" | "skillsInvoked" | "toolsUsed">) => boolean;
 }
 
+const MUTATING_TOOLS = ["Bash", "Write", "Edit", "NotebookEdit"];
+
 /** Run one headless Claude turn-loop and extract what it ACTUALLY did (not its prose). */
 export async function runClaude(prompt: string, opts: RunOptions = {}): Promise<Result> {
   const allowedTools = opts.allowedTools ?? [];
@@ -59,12 +61,27 @@ export async function runClaude(prompt: string, opts: RunOptions = {}): Promise<
     systemPrompt = (systemPrompt ?? "") + directive;
   }
 
+  // `allowedTools` does not restrict anything under bypassPermissions: sessions given
+  // Read/Grep/Glob were observed running Bash, and a contrast control used it to leave its empty
+  // directory and read the real CLAUDE.md. Deny the mutating tools outright unless a caller asked
+  // for one by name, so "read-only" is enforced rather than hoped for.
+  const disallowedTools = [...MUTATING_TOOLS.filter((t) => !allowedTools.includes(t)), "mcp__*"];
+
   const options: Options = {
     model: opts.model ?? EVAL_MODEL,
     maxTurns: opts.maxTurns ?? MAX_TURNS,
-    permissionMode: "bypassPermissions", // safe: evals only read/plan and tools are allow-listed
+    permissionMode: "bypassPermissions", // evals only read/plan; mutating tools are denied below
     systemPrompt,
+    // `tools` is the base set the session is given at all, so the allow-list is also the whole
+    // toolbox: no WebFetch, cron, remote triggers or tool search that nobody asked for.
+    tools: allowedTools,
     allowedTools,
+    disallowedTools,
+    // No MCP at all. A session on the Claude Code login otherwise inherits the project's
+    // .mcp.json AND the account's claude.ai connectors; with bypassPermissions an eval session was
+    // observed calling a Claude Docs write tool. Evals measure skills, agents and CLAUDE.md only.
+    mcpServers: {},
+    strictMcpConfig: true,
     cwd: opts.cwd ?? REPO_ROOT,
     // Default: do NOT load on-disk config — isolates the injected artifact. workflowTask overrides.
     settingSources: opts.settingSources ?? [],

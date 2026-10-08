@@ -25,6 +25,9 @@ const BACKEND = process.env.EVAL_BACKEND ?? "subscription";
  */
 export function subscriptionEnv(): Record<string, string> {
   const env = { ...process.env } as Record<string, string>;
+  // Belt and braces with strictMcpConfig in run-claude.ts: keep the account's claude.ai
+  // connectors (Docs, Gmail, Drive, …) out of eval sessions.
+  env.ENABLE_CLAUDEAI_MCP_SERVERS = "false";
 
   if (BACKEND === "openrouter") {
     const key = process.env.OPENROUTER_API_KEY;
