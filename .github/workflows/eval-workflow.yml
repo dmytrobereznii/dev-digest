@@ -149,15 +149,16 @@ jobs:
       EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
-      # Before anything starts, so a missing secret fails fast and clearly.
+      - uses: actions/checkout@v4
+
+      # Right after checkout (the job's working directory is evals/, which does not exist
+      # before it), and before install or the proxy, so a missing secret fails fast and clearly.
       - name: Require OPENROUTER_API_KEY
         run: |
           if [ -z "${OPENROUTER_API_KEY:-}" ]; then
             echo "::error title=Missing secret::Repository secret OPENROUTER_API_KEY is not set (Settings > Secrets and variables > Actions)."
             exit 1
           fi
-
-      - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
@@ -173,6 +174,7 @@ jobs:
 
       # The engine: LiteLLM proxy reads OPENROUTER_API_KEY from the job env.
       - name: Start LiteLLM proxy
+        id: proxy
         run: docker compose -f proxy/docker-compose.yml up -d
 
       - name: Wait for proxy
@@ -182,9 +184,9 @@ jobs:
         run: pnpm eval:workflow
 
       - name: Proxy logs (on failure)
-        if: failure()
+        if: failure() && steps.proxy.conclusion != 'skipped'
         run: OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-unused}" docker compose -f proxy/docker-compose.yml logs --tail 100
 
       - name: Stop proxy
-        if: always()
+        if: always() && steps.proxy.conclusion != 'skipped'
         run: pnpm proxy:down
