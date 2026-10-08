@@ -14,9 +14,17 @@ services:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: devdigest-eval-litellm
     ports:
-      - "4000:4000"
+      # Loopback only: the gateway runs without auth (below), so it must not be reachable
+      # from the network.
+      - "127.0.0.1:4000:4000"
     environment:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in the environment}
+      # Newer LiteLLM images refuse to start without a master key ("UnsafeMasterKeyError").
+      # This gateway is no-auth by design (see litellm.config.yaml): it ignores the bearer
+      # token the SDK forwards and uses OPENROUTER_API_KEY from its own environment. The flag
+      # is LiteLLM's documented opt-in for that, acceptable because the port is loopback-only
+      # and the container is ephemeral.
+      LITELLM_DANGEROUSLY_PERMIT_WEAK_OR_UNSET_MASTER_KEY: "true"
     volumes:
       - ./litellm.config.yaml:/app/config.yaml:ro
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
