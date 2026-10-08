@@ -1,0 +1,199 @@
+# Harness evals, agents tier (evals/ package, pnpm, vitest + Claude Agent SDK).
+#
+# Blocking, no model and no key: install and typecheck.
+# Model part: only the CHANGED agents that have their own evals/agents/<name>/*.eval.ts
+# run (selected by evals/scripts/ci-detect.mjs). A changed agent without evals is a
+# visible "SKIP <name> (no evals)" line, never a failure.
+#
+# Tool tier => the Agent SDK speaks the Anthropic protocol, so cheap non-Anthropic
+# models go through the bundled LiteLLM proxy (evals/proxy, Docker, :4000). Model names
+# come from repository variables (Settings > Secrets and variables > Actions > Variables):
+#   EVAL_MODEL_TOOLS / EVAL_JUDGE_MODEL_TOOLS   (default google/gemini-2.5-flash)
+#
+# Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: model
+# jobs are skipped for fork PRs, and the trigger is `pull_request`, never
+# `pull_request_target`. Agents run one at a time (OpenRouter rate limits degrade
+# tool runs). Not a required check (the repo has no branch protection).
+name: eval-agents
+
+on:
+  push:
+    paths:
+      - '.claude/agents/**'
+      - 'evals/agents/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-agents.yml'
+  pull_request:
+    paths:
+      - '.claude/agents/**'
+      - 'evals/agents/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-agents.yml'
+
+permissions:
+  contents: read
+
+# Push and pull_request both fire for the same commit; keep only the newest run.
+concurrency:
+  group: eval-agents-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Deterministic gate: no model, no key. Blocks.
+  static:
+    name: static (typecheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: evals
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+  # Which changed agents have evals? No model, no key.
+  detect:
+    name: detect changed agents
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      agents: ${{ steps.detect.outputs.agents }}
+      skipped_agents: ${{ steps.detect.outputs.skipped_agents }}
+    steps:
+      # Full history: the diff needs the PR base / the previous push tip.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Changed files -> eval suites
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          zero=0000000000000000000000000000000000000000
+          names() { git -c core.quotepath=off diff --name-only "$@"; }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(names "$PR_BASE_SHA...$PR_HEAD_SHA")"
+          elif [ "$PUSH_BEFORE" != "$zero" ] && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            files="$(names "$PUSH_BEFORE" "$PUSH_AFTER")"
+          else
+            # New branch (all-zero before) or a force-push that dropped the old tip:
+            # compare with where the branch left the default branch, else the tip commit alone.
+            if base="$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER" 2>/dev/null)"; then
+              files="$(names "$base" "$PUSH_AFTER")"
+            else
+              files="$(git -c core.quotepath=off diff-tree --no-commit-id --name-only -r --root "$PUSH_AFTER")"
+            fi
+          fi
+
+          echo "changed files:"
+          printf '%s\n' "$files" | sed 's/^/  /'
+          CHANGED_FILES="$files" node evals/scripts/ci-detect.mjs
+
+      - name: Report agents without evals
+        env:
+          SKIPPED: ${{ steps.detect.outputs.skipped_agents }}
+        run: |
+          for n in $SKIPPED; do
+            echo "SKIP $n (no evals)"
+            echo "::notice title=eval-agents::SKIP $n (no evals)"
+          done
+
+  fork-notice:
+    name: model evals skipped (fork PR)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "::notice title=eval-agents::Model evals skipped - pull requests from forks get no secrets. Deterministic checks still ran."
+
+  agents:
+    name: agent ${{ matrix.agent }}
+    needs: [detect, static]
+    if: >-
+      needs.detect.outputs.agents != '[]' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        agent: ${{ fromJSON(needs.detect.outputs.agents) }}
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      OPENROUTER_BASE_URL: http://localhost:4000
+      EVAL_MODEL: ${{ vars.EVAL_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_TOOLS || 'google/gemini-2.5-flash' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      # Before anything starts, so a missing secret fails fast and clearly.
+      - name: Require OPENROUTER_API_KEY
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error title=Missing secret::Repository secret OPENROUTER_API_KEY is not set (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # The engine: LiteLLM proxy reads OPENROUTER_API_KEY from the job env.
+      - name: Start LiteLLM proxy
+        run: docker compose -f proxy/docker-compose.yml up -d
+
+      - name: Wait for proxy
+        run: pnpm proxy:wait
+
+      - name: Run agent evals
+        env:
+          AGENT: ${{ matrix.agent }}
+        run: pnpm vitest run "agents/$AGENT"
+
+      - name: Proxy logs (on failure)
+        if: failure()
+        run: OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-unused}" docker compose -f proxy/docker-compose.yml logs --tail 100
+
+      - name: Stop proxy
+        if: always()
+        run: pnpm proxy:down
