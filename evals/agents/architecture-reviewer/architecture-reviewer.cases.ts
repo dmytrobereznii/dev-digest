@@ -24,10 +24,11 @@ export const cases: AgentCase[] = [
       "reports a finding that server/src/modules/blast/service.ts imports or constructs the concrete `OctokitGitHubClient` adapter, i.e. a service depending on a concrete adapter instead of receiving the port",
       "reports a finding that server/src/modules/blast/routes.ts imports or constructs `BlastRepository` directly, bypassing the service",
       // The practice the citation rule in the agent definition exists for: delete that rule and this
-      // one drops while the other three hold. Calibrated twice — demanding the exact ripple wording
-      // made the judge fail outputs that did cite; accepting any named rule let prose such as
-      // "violates the ring 3 rule" pass with the citation rule deleted. The `rule:` slot is the signal.
-      "every finding in the findings list carries an explicit `rule:` citation naming its source, such as `rule: onion-architecture → ...`, `rule: frontend-architecture → ...`, `rule: depcruise:<rule-name>` or `rule: principle ...`; a finding that only says in prose that something violates a ring or a rule, without a `rule:` citation, FAILS this practice",
+      // one drops while the other three hold. Calibrated three times — demanding the exact ripple
+      // wording failed outputs that did cite; accepting any named rule let prose such as "violates
+      // the ring 3 rule" pass with the citation rule deleted; "every finding" failed the case on an
+      // extra third finding. The `rule:` slot on the two planted findings is the signal.
+      "the two findings for the planted violations (the `OctokitGitHubClient` one in service.ts and the `BlastRepository` one in routes.ts) each carry an explicit `rule:` citation naming a source, such as `rule: onion-architecture → ...` or `rule: depcruise:<rule-name>`; if either of those two only says in prose that something violates a ring or a rule, with no `rule:` citation, this practice FAILS",
       "the result contains a non-empty verdict line whose value is CONCERNS or BLOCKING, not NO_FINDINGS",
     ],
     threshold: 1.0,

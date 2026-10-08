@@ -53,7 +53,7 @@ export const cases: WorkflowCase[] = [
     prompt:
       "I am about to start working in server/ on the reviews module. Before you look at any code, " +
       "do whatever this repo's guidelines require for starting work in that package, then tell me " +
-      "you are ready.",
+      "you are ready. Stay inside the current working directory.",
     expectFileRead: "server/.context/insights/INSIGHTS.md",
     tools: ["Read", "Grep", "Glob"],
     maxTurns: 6,
