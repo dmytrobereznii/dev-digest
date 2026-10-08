@@ -1,0 +1,18 @@
+diff --git a/reviewer-core/src/review/run.ts b/reviewer-core/src/review/run.ts
+index 8d2f6a0..c41b9e7 100644
+--- a/reviewer-core/src/review/run.ts
++++ b/reviewer-core/src/review/run.ts
+@@ -1,3 +1,4 @@
++import { readFileSync } from 'node:fs';
+ import type {
+   Finding,
+   LLMProvider,
+@@ -23,6 +24,9 @@ import { reduceReviews, scoreFromFindings, sliceDiff } from './reduce.js';
+
+ /** Default map-reduce threshold (matches the server's FILE_MAP_THRESHOLD_LINES). */
+ export const DEFAULT_MAP_THRESHOLD_LINES = 400;
++/** House style guide appended to every prompt. */
++export const STYLE_GUIDE = readFileSync(new URL('../../STYLE.md', import.meta.url), 'utf8');
+ /** Default structured-output reprompt retries (matches REVIEW_MAX_RETRIES). */
+ export const DEFAULT_REVIEW_MAX_RETRIES = 2;
+
