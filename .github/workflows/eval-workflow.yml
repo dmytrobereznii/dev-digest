@@ -12,6 +12,10 @@
 #   EVAL_MODEL_TOOLS / EVAL_JUDGE_MODEL_TOOLS   (defaults anthropic/claude-haiku-4.5 / anthropic/claude-sonnet-5)
 # Activation cases are known to be flaky on non-Anthropic models.
 #
+# Model jobs run for same-repo pull requests and for pushes to the default branch. A push to
+# any other branch runs only the deterministic jobs: its pull request already runs the models,
+# and running both would double the spend.
+#
 # Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: the
 # model job is skipped for fork PRs, and the trigger is `pull_request`, never
 # `pull_request_target`. Not a required check (the repo has no branch protection).
@@ -38,9 +42,10 @@ on:
 permissions:
   contents: read
 
-# Push and pull_request both fire for the same commit; keep only the newest run.
+# One run per event and branch; a newer commit cancels the older run of the same kind. Push and
+# pull_request runs never cancel each other (a cancelled run shows as a failed check on the PR).
 concurrency:
-  group: eval-workflow-${{ github.head_ref || github.ref_name }}
+  group: eval-workflow-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -136,8 +141,10 @@ jobs:
     needs: [detect, static]
     if: >-
       (needs.detect.outputs.run_workflow == 'true' || needs.detect.outputs.own_file_changed == 'true') &&
-      (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event_name == 'push' &&
+        github.ref_name == github.event.repository.default_branch))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
