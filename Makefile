@@ -1,10 +1,12 @@
 # DevDigest — common operations.
 #
-# Five standalone packages, NOT a workspace: pnpm in server/ and client/,
-# npm in reviewer-core/, e2e/ and mcp/. The fan-out targets below encode that.
+# Six standalone packages, NOT a workspace: pnpm in server/, client/ and
+# evals/, npm in reviewer-core/, e2e/ and mcp/. The fan-out targets below
+# encode that.
 
 .DEFAULT_GOAL := help
-.PHONY: help dev db stop check test test-it build-web typecheck lint lint-arch e2e mcp-inspect mcp-smoke
+.PHONY: help dev db stop check test test-it build-web typecheck lint lint-arch e2e mcp-inspect mcp-smoke \
+	eval-quality eval-skills eval-agents eval-workflow
 
 help: ## Show this help
 	@grep -hE '^[a-z0-9-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -22,6 +24,9 @@ stop: ## Stop the dev servers this checkout started, then Postgres (data kept)
 mcp/node_modules: mcp/package-lock.json
 	cd mcp && npm ci && touch node_modules
 
+evals/node_modules: evals/pnpm-lock.yaml
+	cd evals && pnpm install --frozen-lockfile && touch node_modules
+
 # Everything the CI workflows run except the browser e2e lane, in the order
 # that fails cheapest-first. `make e2e` is the one deliberate omission: it
 # needs the agent-browser CLI and a full ephemeral stack.
@@ -37,7 +42,7 @@ mcp/node_modules: mcp/package-lock.json
 # rewrites `tsconfig.json` and `next-env.d.ts` to point at whatever dist dir it
 # is given, so it dirties two committed files. CI has no dev server, so there
 # it always runs.
-check: typecheck lint lint-arch test test-it build-web ## Everything CI runs except browser e2e (~40s)
+check: typecheck lint lint-arch eval-quality test test-it build-web ## Everything CI runs except browser e2e and model evals (~40s)
 	@printf '\033[1;32m✓ check passed\033[0m — e2e not included (make e2e)\n'
 
 test: mcp/node_modules ## Unit lanes, no Docker (client, server, reviewer-core, mcp)
@@ -56,11 +61,12 @@ build-web: ## Production build of the web app — the lane typecheck + test miss
 		cd client && pnpm build; \
 	fi
 
-typecheck: mcp/node_modules ## Type-check server, client, reviewer-core, mcp
+typecheck: mcp/node_modules evals/node_modules ## Type-check server, client, reviewer-core, mcp, evals
 	cd server && pnpm typecheck
 	cd client && pnpm typecheck
 	cd reviewer-core && npm run typecheck
 	cd mcp && npm run typecheck
+	cd evals && pnpm typecheck
 
 lint: ## ESLint both TypeScript packages
 	cd client && pnpm exec eslint .
@@ -71,6 +77,23 @@ lint-arch: ## Check the onion-architecture boundaries (server)
 
 e2e: ## Hermetic browser e2e on isolated ports (ephemeral Postgres)
 	./scripts/e2e.sh
+
+# Harness evals (evals/README.md): they test .claude/skills, .claude/agents and
+# CLAUDE.md, not the product. Only `eval-quality` is deterministic and part of
+# `check`. The other three start live model sessions on the Claude Code
+# subscription, so they are never part of `check`; CLAUDE.md says which one a
+# change calls for.
+eval-quality: evals/node_modules ## Static SKILL.md gate for every skill (no model)
+	cd evals && pnpm eval:quality
+
+eval-skills: evals/node_modules ## Skill evals — LIVE model sessions, LLM-judged
+	cd evals && pnpm eval:skills
+
+eval-agents: evals/node_modules ## Agent evals — LIVE model sessions, LLM-judged
+	cd evals && pnpm eval:agents
+
+eval-workflow: evals/node_modules ## Workflow evals — LIVE sessions on the real harness, trace-asserted
+	cd evals && pnpm eval:workflow
 
 INSPECTOR := npx -y @modelcontextprotocol/inspector@2.8.0
 MCP_CMD   := mcp/node_modules/.bin/tsx mcp/src/index.ts
