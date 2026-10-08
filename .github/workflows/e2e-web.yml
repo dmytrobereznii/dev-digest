@@ -8,20 +8,23 @@
 # serves the seeded read-only data the specs exercise — no LLM is called.
 name: e2e web
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/e2e-web.yml'
-  pull_request:
-    paths:
-      - 'client/**'
-      - 'server/**'
-      - 'e2e/**'
-      - '.github/workflows/e2e-web.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'client/**'
+  #     - 'server/**'
+  #     - 'e2e/**'
+  #     - '.github/workflows/e2e-web.yml'
+  # pull_request:
+  #   paths:
+  #     - 'client/**'
+  #     - 'server/**'
+  #     - 'e2e/**'
+  #     - '.github/workflows/e2e-web.yml'
 
 permissions:
   contents: read
@@ -34,6 +37,7 @@ env:
   DATABASE_URL: postgres://devdigest:devdigest@localhost:5432/devdigest
   NEXT_PUBLIC_API_BASE: http://localhost:3001
   E2E_BASE_URL: http://localhost:3000
+  API_RATE_LIMIT_MAX: '10000'
 
 jobs:
   e2e:

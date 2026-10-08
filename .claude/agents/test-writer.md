@@ -9,7 +9,8 @@ description: >-
   reports source bugs rather than fixing them. Not for implementing or fixing
   source, including refactors for testability (use implementer), checking a
   change against its plan (use plan-verifier), deciding a test strategy or what
-  to build (use planner), or editing TESTING.md (use doc-writer).
+  to build (use implementation-planner or spec-creator), or editing TESTING.md
+  (use doc-writer).
 model: sonnet
 tools: Read, Grep, Glob, Write, Edit, Bash, Skill
 ---
@@ -49,7 +50,9 @@ Everything else is read-only: source, `server/src/db/seed*`,
 `.github/`, `Makefile`, `scripts/`, `.context/`, `.claude/`, `server/clones/`.
 
 Write every file with Write or Edit. Bash runs test lanes and read-only
-inspection only: no `>`, `tee`, `sed -i`, installs or other file writes.
+inspection only: no `>`, `tee`, `sed -i`, `cp`, `python3`/`node` heredoc that
+opens a file for writing, installs or other file writes. `mkdir -p` is the one
+exception.
 
 ## Process
 1. Read the package's `.context/insights/INSIGHTS.md` (the client and e2e

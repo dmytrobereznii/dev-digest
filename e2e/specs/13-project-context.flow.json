@@ -1,0 +1,22 @@
+{
+  "name": "Project Context shows the not-cloned state on the seeded repo",
+  "description": "The seeded acme/payments-api has a null clone_path (see e2e/.context/docs/seed-contract.md), so no document can be listed in a browser flow; the populated path is covered by the server and component suites. This flow asserts the not-cloned state on both surfaces: the sidebar's Project Context entry opens the page, which says the repository is not cloned (AC-12, AC-20); and the seeded Security Reviewer's editor shows a Context tab after Skills whose body says the same (AC-21, AC-40). The editor renders a Skeleton until its TanStack Query resolves, so `wait --load networkidle` precedes the tab click. Read-only seeded data, no model call. Assumes a freshly-seeded DB (use the hermetic runner).",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app; home redirects to the first repo" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "repo pulls route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "shell and repo list settle" },
+    { "cmd": ["find", "text", "Project Context", "click"], "label": "open Project Context from the sidebar" },
+    { "cmd": ["wait", "--url", "/context"], "label": "project context route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "documents fetch settles" },
+    { "cmd": ["wait", "--text", "Repository not cloned"], "label": "page shows the not-cloned state" },
+
+    { "cmd": ["open", "{BASE}/agents"], "label": "go to the agents list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "Security Reviewer", "click"], "label": "open the seeded Security Reviewer" },
+    { "cmd": ["wait", "--url", "tab=config"], "label": "agent editor opens on Config" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agent detail settles — the editor is a Skeleton until its query resolves" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Context", "--exact"], "label": "switch to the Context tab" },
+    { "cmd": ["wait", "--url", "tab=context"], "label": "context tab is active in the URL" },
+    { "cmd": ["wait", "--text", "Repository not cloned"], "label": "tab shows the not-cloned state" }
+  ]
+}

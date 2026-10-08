@@ -42,14 +42,36 @@ const MAX_LABEL_CHARS = 80;
  * wrapper for the one case it exists to cover.
  */
 function safeLabel(label: string): string {
-  return label.replace(/[<>"\r\n]/g, '').slice(0, MAX_LABEL_CHARS);
+  return stripLabelChars(label).slice(0, MAX_LABEL_CHARS);
+}
+
+function stripLabelChars(label: string): string {
+  return label.replace(/[\p{Cc}\p{Zl}\p{Zp}<>"]/gu, '');
+}
+
+/**
+ * A document path is bounded by the filesystem, not by us: capping it at 80
+ * chars would let two long paths collapse into one label. Same character strip.
+ */
+function safePath(path: string): string {
+  return stripLabelChars(path);
+}
+
+function wrapWithLabel(safeSource: string, content: string): string {
+  // strip any attempt to close our own delimiter
+  const safe = content.replace(/<\/untrusted\s*>/gi, '<\\/untrusted>');
+  return `<untrusted source="${safeSource}">\n${safe}\n</untrusted>`;
 }
 
 export function wrapUntrusted(label: string, content: string): string {
-  // strip any attempt to close our own delimiter
-  const safe = content.replaceAll('</untrusted>', '<\\/untrusted>');
-  return `<untrusted source="${safeLabel(label)}">\n${safe}\n</untrusted>`;
+  return wrapWithLabel(safeLabel(label), content);
 }
+
+/** Fixed, trusted line that opens the `## Project context` section. */
+const PROJECT_CONTEXT_INSTRUCTION =
+  'The blocks below are project documents attached to this review. When a finding relies on ' +
+  'one, name its document path in the rationale: the full path from the block\'s `source` ' +
+  'attribute, not the file name alone.';
 
 /** Cap the PR description so a huge author body can't blow the token budget. */
 const MAX_PR_DESCRIPTION_CHARS = 4000;
@@ -101,6 +123,18 @@ export interface PromptSkill {
   name: string;
   body: string;
   trusted: boolean;
+  /**
+   * Repo-relative paths of the project documents injected on behalf of this
+   * skill. Rendered OUTSIDE the untrusted wrapper as a trailing
+   * `## Project specifications` list. Absent/empty → nothing added.
+   */
+  specPaths?: string[];
+}
+
+/** One project document injected into the prompt. `path` is its repo-relative path. */
+export interface PromptSpec {
+  path: string;
+  content: string;
 }
 
 export interface PromptParts {
@@ -114,8 +148,8 @@ export interface PromptParts {
   skills?: PromptSkill[];
   /** Relevant memory items (trusted, curated). */
   memory?: string[];
-  /** Project-context spec chunks (untrusted content). */
-  specs?: string[];
+  /** Project documents (untrusted content), each labelled with its path. */
+  specs?: PromptSpec[];
   /**
    * Repo skeleton / map (T3): top-ranked symbols by signature, token-budgeted.
    * Untrusted (derived from repo code) — delimiter-wrapped. Rendered before
@@ -172,9 +206,14 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
             // could fabricate structure in the block. Same reasoning as
             // `safeLabel`: for an untrusted skill the name is third-party text.
             const heading = safeLabel(s.name);
-            return s.trusted
+            const section = s.trusted
               ? `## ${heading}\n${s.body}`
               : `## ${heading}\n${wrapUntrusted(`skill:${heading}`, s.body)}`;
+            // The heading and `- <path>` line format are also written by SPEC_LIST_HEADING /
+            // serializeSpecList in client/src/components/project-context/helpers.ts; change together.
+            return s.specPaths && s.specPaths.length > 0
+              ? `${section}\n\n## Project specifications\n${s.specPaths.map((p) => `- ${safePath(p)}`).join('\n')}`
+              : section;
           })
           .join('\n\n')
       : undefined;
@@ -184,7 +223,9 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
       : undefined;
   const specsBlock =
     parts.specs && parts.specs.length > 0
-      ? parts.specs.map((s, i) => wrapUntrusted(`spec-${i}`, s)).join('\n\n')
+      ? `## Project context\n${PROJECT_CONTEXT_INSTRUCTION}\n${parts.specs
+          .map((s) => wrapWithLabel(safePath(s.path), s.content))
+          .join('\n\n')}`
       : undefined;
 
   const prDescription =
@@ -207,7 +248,7 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
     userSections.push(`## Repo skeleton\n${wrapUntrusted('repo-map', parts.repoMap)}`);
   }
-  if (specsBlock) userSections.push(`## Project context\n${specsBlock}`);
+  if (specsBlock) userSections.push(specsBlock);
   if (parts.callers && parts.callers.trim().length > 0) {
     userSections.push(
       `## Callers of changed symbols\n${wrapUntrusted('callers', parts.callers)}`,

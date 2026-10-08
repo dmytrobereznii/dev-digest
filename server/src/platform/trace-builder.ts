@@ -4,6 +4,8 @@ import type {
   RunLogLine,
   RunStats,
   RunTrace,
+  SpecRead,
+  SpecSkipped,
   ToolCall,
 } from '@devdigest/shared';
 import { RunTrace as RunTraceSchema } from '@devdigest/shared';
@@ -34,7 +36,9 @@ export interface BuildTraceInput {
   toolCalls: ToolCall[];
   rawOutput: string;
   memoryPulled: MemoryPulled[];
-  specsRead: string[];
+  specsRead: SpecRead[];
+  /** Omitted → []; nothing was skipped. */
+  specsSkipped?: SpecSkipped[];
   log: RunLogLine[];
 }
 
@@ -55,6 +59,7 @@ export function buildRunTrace(input: BuildTraceInput): RunTrace {
     raw_output: input.rawOutput,
     memory_pulled: input.memoryPulled,
     specs_read: input.specsRead,
+    specs_skipped: input.specsSkipped ?? [],
     log: input.log,
   };
   // Validate so a malformed trace fails loudly at write-time, not read-time.

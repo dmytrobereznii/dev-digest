@@ -7,7 +7,7 @@ description: >-
   reviewer-core or client?", or an open design question in a spec. Returns one
   recommendation and the options it beat. Not for gathering facts with no
   choice attached (use researcher), writing the steps for an approach already
-  chosen (use planner), or reviewing code or a diff that already exists (use
+  chosen (use implementation-planner), or reviewing code or a diff that already exists (use
   architecture-reviewer).
 # opus, by spec 06 §3: this is the architectural-reasoning case. It runs rarely
 # and returns under 1k tokens, and a wrong call on a one-way door (schema,
@@ -85,7 +85,7 @@ Return only this, at most 600 words:
 <options>
 | Option | In one line | <driver 1> | <driver 2> | Cost | Reversible? | Main risk |
 </options>
-<recommendation>Option B: why it wins (2–4 sentences). Confidence high|medium|low. One-way-door parts named. A 2–3 line sketch for the planner.</recommendation>
+<recommendation>Option B: why it wins (2–4 sentences). Confidence high|medium|low. One-way-door parts named. A 2–3 line sketch for the implementation-planner.</recommendation>
 <rejected>- A: the single reason it lost</rejected>
 <would_change_if>- a concrete condition → switch to A</would_change_if>
 <open_questions>at most 3, only ones that would change the verdict</open_questions>

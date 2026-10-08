@@ -9,9 +9,13 @@ import {
   vector,
   index,
   uniqueIndex,
+  bigint,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { workspaces } from './core';
 import { repos } from './repos';
+import { agents } from './agents';
+import { skills } from './skills';
 
 // ============================================================ Context & codebase
 
@@ -124,3 +128,40 @@ export const onboarding = pgTable('onboarding', {
   json: jsonb('json').notNull(),
   generatedAt: timestamp('generated_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ============================================================ Project Context
+
+/**
+ * Documents attached to an agent / a skill, per repository. Only the path is
+ * stored — text is read from the clone at run time. `seq` is an identity column
+ * so attach order cannot tie (re-attaching deletes and re-inserts: a new `seq`).
+ */
+export const agentContextDocs = pgTable(
+  'agent_context_docs',
+  {
+    repoId: uuid('repo_id')
+      .notNull()
+      .references(() => repos.id, { onDelete: 'cascade' }),
+    agentId: uuid('agent_id')
+      .notNull()
+      .references(() => agents.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    seq: bigint('seq', { mode: 'number' }).notNull().generatedAlwaysAsIdentity(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.repoId, t.agentId, t.path] }) }),
+);
+
+export const skillContextDocs = pgTable(
+  'skill_context_docs',
+  {
+    repoId: uuid('repo_id')
+      .notNull()
+      .references(() => repos.id, { onDelete: 'cascade' }),
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    seq: bigint('seq', { mode: 'number' }).notNull().generatedAlwaysAsIdentity(),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.repoId, t.skillId, t.path] }) }),
+);

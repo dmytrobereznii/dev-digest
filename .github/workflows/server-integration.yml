@@ -10,16 +10,19 @@
 # don't provide one).
 name: server integration
 
+# Automatic triggers are off: the suites run locally (`make check`). Start this
+# from the Actions tab, or uncomment the block below to run on push/PR again.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'server/**'
-      - '.github/workflows/server-integration.yml'
-  pull_request:
-    paths:
-      - 'server/**'
-      - '.github/workflows/server-integration.yml'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'server/**'
+  #     - '.github/workflows/server-integration.yml'
+  # pull_request:
+  #   paths:
+  #     - 'server/**'
+  #     - '.github/workflows/server-integration.yml'
 
 permissions:
   contents: read

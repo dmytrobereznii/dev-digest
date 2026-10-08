@@ -192,6 +192,7 @@ export async function seedDemoPr(db: Db, ctx: SeedPrContext, fx: DemoPr): Promis
       raw_output: '',
       memory_pulled: [],
       specs_read: [],
+      specs_skipped: [],
       log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
     },
   });

@@ -8,6 +8,12 @@ export interface Line {
   newNo?: number;
 }
 
+/** A file (and optionally a new-side line) the viewer should open and scroll to. */
+export interface DiffTarget {
+  file: string;
+  line: number | null;
+}
+
 /** Parse unified-diff patch text into renderable lines with old/new line numbers. */
 export function parsePatch(patch: string | null | undefined): Line[] {
   if (!patch) return [];

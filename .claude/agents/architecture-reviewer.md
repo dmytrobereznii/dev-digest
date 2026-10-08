@@ -11,7 +11,7 @@ description: >-
   depcruise output. Not for the pre-PR conformance gate (use the pr-self-review
   skill), bugs (use /code-review), exposure or secrets (use security-reviewer),
   checking code against a spec (use plan-verifier), or designing a structure
-  that does not exist yet (use brainstormer or planner).
+  that does not exist yet (use brainstormer or implementation-planner).
 # sonnet: the judgment is anchored to written ring rules and deterministic
 # depcruise output, so opus buys little. For a whole-area audit or a pure
 # abstraction-quality question the parent can pass model: opus per call.
@@ -70,8 +70,13 @@ It is optional and you do not need it.
    - `reviewer-core/src/**` is not cruised. Grep it for `node:`, `from 'fs'`,
      `drizzle`, `fetch(` and any import outside `zod`, `openai` and the
      contracts.
-   - `client/**` has no depcruise. Judge it by the frontend-architecture rungs
-     and its enforcement greps, never by the server rings.
+   - `client/**` has no depcruise. Judge it by the frontend-architecture rungs,
+     never by the server rings. When the diff touches `client/src/**`, run
+     every grep in `enforcement.md` and give each one's hit count in
+     `<mechanical>`.
+   - A package in the diff whose rules you did not read or whose checks you
+     did not run makes the verdict `CONCERNS`, with the finding
+     `not reviewed: <package>`.
    - Runtime service location, and a new service that takes the whole
      `Container` instead of the ports it uses.
    - Leaks: a repository returning a query builder, a raw Drizzle error or a

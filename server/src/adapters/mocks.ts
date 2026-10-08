@@ -33,6 +33,7 @@ import type {
   SecretKey,
 } from '@devdigest/shared';
 import { parseUnifiedDiff } from './git/diff-parser.js';
+import type { DocumentReader } from './docs/index.js';
 
 /**
  * Deterministic MOCK adapters for tests/dev — NO real network. Each mirrors the
@@ -299,6 +300,22 @@ export class MockGitClient implements GitClient {
   }
   async readFile(_repo: RepoRef, path: string): Promise<string> {
     return this.opts.files?.[path] ?? '';
+  }
+}
+
+// ---------- Mock DocumentReader ----------
+
+/** In-memory Project Context documents keyed by repo-relative path. */
+export class MockDocumentReader implements DocumentReader {
+  constructor(public files: Record<string, string> = {}) {}
+
+  async listPaths(_root: string): Promise<string[]> {
+    return Object.keys(this.files).sort();
+  }
+  async read(_root: string, path: string): Promise<string> {
+    const content = this.files[path];
+    if (content === undefined) throw new Error(`read: "${path}" not found`);
+    return content;
   }
 }
 

@@ -71,6 +71,20 @@ export const RunStats = z.object({
 });
 export type RunStats = z.infer<typeof RunStats>;
 
+/** A project document injected into the prompt, with its token count. */
+export const SpecRead = z.object({
+  path: z.string(),
+  tokens: z.number().int(),
+});
+export type SpecRead = z.infer<typeof SpecRead>;
+
+/** An attached document left out of the prompt, and why. */
+export const SpecSkipped = z.object({
+  path: z.string(),
+  reason: z.enum(['missing', 'over_budget']),
+});
+export type SpecSkipped = z.infer<typeof SpecSkipped>;
+
 /** The single-document trace stored in `run_traces.trace`. */
 export const RunTrace = z.object({
   config: z.object({
@@ -89,7 +103,9 @@ export const RunTrace = z.object({
   tool_calls: z.array(ToolCall),
   raw_output: z.string(),
   memory_pulled: z.array(MemoryPulled),
-  specs_read: z.array(z.string()),
+  specs_read: z.array(SpecRead),
+  /** `.default([])` keeps traces persisted before this field existed parseable. */
+  specs_skipped: z.array(SpecSkipped).default([]),
   log: z.array(RunLogLine),
 });
 export type RunTrace = z.infer<typeof RunTrace>;

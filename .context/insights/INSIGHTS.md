@@ -89,6 +89,13 @@ reproduces the `agents` cycle the rule's own comment already grandfathers
 agents-identical shape was kept. A new module mirroring `agents/` will add a
 17th; that is expected, not a regression.
 
+**Updated 2026-10-03 (L05 project context):** the `depcruise` baseline is
+**0 errors / 18 warnings**: 8 `no-circular` and 10
+`persistence-in-service`. It was already 18 at `2c6c3e0`, before the L05
+build, and the build added none, so the 16 above was stale by then. Check
+a slice by rule, not by total:
+`cd server && pnpm exec depcruise src | grep -oE 'warn [a-z-]+' | sort | uniq -c`
+
 ### 2026-09-16 — Lesson features are built from scratch, never recovered from history
 
 **What:** Every README lesson feature (L01–L08) is implemented from the
@@ -126,6 +133,38 @@ that way.
 
 ## Codebase Patterns
 
+- **2026-10-03** — The design fixtures for demo PR #482
+  (`.context/docs/design/src/data.jsx`, and the screenshots drawn from
+  them) describe different code from the seeded patches in
+  `server/src/db/seed-diffs.ts`. The fixture's "Adds Redis round-trip per
+  request" risk, its "429 omits Retry-After" reason at `ratelimit.ts:52`
+  and its "posts lookup per user" are all false of the seed: the seeded
+  limiter is in-process, the 429 branch sets `Retry-After` and its defect
+  is a missing `return` at line 71, and the loop reads orgs and prefs. A
+  line-range check passes on text that is wrong, so anything quoted from a
+  fixture into a seed, a spec criterion or an e2e wait has to be read
+  against the patch body. SPEC-12 quoted three such texts and needed two
+  spec rounds to undo them.
+  `server/src/db/seed-brief.ts`,
+  `server/src/db/seed-diffs.ts:31,93-94,180-181`
+
+- **2026-10-03** — The skill path list (`## Project specifications`, then
+  one `- <path>` line each) is written in TWO places: the prompt, at
+  `reviewer-core/src/prompt.ts:212`, and the skill Context tab's
+  "Serializes as" preview, `SPEC_LIST_HEADING` and `serializeSpecList` in
+  `client/src/components/project-context/helpers.ts:4`. No type or test
+  ties one to the other, so a change to the heading or the line format in
+  the engine leaves the preview wrong with every lane green. Change both
+  together.
+
+- **2026-10-03** — The starter ships dormant scaffolding for lesson features,
+  so grep for the slot before speccing one as new. For L05 Project Context the
+  trace field and its drawer row already exist and the executor hard-codes
+  `specs_read: []`; the client has hooks calling `GET /repos/:id/context`,
+  which no server route serves.
+  `server/src/modules/reviews/run-executor.ts:319`,
+  `client/src/lib/hooks/core.ts:122`
+
 - **2026-09-20** — The conventions→skill **merge format is transcribed in TWO
   places and must stay byte-identical**: the design's `conventionsToDraft` +
   `slugifyRule` (`.context/docs/design/src/screen_conv_conf.jsx:4`) and the
@@ -160,5 +199,20 @@ that way.
   `.context/docs/custom-agents.md` §7.
 
 ## Recurring Errors & Fixes
+
+- **2026-10-03** — "The UI is down again" with the API still answering on
+  :3001 means the web server was started as a Claude session background
+  task (`pnpm dev` in `client/`) and went away when that session ended:
+  seven such starts since 2026-09-22, none survived. The API outlives them
+  only because it is an orphaned `pnpm dev` no session owns. Start the web
+  server detached and record it, so it survives and `make stop` reaps it:
+  `cd client && nohup pnpm dev >/tmp/web-dev.log 2>&1 </dev/null &` then
+  append its PID to `.dev-pids`. Never free :3000 with `kill $(lsof -ti)`.
+
+- **2026-10-03** — `(eval):1: ==== not found` from a Bash call means zsh
+  expanded a bare word starting with `=` as a command path. The whole command
+  aborts there, so everything after the separator is lost. Quote separators:
+  `echo '-----'`, never `echo =====`. Hit twice in one session and once by a
+  researcher subagent in session `18b85d39`.
 
 ## Open Questions

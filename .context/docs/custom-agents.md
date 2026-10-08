@@ -21,8 +21,8 @@ them again before relying on them.
   *Naming conventions* has a row for agent files.
 - `memory` stays off. Agents *report* findings, and the parent routes them
   through `/engineering-insights` into `INSIGHTS.md`, the team's only store.
-- Write-path limits (planner, test-writer, doc-writer) are enforced by the
-  agent's prompt only, not by a hook.
+- Write-path limits (spec-creator, implementation-planner, test-writer,
+  doc-writer) are enforced by the agent's prompt only, not by a hook.
 - Agents that read or analyze get no `Write`/`Edit`. They get `Bash` only where
   their process needs it, and the body declares it read-only.
 
@@ -90,7 +90,7 @@ filename. `:` is not allowed in names.
 | `tools` | **Always an allowlist** for read-only or advisory agents (`Read, Grep, Glob`, plus `Bash` only if needed). Leave out `Agent` unless the agent orchestrates. |
 | `disallowedTools` | Use it instead of `tools` only when the agent needs almost everything. A specifier such as `Bash(git push *)` still removes the **whole** tool, so use a hook for finer control. |
 | `effort` | Set `low` for mechanical agents. Otherwise leave it unset so it inherits. Changing model or effort is a separate prompt cache. |
-| `maxTurns` | Unset for now (decided 2026-09-22): the first capped run, planner at 40, stopped before writing anything. Add it back per agent when a run actually loops, at about 2× that agent's longest normal run. A capped run comes back marked partial (v2.1.246+) and can be resumed. |
+| `maxTurns` | Unset for now (decided 2026-09-22): the first capped run, planner (now implementation-planner) at 40, stopped before writing anything. Add it back per agent when a run actually loops, at about 2× that agent's longest normal run. A capped run comes back marked partial (v2.1.246+) and can be resumed. |
 | `skills` | Preload only a skill the agent needs on **every** run, because its **full text** is injected at startup. The agent can still call other skills through the Skill tool. |
 | `omitClaudeMd` | `true` only for read-only agents that get everything they need from the delegation prompt (v2.1.271+). See §7 for why it matters here. |
 | `isolation: worktree` | For agents that edit files in parallel. **Gotcha:** the worktree branches from the *default branch*, not the parent's `HEAD`, so it will not see uncommitted work. |
@@ -185,9 +185,12 @@ agent for fact-finding, 2–4 for comparisons, more only for broad research.
 
 **Measure, don't guess.** `/usage` gives session cost, but its cache line covers
 the main conversation only; the plan-tier view attributes usage to subagents.
-`/context` shows what is filling the window. OpenTelemetry
-`claude_code.token.usage` / `claude_code.cost.usage` carry `agent.name` and
-`query_source=subagent`, which is the only per-agent breakdown.
+`/context` shows what is filling the window. For a per-agent breakdown, run
+the `workflow-reviewer` skill: it reads each subagent's transcript from disk
+and reports requests, cache, context size and tool output per agent, with no
+setup. OpenTelemetry `claude_code.token.usage` / `claude_code.cost.usage`
+carry `agent.name` and `query_source=subagent`, and are the only source of
+cost in dollars per agent.
 
 ## 7. DevDigest-specific rules
 

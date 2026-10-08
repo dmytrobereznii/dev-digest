@@ -22,6 +22,11 @@ import {
   CONVENTION_SCAN_AGE_MS,
 } from './seed-conventions.js';
 import { seedIntent } from './seed-intent.js';
+import { seedBrief } from './seed-brief.js';
+
+/** Summary of the seeded sample review on PR #482. */
+export const DEMO_REVIEW_SUMMARY =
+  'Solid middleware approach, but a Stripe secret key is committed in plaintext and the user-list endpoint introduces an N+1 query under the new limiter.';
 
 /**
  * The demo PR's changed files, with their unified-diff patches. A row whose
@@ -29,7 +34,7 @@ import { seedIntent } from './seed-intent.js';
  * repo is never cloned, so that reconstruction is the only source), which
  * leaves every agent reviewing an empty diff.
  */
-const DEMO_PR_FILES = [
+export const DEMO_PR_FILES = [
   { path: 'src/middleware/ratelimit.ts', additions: 84, deletions: 0, patch: RATELIMIT_PATCH },
   { path: 'src/api/public/webhooks.ts', additions: 31, deletions: 6, patch: WEBHOOKS_PATCH },
   { path: 'src/config.ts', additions: 4, deletions: 0, patch: CONFIG_PATCH },
@@ -180,8 +185,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         prId: pr!.id,
         kind: 'review',
         verdict: 'request_changes',
-        summary:
-          'Solid middleware approach, but a Stripe secret key is committed in plaintext and the user-list endpoint introduces an N+1 query under the new limiter.',
+        summary: DEMO_REVIEW_SUMMARY,
         score: 61,
         model: 'seed',
       })
@@ -498,6 +502,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
         raw_output: '',
         memory_pulled: [],
         specs_read: [],
+        specs_skipped: [],
         log: [{ t: '00.00', kind: 'info', msg: 'Seeded run (no LLM call was made)' }],
       },
     });
@@ -525,6 +530,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   // ---- L03: the intent layer's demo rows (./seed-intent.ts) ----
   // Runs last so every demo PR (#482 above + ./seed-prs/) already exists.
   await seedIntent(db, { workspaceId, repoId });
+  await seedBrief(db, { repoId });
 
   return { workspaceId, userId };
 }

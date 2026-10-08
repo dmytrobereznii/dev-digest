@@ -6,7 +6,7 @@
  * `startClosed`. None of this exists yet, so every case but the regression
  * one is expected to fail until FileCard grows these props.
  */
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { PrFile, PrReviewComment } from "@/lib/types";
@@ -154,6 +154,26 @@ describe("FileCard — startClosed (D7)", () => {
 
     expect(screen.getByText(file.path)).toBeInTheDocument();
     expect(screen.queryByText("added line")).not.toBeInTheDocument();
+  });
+});
+
+describe("FileCard — target (AC-68)", () => {
+  it("C1 a target opens the card over startClosed and the size cap", () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    try {
+      // 210 changed lines is over AUTO_EXPAND_MAX_LINES (200); startClosed too.
+      const file = buildFile({ additions: 150, deletions: 60 });
+      const { unmount } = renderWithIntl(<FileCard file={file} startClosed />);
+      // Control: same props without a target stay closed.
+      expect(screen.queryByText("added line")).not.toBeInTheDocument();
+      unmount();
+
+      renderWithIntl(<FileCard file={file} startClosed target={{ file: file.path, line: null }} />);
+      expect(screen.getByText("added line")).toBeInTheDocument();
+    } finally {
+      // @ts-expect-error jsdom has no scrollIntoView; remove the stub again
+      delete Element.prototype.scrollIntoView;
+    }
   });
 });
 

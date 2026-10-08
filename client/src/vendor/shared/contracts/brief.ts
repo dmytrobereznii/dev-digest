@@ -193,10 +193,56 @@ export const SmartDiff = z.object({
 export type SmartDiff = z.infer<typeof SmartDiff>;
 
 // ---- Composed PR Brief (pr_brief.json) ----
+/** One "read this first" entry: a changed file, a line in it, and why. */
+export const ReviewFocusItem = z.object({
+  file: z.string(),
+  line: z.number().int().min(1),
+  reason: z.string(),
+});
+export type ReviewFocusItem = z.infer<typeof ReviewFocusItem>;
+
+/** `intent` and `blast` record what the model was told; null when missing. */
 export const PrBrief = z.object({
-  intent: Intent,
-  blast: BlastRadius,
+  summary: z.string(),
+  intent: Intent.nullable(),
+  blast: BlastRadius.nullable(),
   risks: Risks,
+  review_focus: z.array(ReviewFocusItem),
   history: PrHistory,
 });
 export type PrBrief = z.infer<typeof PrBrief>;
+
+/** An input a generation ran without. */
+export const BriefMissingInput = z.enum(['intent', 'blast', 'specs']);
+export type BriefMissingInput = z.infer<typeof BriefMissingInput>;
+
+/** What `pr_brief.json` holds: the brief plus its generation data. */
+export const PrBriefStored = PrBrief.extend({
+  pr_id: z.string().uuid(),
+  head_sha: z.string(),
+  generated_at: z.string(),
+  model: z.string(),
+  tokens_in: z.number().int(),
+  tokens_out: z.number().int(),
+  cost_usd: z.number().nullable(),
+  missing_inputs: z.array(BriefMissingInput),
+  specs_used: z.array(z.string()),
+  dropped: z.object({
+    risks: z.number().int(),
+    review_focus: z.number().int(),
+  }),
+});
+export type PrBriefStored = z.infer<typeof PrBriefStored>;
+
+/** A stored brief as served: `stale` is computed on read, never stored. */
+export const PrBriefRecord = PrBriefStored.extend({
+  stale: z.boolean(),
+});
+export type PrBriefRecord = z.infer<typeof PrBriefRecord>;
+
+/** Response of `GET /pulls/:id/brief` — null when no brief is stored. */
+export const PrBriefResponse = z.object({
+  brief: PrBriefRecord.nullable(),
+  generating: z.boolean(),
+});
+export type PrBriefResponse = z.infer<typeof PrBriefResponse>;

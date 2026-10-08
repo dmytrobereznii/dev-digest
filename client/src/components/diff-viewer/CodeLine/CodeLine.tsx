@@ -7,7 +7,7 @@ import { Icon } from "@devdigest/ui";
 import { commentTargetFor, type CommentThread, type DiffCommentApi, cs } from "../comments";
 import { type Line } from "../helpers";
 import { type LineAnnotation } from "../annotations";
-import { s, lineRowFor, lineSignFor, markerBarStyle, markerPillStyle } from "../styles";
+import { s, targetLineStyle, lineRowFor, lineSignFor, markerBarStyle, markerPillStyle } from "../styles";
 import { CommentThreadView } from "../CommentThreadView";
 import { InlineComposer } from "../InlineComposer";
 
@@ -17,15 +17,26 @@ export function CodeLine({
   threads,
   annotations,
   commenting,
+  isTarget,
+  scrollToTarget = true,
 }: {
   ln: Line;
   path: string;
   threads: CommentThread[];
   annotations: LineAnnotation[];
   commenting?: DiffCommentApi;
+  /** This is the line a navigation targeted: mark it and scroll it into view. */
+  isTarget?: boolean;
+  /** False once the target has already scrolled: the mark stays, the scroll does not repeat. */
+  scrollToTarget?: boolean;
 }) {
   const [hover, setHover] = React.useState(false);
   const [composing, setComposing] = React.useState(false);
+  const rowRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (isTarget && scrollToTarget) rowRef.current?.scrollIntoView?.({ block: "center" });
+  }, [isTarget, scrollToTarget]);
 
   if (ln.kind === "hunk") {
     return (
@@ -49,7 +60,11 @@ export function CodeLine({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div style={{ ...lineRowFor(ln.kind), position: "relative" }}>
+      <div
+        ref={rowRef}
+        aria-current={isTarget ? "true" : undefined}
+        style={{ ...lineRowFor(ln.kind), position: "relative", ...(isTarget ? targetLineStyle : null) }}
+      >
         {marker && <div data-testid="line-marker-bar" style={markerBarStyle(marker.color)} />}
         <span className="mono tnum" style={{ ...s.lineNo, position: "relative" }}>
           {showAdd && target && (

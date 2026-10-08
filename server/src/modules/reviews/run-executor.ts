@@ -208,13 +208,44 @@ export class ReviewRunExecutor {
       // which carries the reasoning) — a third-party body is rendered as DATA
       // inside <untrusted> by assemblePrompt.
       const linkedSkills = await this.agents.linkedSkills(agent.id);
-      const skills = linkedSkills
-        .filter((l) => l.skill.enabled)
-        .map((l) => ({
+      const enabledLinks = linkedSkills.filter((l) => l.skill.enabled);
+
+      // Project Context — documents attached to the agent and its enabled
+      // skills for THIS repository. Best-effort: a failed lookup injects
+      // nothing and never fails the run.
+      let ctx: Awaited<ReturnType<Container['projectContext']['resolveForRun']>> | undefined;
+      try {
+        ctx = await this.container.projectContext.resolveForRun(
+          agent.id,
+          enabledLinks.map((l) => l.skill.id),
+          { id: repo.id, clonePath: repo.clonePath },
+        );
+      } catch (err) {
+        runLog.info(`project context: unavailable — ${(err as Error).message}`);
+      }
+      if (ctx && (ctx.plan.injected.length > 0 || ctx.plan.skipped.length > 0)) {
+        const tokens = ctx.plan.injected.reduce((n, d) => n + d.tokens, 0);
+        runLog.info(
+          `Project context: ${ctx.plan.injected.length} document(s) injected (${tokens.toLocaleString('en-US')} tokens)` +
+            (ctx.plan.skipped.length > 0 ? `; ${ctx.plan.skipped.length} skipped` : ''),
+        );
+        for (const s of ctx.plan.skipped) {
+          runLog.info(`Project context: skipped ${s.path} (${s.reason})`);
+        }
+      }
+      const specs = ctx?.documents ?? [];
+      const specsRead = ctx?.plan.injected.map((d) => ({ path: d.path, tokens: d.tokens })) ?? [];
+      const specsSkipped = ctx?.plan.skipped ?? [];
+
+      const skills = enabledLinks.map((l) => {
+        const specPaths = ctx?.skillPaths.get(l.skill.id);
+        return {
           name: l.skill.name,
           body: l.skill.body,
           trusted: isTrustedSource(l.skill.source),
-        }));
+          ...(specPaths?.length ? { specPaths } : {}),
+        };
+      });
       if (linkedSkills.length > 0) {
         const chars = skills.reduce((n, sk) => n + sk.body.length, 0);
         const skipped = linkedSkills.length - skills.length;
@@ -244,6 +275,8 @@ export class ReviewRunExecutor {
         // L02 — linked+enabled skills, same omit-when-empty contract: an agent
         // with no skills produces a byte-identical prompt to the pre-L02 one.
         ...(skills.length ? { skills } : {}),
+        // Project Context documents, same omit-when-empty contract.
+        ...(specs.length ? { specs } : {}),
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
@@ -316,7 +349,8 @@ export class ReviewRunExecutor {
         })),
         raw_output: outcome.raw,
         memory_pulled: [],
-        specs_read: [],
+        specs_read: specsRead,
+        specs_skipped: specsSkipped,
         // Persisted log = the run's FULL event buffer (incl. shared pre-work:
         // diff load + intent), not just events recorded inside this method.
         log: runLog.logFor(runId),
@@ -490,6 +524,7 @@ export class ReviewRunExecutor {
       raw_output: '',
       memory_pulled: [],
       specs_read: [],
+      specs_skipped: [],
       log: this.container.runBus.buffer(runId).map((e) => ({ t: e.t, kind: e.kind, msg: e.msg })),
     };
   }

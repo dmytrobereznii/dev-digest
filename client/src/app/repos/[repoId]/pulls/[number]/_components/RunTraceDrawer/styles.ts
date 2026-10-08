@@ -114,7 +114,7 @@ export const s = {
 
   // ---- Row ----
   row: { display: "flex", gap: 12 } satisfies CSSProperties,
-  rowLabel: { color: "var(--text-muted)", width: 110 } satisfies CSSProperties,
+  rowLabel: { color: "var(--text-muted)", width: 110, flexShrink: 0 } satisfies CSSProperties,
 
   // ---- Drawer body ----
   footer: { display: "flex", gap: 10 } satisfies CSSProperties,

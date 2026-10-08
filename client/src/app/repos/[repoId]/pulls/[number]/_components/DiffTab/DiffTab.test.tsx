@@ -7,19 +7,19 @@
  * fetch, no MSW); the fixture mirrors #499's shape (spec §6) but keeps
  * patches minimal for readability.
  */
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { PrFile } from "@/lib/types";
 import type { FindingRecord, ReviewRecord, SmartDiffResponse } from "@devdigest/shared";
-import { prReview, shell } from "@/test/messages";
-
+import { brief, prReview, shell } from "@/test/messages";
 let smartDiffData: SmartDiffResponse | undefined;
 let reviewsData: ReviewRecord[] | undefined;
+let smartDiffError = false;
 const dismiss = vi.fn();
 
 vi.mock("@/lib/hooks/reviews", () => ({
-  useSmartDiff: () => ({ data: smartDiffData, isLoading: false, isError: false }),
+  useSmartDiff: () => ({ data: smartDiffData, isLoading: false, isError: smartDiffError }),
   usePrReviews: () => ({ data: reviewsData, isLoading: false }),
   useFindingAction: () => ({ mutate: dismiss, isPending: false }),
   usePrComments: () => ({ data: [] }),
@@ -33,11 +33,12 @@ afterEach(() => {
   dismiss.mockClear();
   smartDiffData = undefined;
   reviewsData = undefined;
+  smartDiffError = false;
 });
 
 function renderWithIntl(ui: React.ReactElement) {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview, shell }}>
+    <NextIntlClientProvider locale="en" messages={{ prReview, shell, brief }}>
       {ui}
     </NextIntlClientProvider>,
   );
@@ -463,5 +464,195 @@ describe("DiffTab — no review yet (A15)", () => {
 
     expect(screen.getByText("No review yet — run one to see findings inline")).toBeInTheDocument();
     expect((container.textContent ?? "")).not.toMatch(/●/);
+  });
+});
+
+// ---- Files changed opened with a target (AC-67..AC-73, NFR-11) ----
+describe("DiffTab — target file / line", () => {
+  const scrollIntoView = vi.fn();
+
+  beforeEach(() => {
+    scrollIntoView.mockReset();
+    Element.prototype.scrollIntoView = scrollIntoView;
+  });
+
+  afterEach(() => {
+    // @ts-expect-error jsdom has no scrollIntoView; remove the stub again
+    delete Element.prototype.scrollIntoView;
+  });
+
+  /** Elements scrollIntoView was called on. */
+  const scrolled = () => scrollIntoView.mock.contexts as HTMLElement[];
+
+  // retry.ts is over the auto-expand cap (200 changed lines).
+  const BIG_FILES = FILES.map((f) =>
+    f.path === "src/api/payouts/retry.ts" ? { ...f, additions: 150, deletions: 60 } : f,
+  );
+
+  it("X1 Smart order: a target in a collapsed group expands the group", () => {
+    smartDiffData = smartDiffFixture();
+    reviewsData = [REVIEW];
+    renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={FILES} target={{ file: "pnpm-lock.yaml", line: null }} />,
+    );
+
+    expect(screen.getByText(/ioredis: 5\.4\.1/)).toBeInTheDocument();
+  });
+
+  it("X2 a target file over the auto-expand limit is expanded", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const { unmount } = renderWithIntl(<DiffTab prId="pr-499" filesCount={7} files={BIG_FILES} />);
+    // Control: without a target the oversized file stays closed.
+    expect(screen.queryByText(/retry_window_exhausted/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithIntl(
+      <DiffTab
+        prId="pr-499"
+        filesCount={7}
+        files={BIG_FILES}
+        target={{ file: "src/api/payouts/retry.ts", line: null }}
+      />,
+    );
+    expect(screen.getByText(/retry_window_exhausted/)).toBeInTheDocument();
+  });
+
+  it("X3 the target card is scrolled into view", () => {
+    smartDiffData = smartDiffFixture();
+    reviewsData = [REVIEW];
+    renderWithIntl(
+      <DiffTab
+        prId="pr-499"
+        filesCount={7}
+        files={FILES}
+        target={{ file: "docs/retry-window.md", line: null }}
+      />,
+    );
+
+    expect(scrolled()).toHaveLength(1);
+    const card = scrolled()[0];
+    expect(card).toContainElement(screen.getByText("docs/retry-window.md"));
+    expect(card).not.toContainElement(screen.getByText("src/lib/retry-window.ts"));
+  });
+
+  it("X4 Original order: the target card is expanded and in view in the flat list", () => {
+    // A smart-diff load error forces the flat Original order view.
+    smartDiffError = true;
+    smartDiffData = undefined;
+    reviewsData = [];
+    renderWithIntl(
+      <DiffTab
+        prId="pr-499"
+        filesCount={7}
+        files={BIG_FILES}
+        target={{ file: "src/api/payouts/retry.ts", line: null }}
+      />,
+    );
+
+    expect(screen.queryByText("Core logic")).not.toBeInTheDocument();
+    expect(screen.getByText(/retry_window_exhausted/)).toBeInTheDocument();
+    expect(scrolled()).toHaveLength(1);
+    expect(scrolled()[0]).toContainElement(screen.getByText("src/api/payouts/retry.ts"));
+  });
+
+  it("X5 a rendered target line is marked and scrolled into view", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const { container } = renderWithIntl(
+      <DiffTab
+        prId="pr-499"
+        filesCount={7}
+        files={FILES}
+        target={{ file: "src/lib/retry-window.ts", line: 2 }}
+      />,
+    );
+
+    const marked = container.querySelectorAll('[aria-current="true"]');
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.textContent).toContain("record(now");
+    expect(scrolled()).toEqual([marked[0]]);
+  });
+
+  it("X6 an unrendered target line marks nothing and scrolls to the card", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const { container } = renderWithIntl(
+      <DiffTab
+        prId="pr-499"
+        filesCount={7}
+        files={FILES}
+        target={{ file: "src/lib/retry-window.ts", line: 999 }}
+      />,
+    );
+
+    expect(container.querySelector('[aria-current="true"]')).toBeNull();
+    expect(scrolled()).toHaveLength(1);
+    const card = scrolled()[0];
+    expect(card).toContainElement(screen.getByText("src/lib/retry-window.ts"));
+    expect(card).not.toContainElement(screen.getByText("src/api/payouts/retry.ts"));
+  });
+
+  it("X7 an unknown target file shows a notice naming the path and applies no target", () => {
+    smartDiffData = smartDiffFixture();
+    reviewsData = [REVIEW];
+    // Near-miss of a real path: only an exact match may navigate.
+    const missing = "src/lib/retry-window.tsx";
+    const { container } = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={FILES} target={{ file: missing, line: 2 }} />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(`${missing} is not in this PR's files.`);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(container.querySelector('[aria-current="true"]')).toBeNull();
+    // No group was force-opened by the rejected target.
+    expect(screen.queryByText(/ioredis: 5\.4\.1/)).not.toBeInTheDocument();
+  });
+
+  const LOCK_TARGET = { file: "pnpm-lock.yaml", line: 40 };
+  // retry.ts is over the auto-expand cap, so only the target opens it; its group (core) is open by default.
+  const BIG_TARGET = { file: "src/api/payouts/retry.ts", line: 3 };
+
+  it("after the target was applied, re-expanding its group does not re-open the file or scroll again", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const { container } = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={BIG_FILES} target={BIG_TARGET} />,
+    );
+    // First arrival: card opened, line marked and scrolled once.
+    expect(screen.getByText(/retry_window_exhausted/)).toBeInTheDocument();
+    expect(container.querySelectorAll('[aria-current="true"]')).toHaveLength(1);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+    // Collapse the target file, then collapse and re-expand its role group.
+    fireEvent.click(screen.getByText("src/api/payouts/retry.ts"));
+    expect(screen.queryByText(/retry_window_exhausted/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(prReview.smartDiff.coreLabel));
+    fireEvent.click(screen.getByText(prReview.smartDiff.coreLabel));
+
+    // The file stays collapsed and nothing scrolled again.
+    expect(screen.queryByText(/retry_window_exhausted/)).not.toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+    // The line mark stays: opening the file by hand shows it, still without a scroll.
+    fireEvent.click(screen.getByText("src/api/payouts/retry.ts"));
+    const marked = container.querySelectorAll('[aria-current="true"]');
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.textContent).toContain("retry_window_exhausted");
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  it("a remount of DiffTab with the same target applies it again", () => {
+    smartDiffData = smartDiffFixture({ zeroFindings: true });
+    reviewsData = [];
+    const first = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={FILES} target={LOCK_TARGET} />,
+    );
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    renderWithIntl(<DiffTab prId="pr-499" filesCount={7} files={FILES} target={LOCK_TARGET} />);
+    expect(screen.getByText(/ioredis: 5\.4\.1/)).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
   });
 });

@@ -63,7 +63,8 @@ given, so that trades a runtime clash for two dirty committed files.
 
 Current clean baselines — a `check` that reports these is green, not dirty:
 client **0 errors / 52 warnings**, server **0 / 0**, `depcruise`
-**0 errors / 16 warnings**.
+**0 errors / 18 warnings** (8 `no-circular`, 10 `persistence-in-service`;
+measured 2026-10-03).
 
 ## Gotchas
 

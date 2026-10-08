@@ -76,3 +76,13 @@ describe("SkillEditor", () => {
     expect(screen.getByText("Saving snapshots the body as v5")).toBeInTheDocument();
   });
 });
+
+describe("SkillEditor Context tab", () => {
+  it("shows a Context tab after Config", () => {
+    renderEditor();
+    const labels = screen.getAllByRole("button").map((b) => b.textContent?.trim());
+    const config = labels.indexOf("Config");
+    expect(config).toBeGreaterThanOrEqual(0);
+    expect(labels[config + 1]).toBe("Context");
+  });
+});

@@ -77,8 +77,8 @@ Severities here are **fixed** — no model judgment, nothing to argue about:
 | an always-on repo rule broken (`routing.md` § Always-on) | `CRITICAL` |
 | a convention grep hit | `WARNING` |
 
-`depcruise`'s baseline is **0 errors, 15 warnings**. A finding is a *new*
-error, not the baseline.
+`depcruise`'s baseline is **0 errors, 18 warnings** (measured 2026-10-03). A
+finding is a *new* error, not the baseline.
 
 **If this lane produces a `CRITICAL`, stop here.** Skip Step 4, write the
 verdict, report. A failing typecheck is cheap to fix and re-run, and judgment

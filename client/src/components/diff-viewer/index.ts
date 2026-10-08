@@ -3,4 +3,5 @@
 export { DiffViewer } from "./DiffViewer";
 export { lineKey } from "./comments";
 export type { DiffCommentApi } from "./comments";
+export type { DiffTarget } from "./helpers";
 export type { LineAnnotation, LineMarker } from "./annotations";

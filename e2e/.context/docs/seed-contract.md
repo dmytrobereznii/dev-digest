@@ -17,6 +17,13 @@ this table before touching the seed.
 | `src/config.ts` | seeded file patch | diff viewer | 05 |
 | `Security Reviewer` | built-in agent name | agents list | 03 |
 | `This repository has no index yet` | acme clone_path null → repo-intel no_data | BlastRadiusCard status notice | 12 |
+| `Repository not cloned` | acme clone_path null → project-context `not_cloned` | Project Context page and the agent editor's Context tab | 13 |
+
+| `Adds a token-bucket rate limiter in front of the public API` | first clause of `summary` in the hand-authored `pr_brief` row for #482 (`server/src/db/seed-brief.ts`) | PR Overview brief summary | 14 |
+| `Auth surface touched` | title of the first seeded risk (`risks.risks[0]`) | PR Overview risk areas | 14 |
+| `src/config.ts:12` | first seeded `review_focus` entry (`file` + `line`) | PR Overview review-focus button, rendered `file:line` | 14 |
+| `rateLimitWindowMs: 60_000` | new-side line of the seeded `src/config.ts` patch (`seed-diffs.ts`) | Files changed diff after the focus entry opens `tab=diff` | 14 |
+| no `Generate brief` text | the brief row exists, so the empty-state button is absent, also after `reload` | PR Overview (asserted with `wait --fn`) | 14 |
 
 Flows 01, 06 and 07 assert only static UI copy.
 
@@ -31,6 +38,18 @@ out waiting for PR #482. `make e2e`'s fresh stack is the safe way to run them.
 The sample review predates `agent_runs`, so the seed attaches its run in a
 separate block that only fires when `reviews.run_id` is null. A DB seeded
 before L01 gains the run on the next `pnpm db:seed`; it does not need a reset.
+
+## The brief's cost never renders as `$0.014`
+
+`$0.014` belongs to flow 02: the sample review's run, shown by `CostBadge`. The
+seeded brief carries `cost_usd: 0.0031`, which `BriefSummary` renders through
+`formatUsd` (`< $1` → 3 dp) as `$0.003`, next to the model name. Flow 14 never
+waits on a cost, and the brief's cost must never be set to `0.014`, or flow 02's
+`$0.014` stops being unique on the Overview.
+
+The `pr_brief` row is insert-only (`seedBrief` returns when one exists), so a
+brief a user generated on #482 replaces the seeded values and fails flow 14.
+`make e2e`'s fresh stack is the safe way to run it.
 
 ## The other demo PRs do not touch this contract
 

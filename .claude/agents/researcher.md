@@ -6,7 +6,7 @@ description: >-
   actually behaves at the version we run; how DevDigest currently does X
   across packages. Returns a cited, dated summary that separates verified facts from inference,
   and writes nothing. Not for locating a file or symbol (use Explore), an
-  implementation plan (use planner), picking between options (use brainstormer),
+  implementation plan (use implementation-planner), picking between options (use brainstormer),
   reviewing a diff (use architecture-reviewer or security-reviewer), or
   checking finished code against a plan (use plan-verifier).
 # sonnet: weighing sources is more than search, and the Opus parent makes the

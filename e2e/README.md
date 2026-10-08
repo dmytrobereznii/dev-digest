@@ -83,7 +83,8 @@ Env knobs:
 - Runner: `E2E_BASE_URL`, `AGENT_BROWSER_BIN` (default `agent-browser`),
   `E2E_STEP_TIMEOUT` (ms, default 60000).
 - Hermetic stack (`scripts/e2e.sh`): `E2E_PG_PORT` (5433), `E2E_API_PORT` (3101),
-  `E2E_WEB_PORT` (3100), `E2E_PG_CONTAINER` (`devdigest-e2e-postgres`),
+  `E2E_WEB_PORT` (3100), `E2E_API_RATE_LIMIT_MAX` (10000; exported to the API
+  as `API_RATE_LIMIT_MAX`, the global per-minute limit), `E2E_PG_CONTAINER` (`devdigest-e2e-postgres`),
   `E2E_PG_IMAGE` (`pgvector/pgvector:pg16`).
 
 Failure screenshots are written to `e2e/test-results/` (git-ignored; uploaded as

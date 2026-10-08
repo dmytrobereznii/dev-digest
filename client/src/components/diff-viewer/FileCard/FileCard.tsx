@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@devdigest/ui";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
-import { parsePatch, type Line } from "../helpers";
+import { parsePatch, type DiffTarget, type Line } from "../helpers";
 import {
   buildThreads,
   keysForLine,
@@ -52,8 +52,14 @@ export function FileCard({
   annotations,
   flagged,
   startClosed,
+  target,
+  applyTarget = true,
 }: {
   file: PrFile;
+  /** False once the target has been applied: it still marks the line, but no longer opens or scrolls. */
+  applyTarget?: boolean;
+  /** When set and naming this file: open the card and scroll to it (or its line). */
+  target?: DiffTarget | null;
   commenting?: DiffCommentApi;
   /** Generic (marker, node) pairs keyed to this file's rendered lines (D7). */
   annotations?: LineAnnotation[];
@@ -65,14 +71,29 @@ export function FileCard({
   const t = useTranslations("shell");
   // A file with findings always opens (D6), even over startClosed or the
   // size cap; otherwise startClosed wins, then the auto-expand size rule.
+  const isTargetFile = !!target && target.file === file.path;
   const [open, setOpen] = React.useState(
-    flagged
+    flagged || (isTargetFile && applyTarget)
       ? true
       : startClosed
         ? false
         : (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
   );
   const lines = React.useMemo(() => parsePatch(file.patch), [file.patch]);
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const targetLine = isTargetFile ? target.line : null;
+  // Matches on the new side only; a rendered line wins the scroll over the card.
+  const targetLineRendered =
+    targetLine != null && lines.some((ln) => ln.kind !== "hunk" && ln.newNo === targetLine);
+
+  React.useEffect(() => {
+    if (isTargetFile && applyTarget) setOpen(true);
+  }, [isTargetFile, applyTarget, target?.line]);
+
+  React.useEffect(() => {
+    if (isTargetFile && applyTarget && !targetLineRendered)
+      cardRef.current?.scrollIntoView?.({ block: "start" });
+  }, [isTargetFile, applyTarget, targetLineRendered, target?.line]);
 
   const renderedKeys = React.useMemo(() => {
     const keys = new Set<string>();
@@ -101,7 +122,7 @@ export function FileCard({
     : 0;
 
   return (
-    <div style={s.fileCard}>
+    <div ref={cardRef} style={s.fileCard}>
       <div onClick={() => setOpen((o) => !o)} style={s.fileHeader}>
         <Icon.ChevronRight size={13} style={chevronFor(open)} />
         <Icon.FileText size={14} style={s.fileIcon} />
@@ -137,6 +158,8 @@ export function FileCard({
                 threads={threadsForLine(ln, matched)}
                 annotations={annotationsForLine(ln, annMatched)}
                 commenting={commenting}
+                isTarget={targetLineRendered && ln.kind !== "hunk" && ln.newNo === targetLine}
+                scrollToTarget={applyTarget}
               />
             ))
           )}
