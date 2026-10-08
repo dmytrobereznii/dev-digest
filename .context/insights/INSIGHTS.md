@@ -122,7 +122,30 @@ that way.
 
 ## What Works
 
+- **2026-10-08** — The "Each finding cites one of these" block in
+  `.claude/agents/architecture-reviewer.md` is load-bearing, measured with
+  `pnpm eval:repeat agents/architecture-reviewer -t "flags both planted"`
+  (2 runs a side, `claude-haiku-4-5`, judge `claude-sonnet-5`). Before the
+  edit: score 1.0, case passed 2/2. After deleting that block and the
+  `— rule: <…>` slot in the output template: score 0.75, case failed 2/2.
+  Only the citation practice moved (100% → 0%); the other three stayed at
+  100%. Without the rule the agent still finds both violations but describes
+  them in prose ("violates ring 3 rule") with no `rule:` citation. The edit
+  was reverted.
+  `evals/agents/architecture-reviewer/architecture-reviewer.cases.ts`
+
 ## What Doesn't Work
+
+- **2026-10-08** — Writing a judged eval practice as a compound sentence. The
+  citation practice for `architecture-reviewer` was wrong twice before it
+  measured anything. Demanding the exact form ("a ripple of the form 'changing
+  X forces edits in A and B'", "quoting that line") failed the unchanged agent
+  0/2 although every finding cited a rule. Loosening it to "names the rule or
+  principle" passed prose such as "violates ring 3 rule" after the citation
+  rule was deleted, so `eval:delta` showed 0. Anchor a practice on one
+  observable token (here the `rule:` slot), and before trusting a delta or its
+  absence read both sides in `evals/results/outputs/<run_id>/`.
+  `evals/agents/architecture-reviewer/architecture-reviewer.cases.ts`
 
 - **2026-09-22** — Trusting the `claude-code-guide` subagent's summary of the
   Claude Code docs as-is. Its report on subagents was wrong on three points: it
