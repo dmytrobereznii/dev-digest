@@ -10,7 +10,6 @@ import {
   SmartDiff,
   Conformance,
   Onboarding,
-  EvalRun,
   MemoryItem,
   RunTrace,
   RunSummary,
@@ -25,6 +24,11 @@ import {
   PrBriefRecord,
   PrBriefResponse,
   FEATURE_MODELS,
+  EvalExpectation,
+  EvalCase,
+  EvalRun,
+  EvalCaseResult,
+  FindingRecord,
 } from '@devdigest/shared';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -174,18 +178,6 @@ describe('AI contracts parse fixtures', () => {
     expect(() =>
       Onboarding.parse({
         sections: [{ kind: 'architecture', title: 'T', body: 'b', links: [] }],
-      }),
-    ).not.toThrow();
-    expect(() =>
-      EvalRun.parse({
-        recall: 0.82,
-        precision: 0.91,
-        citation_accuracy: 0.95,
-        traces_passed: 17,
-        traces_total: 20,
-        duration_ms: 12000,
-        cost_usd: 0.23,
-        per_trace: [{ name: 't01', pass: true, expected: 'x', actual: 'x' }],
       }),
     ).not.toThrow();
     expect(() =>
@@ -498,5 +490,137 @@ describe('RunTrace spec fields', () => {
     const trace = RunTrace.parse({ ...base, specs_read: [] });
     expect(trace.specs_read).toEqual([]);
     expect(trace.specs_skipped).toEqual([]);
+  });
+});
+
+describe('Eval pipeline contracts (slice A)', () => {
+  const expectation = {
+    type: 'must_find',
+    file: 'src/config.ts',
+    start_line: 12,
+    end_line: 14,
+    title: 'Hardcoded key',
+    severity: 'CRITICAL',
+    category: 'security',
+  };
+  const caseResult = {
+    case_id: 'c1',
+    case_name: 'Hardcoded key',
+    expectation_type: 'must_find',
+    pass: true,
+    matched: 1,
+    unjudged: 0,
+    kept: 2,
+    dropped: 1,
+    findings: [
+      { file: 'src/config.ts', start_line: 12, end_line: 14, title: 't', severity: 'CRITICAL', category: 'security' },
+    ],
+    duration_ms: 900,
+    cost_usd: 0.01,
+  };
+  const run = {
+    id: 'r1',
+    agent_id: 'a1',
+    status: 'running',
+    ran_at: '2026-10-10T00:00:00.000Z',
+    duration_ms: null,
+    agent_version: 3,
+    system_prompt: 'p',
+    model: 'gpt-4.1',
+    provider: 'openai',
+    recall: null,
+    precision: null,
+    citation_accuracy: null,
+    traces_passed: null,
+    traces_total: 4,
+    cost_usd: null,
+    error: null,
+  };
+
+  it('EvalExpectation accepts must_find and must_not_flag with a file and a line range, and rejects another type', () => {
+    const found = EvalExpectation.parse(expectation);
+    expect(found).toMatchObject({ type: 'must_find', file: 'src/config.ts', start_line: 12, end_line: 14 });
+    expect(EvalExpectation.parse({ ...expectation, type: 'must_not_flag' }).type).toBe('must_not_flag');
+    expect(() => EvalExpectation.parse({ ...expectation, type: 'should_find' })).toThrow();
+    expect(() => EvalExpectation.parse({ ...expectation, file: undefined })).toThrow();
+    expect(() => EvalExpectation.parse({ ...expectation, end_line: 1.5 })).toThrow();
+  });
+
+  it('EvalCase parses with a null finding_id and a null last_result', () => {
+    const base = {
+      id: 'c1',
+      owner_kind: 'agent',
+      owner_id: 'a1',
+      name: 'Hardcoded key',
+      finding_id: null,
+      input_diff: 'diff --git a/x b/x',
+      input_meta: { pr_title: 'T', pr_description: null },
+      expected_output: expectation,
+      created_at: '2026-10-10T00:00:00.000Z',
+      last_result: null,
+    };
+    const parsed = EvalCase.parse(base);
+    expect(parsed.finding_id).toBeNull();
+    expect(parsed.last_result).toBeNull();
+    expect(EvalCase.parse({ ...base, finding_id: 'f1', last_result: caseResult }).last_result?.case_id).toBe('c1');
+    expect(() => EvalCase.parse({ ...base, finding_id: undefined })).toThrow();
+    expect(() => EvalCase.parse({ ...base, last_result: undefined })).toThrow();
+  });
+
+  it('EvalRun accepts null metrics, cost, duration and error, and rejects a metric outside 0 to 1', () => {
+    const parsed = EvalRun.parse(run);
+    expect(parsed).toMatchObject({
+      recall: null,
+      precision: null,
+      citation_accuracy: null,
+      cost_usd: null,
+      duration_ms: null,
+      traces_passed: null,
+      error: null,
+      status: 'running',
+    });
+    expect(EvalRun.parse({ ...run, recall: 0, precision: 1, citation_accuracy: 0.5 }).precision).toBe(1);
+    for (const key of ['recall', 'precision', 'citation_accuracy'] as const) {
+      expect(() => EvalRun.parse({ ...run, [key]: 1.01 })).toThrow();
+      expect(() => EvalRun.parse({ ...run, [key]: -0.01 })).toThrow();
+    }
+  });
+
+  it('EvalCaseResult carries case_id, case_name, pass, matched, unjudged, kept, dropped and findings', () => {
+    const parsed = EvalCaseResult.parse(caseResult);
+    expect(parsed).toMatchObject({
+      case_id: 'c1',
+      case_name: 'Hardcoded key',
+      pass: true,
+      matched: 1,
+      unjudged: 0,
+      kept: 2,
+      dropped: 1,
+    });
+    expect(parsed.findings).toHaveLength(1);
+    for (const key of ['case_id', 'case_name', 'pass', 'matched', 'unjudged', 'kept', 'dropped', 'findings']) {
+      expect(() => EvalCaseResult.parse({ ...caseResult, [key]: undefined })).toThrow();
+    }
+  });
+
+  it('FindingRecord requires eval_case_id as a string or null', () => {
+    const base = {
+      id: 'f1',
+      severity: 'CRITICAL',
+      category: 'security',
+      title: 't',
+      file: 'src/config.ts',
+      start_line: 12,
+      end_line: 12,
+      rationale: 'r',
+      confidence: 0.9,
+      review_id: 'rv1',
+      accepted_at: null,
+      dismissed_at: null,
+    };
+    expect(FindingRecord.parse({ ...base, eval_case_id: null }).eval_case_id).toBeNull();
+    expect(FindingRecord.parse({ ...base, eval_case_id: 'c1' }).eval_case_id).toBe('c1');
+    expect(() => FindingRecord.parse(base)).toThrow();
+    expect(() => FindingRecord.parse({ ...base, eval_case_id: 5 })).toThrow();
   });
 });

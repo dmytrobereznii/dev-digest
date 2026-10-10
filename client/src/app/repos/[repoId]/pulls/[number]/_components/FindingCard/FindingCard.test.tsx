@@ -24,6 +24,7 @@ const FINDING: FindingRecord = {
   review_id: "r1",
   accepted_at: null,
   dismissed_at: null,
+  eval_case_id: null,
 };
 
 function renderWithIntl(ui: React.ReactElement) {

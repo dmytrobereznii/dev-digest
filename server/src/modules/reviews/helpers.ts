@@ -19,7 +19,10 @@ export { reduceReviews, sliceDiff } from '@devdigest/reviewer-core';
 export type ReviewDtoFinding = FindingRecord;
 export type ReviewDto = ReviewRecord;
 
-export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
+export function findingRowToDto(
+  row: FindingRow,
+  evalCaseId: string | null = null,
+): ReviewDtoFinding {
   return {
     id: row.id,
     severity: row.severity as Finding['severity'],
@@ -37,6 +40,7 @@ export function findingRowToDto(row: FindingRow): ReviewDtoFinding {
     review_id: row.reviewId,
     accepted_at: row.acceptedAt?.toISOString() ?? null,
     dismissed_at: row.dismissedAt?.toISOString() ?? null,
+    eval_case_id: evalCaseId,
   };
 }
 
@@ -61,7 +65,7 @@ export function reviewToDto(
     model: review.model,
     cost_usd: costUsd,
     created_at: review.createdAt.toISOString(),
-    findings: findings.map(findingRowToDto),
+    findings: findings.map((f) => findingRowToDto(f)),
   };
 }
 
