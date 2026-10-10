@@ -1,6 +1,6 @@
 # Spec: Eval Pipeline
 Spec ID: SPEC-13
-Status: approved
+Status: implemented
 Supersedes: —
 
 ## Problem and user

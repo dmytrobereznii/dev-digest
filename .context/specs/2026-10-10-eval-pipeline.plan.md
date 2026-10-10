@@ -672,9 +672,9 @@ one call after `seedBrief`), `server/test/seed-fixtures.test.ts`,
 before this slice reads anything it writes.
 
 - [x] T44 the fixture and `seedEvals` (D19); every fixture text is read against the patch body in `seed-diffs.ts` (root `INSIGHTS.md`, 2026-10-03) → AC-100, AC-101, AC-102, AC-103 → SF1, SF2, SF3, SD1 to SD4
-- [ ] T45 flow 15: Agents → Eval Demo Reviewer → Evals tab → wait for the seeded case name and the four tile labels as rendered; no click on a run control → AC-104 → E15
-- [ ] T46 flow 16: sidebar Eval Dashboard → the agent's row → the two run checkboxes by accessible name → Compare → wait for the line only the v2 prompt holds → AC-105 → E16
-- [ ] T47 flow 17: PR #482 → Agent runs → the first card's "Turn into eval case" → wait for "Eval case created" → AC-106 → E17
+- [x] T45 flow 15: Agents → Eval Demo Reviewer → Evals tab → wait for the seeded case name and the four tile labels as rendered; no click on a run control → AC-104 → E15
+- [x] T46 flow 16: sidebar Eval Dashboard → the agent's row → the two run checkboxes by accessible name → Compare → wait for the line only the v2 prompt holds → AC-105 → E16
+- [x] T47 flow 17: PR #482 → Agent runs → the first card's "Turn into eval case" → wait for "Eval case created" → AC-106 → E17
 - [x] T48 one seed-contract row per waited value, and a note that flow 17 needs a fresh stack → AC-104, AC-105, AC-106 → `make e2e` 17 of 17
 
 Tests — `server/test/seed-fixtures.test.ts`:
@@ -798,9 +798,9 @@ before each `find`, and assert label text in its rendered case (e2e
 | AC-101 | T44 | SD2, SD3 | 92355be |
 | AC-102 | T44 | SF2 | 92355be |
 | AC-103 | T44 | SF1 | 92355be |
-| AC-104 | T45, T48 | E15 | 92355be |
-| AC-105 | T46, T48 | E16 | 92355be |
-| AC-106 | T47, T48 | SD4, E17 | 92355be |
+| AC-104 | T45, T48 | E15 | 92355be, dfb009d |
+| AC-105 | T46, T48 | E16 | 92355be, dfb009d |
+| AC-106 | T47, T48 | SD4, E17 | 92355be, dfb009d |
 | AC-107 | T21, T22 | VR1; `pnpm verify:l06` exits 0 (§6) | 4163b46 |
 | AC-108 | T7, T20 | SC4 to SC8, VR2 | 114d461, 4163b46 |
 | AC-109 | T7, T20 | SC13, ER12, VR5 | 114d461, 4163b46 |
