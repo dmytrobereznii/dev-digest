@@ -6,7 +6,7 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help dev db stop check test test-it build-web typecheck lint lint-arch e2e mcp-inspect mcp-smoke \
-	eval-quality eval-skills eval-agents eval-workflow
+	eval-quality eval-skills eval-agents eval-workflow verify-l06
 
 help: ## Show this help
 	@grep -hE '^[a-z0-9-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -74,6 +74,9 @@ lint: ## ESLint both TypeScript packages
 
 lint-arch: ## Check the onion-architecture boundaries (server)
 	cd server && pnpm exec depcruise src
+
+verify-l06: ## L06 eval-pipeline gate: scorer, contracts, run route (needs Docker)
+	cd server && pnpm verify:l06
 
 e2e: ## Hermetic browser e2e on isolated ports (ephemeral Postgres)
 	./scripts/e2e.sh
