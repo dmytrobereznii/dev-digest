@@ -26,6 +26,7 @@ const USED_NAMESPACES = [
   "common",
   "context",
   "conventions",
+  "eval",
   "prReview",
   "runs",
   "settings",
