@@ -168,8 +168,17 @@ export class ReviewService {
         if (a) names.set(review.agentId, a.name);
       }
     }
+    const evalCaseIds = await this.repo.evalCaseIdsByFinding(
+      rows.flatMap(({ findings }) => findings.map((f) => f.id)),
+    );
     return rows.map(({ review, findings, costUsd }) =>
-      reviewToDto(review, findings, review.agentId ? names.get(review.agentId) : null, costUsd),
+      reviewToDto(
+        review,
+        findings,
+        review.agentId ? names.get(review.agentId) : null,
+        costUsd,
+        evalCaseIds,
+      ),
     );
   }
 

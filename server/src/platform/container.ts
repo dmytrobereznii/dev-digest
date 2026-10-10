@@ -28,6 +28,7 @@ import { SkillsRepository } from '../modules/skills/repository.js';
 import { ConventionsRepository } from '../modules/conventions/repository.js';
 import { ReviewRepository } from '../modules/reviews/repository.js';
 import { PullsRepository } from '../modules/pulls/repository.js';
+import { EvalRepository } from '../modules/eval/repository.js';
 import type { RepoIntel } from '../modules/repo-intel/types.js';
 import { RepoIntelService } from '../modules/repo-intel/service.js';
 import { IntentService } from '../modules/intent/service.js';
@@ -86,6 +87,7 @@ export class Container {
   private _conventionsRepo?: ConventionsRepository;
   private _reviewRepo?: ReviewRepository;
   private _pullsRepo?: PullsRepository;
+  private _evalRepo?: EvalRepository;
   private _repoIntel?: RepoIntel;
   private _intent?: IntentService;
   private _blast?: BlastService;
@@ -128,6 +130,10 @@ export class Container {
 
   get pullsRepo(): PullsRepository {
     return (this._pullsRepo ??= new PullsRepository(this.db));
+  }
+
+  get evalRepo(): EvalRepository {
+    return (this._evalRepo ??= new EvalRepository(this.db));
   }
 
   get codeIndex(): CodeIndex {

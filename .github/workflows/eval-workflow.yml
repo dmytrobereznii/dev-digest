@@ -1,0 +1,213 @@
+# Harness evals, workflow tier (evals/ package, pnpm, vitest + Claude Agent SDK).
+#
+# The workflow tier loads the LIVE harness (CLAUDE.md, skills, agents) and asserts on
+# the trace: subagent dispatch, skill activation, files read. It runs whenever
+# CLAUDE.md, any agent, a workflow case, the engine (evals/src) or this file changes
+# (see evals/scripts/ci-detect.mjs `run_workflow`).
+#
+# Blocking, no model and no key: install and typecheck.
+# Model part: `pnpm eval:workflow`. anthropic/* models go to OpenRouter directly; any other
+# model goes through the bundled LiteLLM proxy (evals/proxy, Docker, :4000). Model names
+# come from repository variables (Settings > Secrets and variables > Actions > Variables):
+#   EVAL_MODEL_TOOLS / EVAL_JUDGE_MODEL_TOOLS   (defaults anthropic/claude-haiku-4.5 / anthropic/claude-sonnet-5)
+# Activation cases are known to be flaky on non-Anthropic models.
+#
+# Model jobs run for same-repo pull requests and for pushes to the default branch. A push to
+# any other branch runs only the deterministic jobs: its pull request already runs the models,
+# and running both would double the spend.
+#
+# Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: the
+# model job is skipped for fork PRs, and the trigger is `pull_request`, never
+# `pull_request_target`. Not a required check (the repo has no branch protection).
+name: eval-workflow
+
+on:
+  push:
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/CLAUDE.md'
+      - '.claude/agents/**'
+      - 'evals/workflow/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-workflow.yml'
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/CLAUDE.md'
+      - '.claude/agents/**'
+      - 'evals/workflow/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-workflow.yml'
+
+permissions:
+  contents: read
+
+# One run per event and branch; a newer commit cancels the older run of the same kind. Push and
+# pull_request runs never cancel each other (a cancelled run shows as a failed check on the PR).
+concurrency:
+  group: eval-workflow-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Deterministic gate: no model, no key. Blocks.
+  static:
+    name: static (typecheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: evals
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+  # Does this change touch the live harness? No model, no key.
+  detect:
+    name: detect harness change
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_workflow: ${{ steps.detect.outputs.run_workflow }}
+      own_file_changed: ${{ steps.detect.outputs.own_file_changed }}
+    steps:
+      # Full history: the diff needs the PR base / the previous push tip.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Changed files -> eval suites
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          zero=0000000000000000000000000000000000000000
+          names() { git -c core.quotepath=off diff --name-only "$@"; }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(names "$PR_BASE_SHA...$PR_HEAD_SHA")"
+          elif [ "$PUSH_BEFORE" != "$zero" ] && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            files="$(names "$PUSH_BEFORE" "$PUSH_AFTER")"
+          else
+            # New branch (all-zero before) or a force-push that dropped the old tip:
+            # compare with where the branch left the default branch, else the tip commit alone.
+            if base="$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER" 2>/dev/null)"; then
+              files="$(names "$base" "$PUSH_AFTER")"
+            else
+              files="$(git -c core.quotepath=off diff-tree --no-commit-id --name-only -r --root "$PUSH_AFTER")"
+            fi
+          fi
+
+          echo "changed files:"
+          printf '%s\n' "$files" | sed 's/^/  /'
+          CHANGED_FILES="$files" node evals/scripts/ci-detect.mjs
+          # ci-detect does not know this workflow file; remember it for the job condition.
+          if printf '%s\n' "$files" | grep -qxF '.github/workflows/eval-workflow.yml'; then own=true; else own=false; fi
+          echo "own_file_changed=$own" >> "${GITHUB_OUTPUT:-/dev/stdout}"
+
+  fork-notice:
+    name: model evals skipped (fork PR)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "::notice title=eval-workflow::Model evals skipped - pull requests from forks get no secrets. Deterministic checks still ran."
+
+  workflow:
+    name: workflow tier
+    needs: [detect, static]
+    if: >-
+      (needs.detect.outputs.run_workflow == 'true' || needs.detect.outputs.own_file_changed == 'true') &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event_name == 'push' &&
+        github.ref_name == github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      EVAL_MODEL: ${{ vars.EVAL_MODEL_TOOLS || 'anthropic/claude-haiku-4.5' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_TOOLS || 'anthropic/claude-sonnet-5' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Right after checkout (the job's working directory is evals/, which does not exist
+      # before it), and before install or the proxy, so a missing secret fails fast and clearly.
+      - name: Require OPENROUTER_API_KEY
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error title=Missing secret::Repository secret OPENROUTER_API_KEY is not set (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # anthropic/* models speak the Agent SDK's protocol on OpenRouter directly. Any other
+      # model needs the bundled LiteLLM proxy to translate, and then every tier is pointed at it.
+      - name: Choose the route
+        id: route
+        run: |
+          case "$EVAL_MODEL" in
+            anthropic/*) echo "proxy=false" >> "$GITHUB_OUTPUT"; echo "route: direct to OpenRouter ($EVAL_MODEL)" ;;
+            *) echo "proxy=true" >> "$GITHUB_OUTPUT"
+               echo "OPENROUTER_BASE_URL=http://localhost:4000" >> "$GITHUB_ENV"
+               echo "route: LiteLLM proxy ($EVAL_MODEL)" ;;
+          esac
+
+      # The proxy reads OPENROUTER_API_KEY from the job env.
+      - name: Start LiteLLM proxy
+        id: proxy
+        if: steps.route.outputs.proxy == 'true'
+        run: docker compose -f proxy/docker-compose.yml up -d
+
+      - name: Wait for proxy
+        if: steps.route.outputs.proxy == 'true'
+        run: pnpm proxy:wait
+
+      - name: Run workflow evals
+        run: pnpm eval:workflow
+
+      - name: Proxy logs (on failure)
+        if: failure() && steps.proxy.conclusion != 'skipped'
+        run: OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-unused}" docker compose -f proxy/docker-compose.yml logs --tail 100
+
+      - name: Stop proxy
+        if: always() && steps.proxy.conclusion != 'skipped'
+        run: pnpm proxy:down

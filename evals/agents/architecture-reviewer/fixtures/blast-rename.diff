@@ -1,0 +1,30 @@
+diff --git a/server/src/modules/blast/service.ts b/server/src/modules/blast/service.ts
+index 3a1c9e2..d94e0b1 100644
+--- a/server/src/modules/blast/service.ts
++++ b/server/src/modules/blast/service.ts
+@@ -22,22 +22,22 @@ export class BlastService {
+     const pull = await this.repo.getPull(workspaceId, prId);
+     if (!pull) throw new NotFoundError('Pull request not found');
+
+-    const paths = await this.repo.getChangedPaths(prId);
++    const changedPaths = await this.repo.getChangedPaths(prId);
+     const flagOn = this.flagOn;
+
+     // D4 rule 1 — 0 changed files never reaches the facade.
+-    if (paths.length === 0) {
++    if (changedPaths.length === 0) {
+       const status = deriveBlastStatus({
+         changedFileCount: 0,
+         flagOn,
+         result: null,
+         indexState: null,
+       });
+       return toBlastRadius(EMPTY_RESULT, status, null);
+     }
+
+     const [result, indexState] = await Promise.all([
+-      this.repoIntel.getBlastRadius(pull.repoId, paths),
++      this.repoIntel.getBlastRadius(pull.repoId, changedPaths),
+       this.repoIntel.getIndexState(pull.repoId),
+     ]);
+

@@ -150,6 +150,18 @@ The `pr_id`-only history query takes the same index with
 
 ## Recurring Errors & Fixes
 
+- **2026-10-10** — An eval run that ends `failed` with "Eval run was
+  interrupted by an API restart." was killed by the boot reaper: every
+  `buildApp` fails all `running` rows in `eval_runs` (and `agent_runs`) of the
+  database it points at. Two things boot an app on the dev database mid-run:
+  saving any server file (`pnpm dev` is `tsx watch`), and the unit lane,
+  because `test/routes-smoke.test.ts` calls `buildApp({ config })` from the
+  process environment with no fixture `db`. So do not run `make test` or
+  `make check`, or edit `server/`, while a run is in flight under `make dev`.
+  A new `.it` test passes the fixture's `db` to every `buildApp` for the same
+  reason.
+  `server/src/app.ts:81-88`, `server/test/routes-smoke.test.ts:11-15`
+
 - **2026-09-21** — The seed is idempotent by SKIPPING rows that already exist,
   so a column added later never reaches demo data already in the database. The
   conventions loop does `if (existing) continue`, and after

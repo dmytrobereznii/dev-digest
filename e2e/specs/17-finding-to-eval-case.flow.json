@@ -1,0 +1,18 @@
+{
+  "name": "A finding of the #482 sample review turns into an eval case",
+  "description": "PR #482 -> Agent runs -> the first FindingCard's 'Turn into eval case' (enabled because the seed accepts the review's findings) -> the control flips to 'Eval case created'. WRITES a case to the database, so it runs last and needs the fresh stack of the hermetic runner: on a re-run the created state shows before any click. Flow 15 must stay ordered before it, since this adds a third case to the agent.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/"], "label": "load the app root" },
+    { "cmd": ["wait", "--url", "/pulls"], "label": "land on the PR list" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR list data settles" },
+    { "cmd": ["find", "text", "Add rate limiting to public API endpoints", "click"], "label": "open the PR row" },
+    { "cmd": ["wait", "--url", "/pulls/482"], "label": "navigate to the PR detail route" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "PR detail data settles" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Agent runs"], "label": "switch to the Agent runs tab" },
+    { "cmd": ["wait", "--url", "tab=findings"], "label": "findings tab is active" },
+    { "cmd": ["wait", "--text", "Hardcoded Stripe secret key in commit"], "label": "seeded FindingCard is visible" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "settle before locating the control" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Turn into eval case", "--exact"], "label": "turn the first finding into an eval case" },
+    { "cmd": ["wait", "--text", "Eval case created"], "label": "the control shows the created state" }
+  ]
+}

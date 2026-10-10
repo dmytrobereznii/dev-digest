@@ -1,0 +1,20 @@
+{
+  "name": "Agent Evals tab shows the seeded eval case and the four metric tiles",
+  "description": "Agents list -> Eval Demo Reviewer (seeded by server/src/db/seed-evals.ts) -> Evals tab. Waits for the seeded must_find case name and the tile labels that only render once a completed run exists. 'Recall' and 'Precision' also head runs-table columns, so the flow additionally waits on 'Citation accuracy' and 'Traces passed' (unique to the tiles). No run control is clicked, so no request starts a run and no model is called. Read-only; but flow 17 adds a third case, so this flow must stay ordered before it.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/agents"], "label": "load the agents page" },
+    { "cmd": ["wait", "--url", "/agents"], "label": "agents route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "agents fetch settles" },
+    { "cmd": ["find", "text", "Eval Demo Reviewer", "click"], "label": "open the seeded eval agent" },
+    { "cmd": ["wait", "--url", "/agents/"], "label": "agent editor route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "editor renders a skeleton until its query resolves" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Evals"], "label": "switch to the Evals tab" },
+    { "cmd": ["wait", "--url", "tab=evals"], "label": "evals tab is active in the URL" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "eval cases and runs settle" },
+    { "cmd": ["wait", "--text", "n-1-query-in-user-list-endpoint"], "label": "the seeded must_find case is listed" },
+    { "cmd": ["wait", "--text", "Citation accuracy"], "label": "tile label rendered (only on the tiles)" },
+    { "cmd": ["wait", "--text", "Traces passed"], "label": "tile label rendered (only on the tiles)" },
+    { "cmd": ["wait", "--text", "Recall"], "label": "recall tile label" },
+    { "cmd": ["wait", "--text", "Precision"], "label": "precision tile label" }
+  ]
+}

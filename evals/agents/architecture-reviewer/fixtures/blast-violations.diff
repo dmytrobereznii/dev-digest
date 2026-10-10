@@ -1,0 +1,47 @@
+diff --git a/server/src/modules/blast/service.ts b/server/src/modules/blast/service.ts
+index 3a1c9e2..b7d04f8 100644
+--- a/server/src/modules/blast/service.ts
++++ b/server/src/modules/blast/service.ts
+@@ -1,6 +1,7 @@
+ import type { BlastRadiusResponse } from '@devdigest/shared';
+ import { NotFoundError } from '../../platform/errors.js';
+ import type { RepoIntel } from '../repo-intel/types.js';
++import { OctokitGitHubClient } from '../../adapters/github/octokit.js';
+ import { EMPTY_RESULT } from './constants.js';
+ import { BlastRepository } from './repository.js';
+ import { deriveBlastStatus, toBlastRadius } from './helpers.js';
+@@ -21,8 +22,10 @@ export class BlastService {
+   async get(workspaceId: string, prId: string): Promise<BlastRadiusResponse> {
+-    const pull = await this.repo.getPull(workspaceId, prId);
+-    if (!pull) throw new NotFoundError('Pull request not found');
++    const github = new OctokitGitHubClient(process.env.GITHUB_TOKEN ?? '');
++    const login = await github.currentLogin();
++    const pull = await this.repo.getPull(workspaceId, prId);
++    if (!pull) throw new NotFoundError(`Pull request not found for @${login}`);
+
+     const paths = await this.repo.getChangedPaths(prId);
+     const flagOn = this.flagOn;
+
+     // D4 rule 1 — 0 changed files never reaches the facade.
+diff --git a/server/src/modules/blast/routes.ts b/server/src/modules/blast/routes.ts
+index 5c20d41..e91a7b3 100644
+--- a/server/src/modules/blast/routes.ts
++++ b/server/src/modules/blast/routes.ts
+@@ -3,6 +3,8 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+ import { BlastRadiusResponse } from '@devdigest/shared';
+ import { getContext } from '../_shared/context.js';
+ import { ApiErrors, IdParams, NotFound } from '../_shared/schemas.js';
++import { NotFoundError } from '../../platform/errors.js';
++import { BlastRepository } from './repository.js';
+
+ /**
+  * blast module (spec 10 D1/D6).
+@@ -30,6 +32,9 @@ export default async function blastRoutes(appBase: FastifyInstance) {
+     async (req) => {
+       const { workspaceId } = await getContext(app.container, req);
++      const repo = new BlastRepository(app.container.db);
++      const pull = await repo.getPull(workspaceId, req.params.id);
++      if (!pull) throw new NotFoundError('Pull request not found');
+       const blast = await service.get(workspaceId, req.params.id);
+       // Evidence the map is a read of the persisted index — no parse, no
+       // import-graph rebuild, no model call happens on this path.

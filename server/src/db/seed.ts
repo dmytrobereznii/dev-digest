@@ -23,6 +23,7 @@ import {
 } from './seed-conventions.js';
 import { seedIntent } from './seed-intent.js';
 import { seedBrief } from './seed-brief.js';
+import { seedEvals } from './seed-evals.js';
 
 /** Summary of the seeded sample review on PR #482. */
 export const DEMO_REVIEW_SUMMARY =
@@ -531,6 +532,7 @@ export async function seed(db: Db): Promise<{ workspaceId: string; userId: strin
   // Runs last so every demo PR (#482 above + ./seed-prs/) already exists.
   await seedIntent(db, { workspaceId, repoId });
   await seedBrief(db, { repoId });
+  await seedEvals(db, { workspaceId, userId, repoId, provider: DEFAULT_PROVIDER, model: DEFAULT_MODEL });
 
   return { workspaceId, userId };
 }
