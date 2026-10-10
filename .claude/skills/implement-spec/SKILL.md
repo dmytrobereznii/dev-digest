@@ -84,6 +84,11 @@ recommendation it had for the spec. Then ask both questions in one
 2. **Commits**: commit after each landed slice, or leave everything in the
    working tree.
 
+If this session also wrote the spec or the plan, say above the questions that
+the build can start from a fresh session instead, with
+`/implement-spec <spec path>`: the plan file is the run's state, and every
+agent return re-reads the parent's whole context.
+
 This is the only planned stop. After it, stop again only for a routed
 decision or a spent rework budget.
 

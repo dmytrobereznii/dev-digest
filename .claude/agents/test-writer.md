@@ -138,3 +138,7 @@ types, so never claim files under their `test/` were typechecked.
   adding keys.
 - **A new test flakes:** find the cause (timer, ordering, shared state); after
   2 failed fixes, report `PARTIAL`.
+- **A lane is red on tests that predate your change, in the same way as on
+  yours:** it is broken outside your diff. Re-run it once at most, make one
+  direct check of the cause, and return `PARTIAL` with that evidence. `make e2e`
+  takes about 6 minutes, so never run it a third time on the same failure.
