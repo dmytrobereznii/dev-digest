@@ -49,6 +49,7 @@ export function reviewToDto(
   findings: FindingRow[],
   agentName?: string | null,
   costUsd: number | null = null,
+  evalCaseIds: ReadonlyMap<string, string> = new Map(),
 ): ReviewDto {
   return {
     id: review.id,
@@ -65,7 +66,7 @@ export function reviewToDto(
     model: review.model,
     cost_usd: costUsd,
     created_at: review.createdAt.toISOString(),
-    findings: findings.map((f) => findingRowToDto(f)),
+    findings: findings.map((f) => findingRowToDto(f, evalCaseIds.get(f.id) ?? null)),
   };
 }
 

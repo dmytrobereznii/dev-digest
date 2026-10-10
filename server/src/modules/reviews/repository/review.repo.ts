@@ -120,6 +120,21 @@ export async function findingContext(
   return { finding, review, pull };
 }
 
+/** finding id → id of the eval case made from it (findings without one are absent). */
+export async function evalCaseIdsByFinding(
+  db: Db,
+  findingIds: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (findingIds.length === 0) return out;
+  const rows = await db
+    .select({ id: t.evalCases.id, findingId: t.evalCases.findingId })
+    .from(t.evalCases)
+    .where(inArray(t.evalCases.findingId, findingIds));
+  for (const r of rows) if (r.findingId) out.set(r.findingId, r.id);
+  return out;
+}
+
 export async function setFindingAccepted(
   db: Db,
   findingId: string,
