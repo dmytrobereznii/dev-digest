@@ -42,6 +42,12 @@ export API_PORT WEB_PORT
 # The suite is one browser = one client; the default 120/min global limit runs
 # out across 14 flows. Per-route limits (e.g. the brief's 10/min) are unaffected.
 export API_RATE_LIMIT_MAX="${E2E_API_RATE_LIMIT_MAX:-10000}"
+# The browser reaches the API at http://localhost:$API_PORT. The API's default
+# bind is IPv4 127.0.0.1 only, while the web server listens on both loopback
+# families; a browser that cannot use IPv4 loopback then loads the page but
+# fails every API request with net::ERR_ADDRESS_INVALID. `localhost` makes
+# Fastify bind 127.0.0.1 and ::1, still loopback-only.
+export API_HOST="${E2E_API_HOST:-localhost}"
 export NEXT_PUBLIC_API_BASE="http://localhost:${API_PORT}"
 export E2E_BASE_URL="http://localhost:${WEB_PORT}"
 
