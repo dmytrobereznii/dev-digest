@@ -1,9 +1,17 @@
-import type { AgentEvalOverview, EvalCase, Provider } from '@devdigest/shared';
+import type {
+  AgentEvalOverview,
+  EvalCase,
+  EvalDashboard,
+  EvalRunDetail,
+  EvalRunSummary,
+  Provider,
+} from '@devdigest/shared';
 import { groundFindings } from '@devdigest/reviewer-core';
 import type { Container } from '../../platform/container.js';
 import { AppError, NotFoundError } from '../../platform/errors.js';
 import { parseUnifiedDiff } from '../../adapters/git/diff-parser.js';
-import { EVAL_ERROR } from './constants.js';
+import { EVAL_ERROR, EVAL_RUN_ERROR, OVERVIEW_RUNS_LIMIT, OVERVIEW_TREND_LIMIT } from './constants.js';
+import { EvalRunExecutor } from './run-executor.js';
 import {
   caseNameFromTitle,
   expectationFromFinding,
@@ -15,6 +23,7 @@ export interface EvalServiceDeps {
   repo: Container['evalRepo'];
   agents: Container['agentsRepo'];
   reviews: Container['reviewRepo'];
+  llm: Container['llm'];
 }
 
 /**
@@ -26,11 +35,13 @@ export class EvalService {
   private repo: EvalServiceDeps['repo'];
   private agents: EvalServiceDeps['agents'];
   private reviews: EvalServiceDeps['reviews'];
+  private executor: EvalRunExecutor;
 
   constructor(deps: EvalServiceDeps) {
     this.repo = deps.repo;
     this.agents = deps.agents;
     this.reviews = deps.reviews;
+    this.executor = new EvalRunExecutor({ repo: deps.repo, agents: deps.agents, llm: deps.llm });
   }
 
   /**
@@ -98,11 +109,57 @@ export class EvalService {
     });
   }
 
-  /** The agent, its cases with last results. Runs and trend arrive with slice D. */
+  /**
+   * Create a run (agent config + case set frozen in one transaction) and start
+   * executing it in the background; answers with the stored `running` run.
+   */
+  async startRun(workspaceId: string, agentId: string): Promise<EvalRunSummary> {
+    const outcome = await this.repo.createRun(workspaceId, agentId);
+    if (outcome.kind === 'agent_not_found') throw new NotFoundError('Agent not found');
+    if (outcome.kind === 'no_cases') {
+      throw new AppError(EVAL_RUN_ERROR.noCases, 'This agent has no eval cases to run', 409);
+    }
+    if (outcome.kind === 'in_progress') {
+      throw new AppError(
+        EVAL_RUN_ERROR.inProgress,
+        'An eval run is already in progress for this agent',
+        409,
+      );
+    }
+    const { run, agent, cases } = outcome;
+    // Fire-and-forget, as review runs are; `execute` never rejects.
+    void this.executor.execute({
+      runId: run.id,
+      provider: run.provider,
+      model: run.model,
+      systemPrompt: agent.systemPrompt,
+      agentId: agent.id,
+      strategy: agent.strategy ?? null,
+      cases,
+    });
+    return run;
+  }
+
+  async getRun(workspaceId: string, runId: string): Promise<EvalRunDetail> {
+    const run = await this.repo.getRunDetail(workspaceId, runId);
+    if (!run) throw new NotFoundError('Eval run not found');
+    return run;
+  }
+
+  async dashboard(workspaceId: string): Promise<EvalDashboard> {
+    return this.repo.dashboard(workspaceId);
+  }
+
+  /** The agent with its cases, last results, 20 newest runs and the trend. */
   async overview(workspaceId: string, agentId: string): Promise<AgentEvalOverview> {
     const agent = await this.agents.getById(workspaceId, agentId);
     if (!agent) throw new NotFoundError('Agent not found');
-    const cases = await this.repo.listCasesByAgent(workspaceId, agentId);
+    const [cases, runs, runsTotal, trend] = await Promise.all([
+      this.repo.listCasesByAgent(workspaceId, agentId),
+      this.repo.listRunsByAgent(workspaceId, agentId, OVERVIEW_RUNS_LIMIT),
+      this.repo.countRunsByAgent(workspaceId, agentId),
+      this.repo.trendByAgent(workspaceId, agentId, OVERVIEW_TREND_LIMIT),
+    ]);
     return {
       agent: {
         id: agent.id,
@@ -113,9 +170,9 @@ export class EvalService {
       },
       cases,
       cases_total: cases.length,
-      runs: [],
-      runs_total: 0,
-      trend: [],
+      runs,
+      runs_total: runsTotal,
+      trend,
     };
   }
 
