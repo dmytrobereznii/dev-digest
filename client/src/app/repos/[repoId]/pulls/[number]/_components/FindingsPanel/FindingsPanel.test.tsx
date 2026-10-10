@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { FindingRecord } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 
@@ -46,9 +47,11 @@ const FINDINGS: FindingRecord[] = [
 
 function renderWithIntl(ui: React.ReactElement) {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
-      {ui}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
+        {ui}
+    </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -115,5 +118,15 @@ describe("FindingsPanel severity filter", () => {
     fireEvent.click(pill("WARNING"));
     expect(screen.queryByText("Hardcoded secret")).not.toBeInTheDocument();
     expect(screen.getByText("Unbounded retry loop")).toBeInTheDocument();
+  });
+});
+
+describe("FindingsPanel eval case control", () => {
+  it("an expanded card in the panel carries the Turn into eval case control", () => {
+    // The first card renders expanded (defaultExpanded={i === 0}).
+    renderWithIntl(<FindingsPanel findings={FINDINGS} prId="pr1" />);
+    expect(
+      screen.getByRole("button", { name: messages.finding.evalCase.action }),
+    ).toBeInTheDocument();
   });
 });

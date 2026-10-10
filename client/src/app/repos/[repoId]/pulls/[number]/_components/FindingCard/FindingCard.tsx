@@ -22,6 +22,7 @@ import { SEV_COLOR, SEV_COLOR_FALLBACK } from "./constants";
 import { lineLabel } from "./helpers";
 import { githubBlobUrl } from "../../../../../../../lib/github-urls";
 import { s } from "./styles";
+import { EvalCaseControl } from "./_components/EvalCaseControl";
 
 export function FindingCard({
   f,
@@ -109,6 +110,7 @@ export function FindingCard({
             >
               {t("finding.dismiss")}
             </Button>
+            <EvalCaseControl f={f} />
           </div>
         </div>
       )}
