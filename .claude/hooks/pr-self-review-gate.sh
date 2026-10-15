@@ -32,6 +32,35 @@ printf '%s' "$command_line" \
 
 cd "${CLAUDE_PROJECT_DIR:-$PWD}" 2>/dev/null || allow
 git rev-parse --git-dir >/dev/null 2>&1 || allow
+
+# --- is the PR for THIS repository? ---------------------------------------
+# The verdict covers this project's tree, so it says nothing about a PR in
+# another repository. Allow when the command clearly targets one: an explicit
+# `-R/--repo` naming a different repo, or a `cd` into another git toplevel.
+# Anything we cannot resolve (a `cd "$VAR"`, an unknown path) stays gated.
+repo_slug() {  # owner/name from any GitHub remote form, lowercased
+  printf '%s' "$1" | sed -E 's#\.git$##; s#^.*[:/]([^/:]+/[^/]+)$#\1#' | tr '[:upper:]' '[:lower:]'
+}
+project_top=$(git rev-parse --show-toplevel)
+project_slug=$(repo_slug "$(git remote get-url origin 2>/dev/null)")
+gh_tail=$(printf '%s' "$command_line" | sed -nE 's/.*gh[[:space:]]+pr[[:space:]]+(create|merge|ready)//p' | head -1)
+
+repo_flag=$(printf '%s' "$gh_tail" \
+  | grep -oE -- '(-R|--repo)[[:space:]=]+[^[:space:];&|]+' | head -1 \
+  | sed -E 's/^(-R|--repo)[[:space:]=]+//; s/^["'\'']//; s/["'\'']$//')
+if [ -n "$repo_flag" ]; then
+  [ "$(repo_slug "$repo_flag")" != "$project_slug" ] && allow
+else
+  before_gh=$(printf '%s' "$command_line" | sed -E 's/gh[[:space:]]+pr[[:space:]]+(create|merge|ready).*//')
+  cd_target=$(printf '%s' "$before_gh" \
+    | grep -oE -- '(^|[;&|(])[[:space:]]*cd[[:space:]]+[^;&|)]+' | tail -1 \
+    | sed -E 's/^[;&|(]?[[:space:]]*cd[[:space:]]+//; s/[[:space:]]+$//; s/^["'\'']//; s/["'\'']$//')
+  if [ -n "$cd_target" ] && [[ "$cd_target" != *'$'* ]]; then
+    cd_target=${cd_target/#\~/$HOME}
+    target_top=$(git -C "$cd_target" rev-parse --show-toplevel 2>/dev/null) || target_top=""
+    [ -n "$target_top" ] && [ "$target_top" != "$project_top" ] && allow
+  fi
+fi
 base=$(git merge-base origin/main HEAD 2>/dev/null) || allow
 [ -n "$base" ] || allow
 
