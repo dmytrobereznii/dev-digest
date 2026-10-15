@@ -29,7 +29,7 @@ export const NAV: NavGroup[] = [
   },
   // Skills, Agents and Conventions are their own section, per the design's
   // `chrome.jsx` NAV — which is also why every breadcrumb on these routes reads
-  // "Skills Lab › …". A later lesson adds the Eval Dashboard to this same group.
+  // "Skills Lab › …". The Eval Dashboard sits in this same group.
   {
     section: "SKILLS LAB",
     items: [
@@ -39,6 +39,8 @@ export const NAV: NavGroup[] = [
       // the active repo, exactly as `pulls` does. Order is the design's — after
       // Agents, not before.
       { key: "conventions", label: "Conventions", icon: "ListChecks", href: "/repos/:repoId/conventions", gKey: "c" },
+      // No gKey: the design's nav entry carries no shortcut.
+      { key: "eval", label: "Eval Dashboard", icon: "Gauge", href: "/eval" },
     ],
   },
 ];

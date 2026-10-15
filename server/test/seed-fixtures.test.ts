@@ -5,6 +5,14 @@ import { PrBriefStored } from '@devdigest/shared';
 import { DEMO_PR_FILES, DEMO_REVIEW_SUMMARY } from '../src/db/seed.js';
 import { seedBrief482 } from '../src/db/seed-brief.js';
 import { groundBrief } from '../src/modules/brief/helpers.js';
+import {
+  EVAL_FIXTURE_CASES,
+  EVAL_FIXTURE_RUNS,
+  EVAL_PROMPT_V2_ONLY_LINE,
+  evalCaseInputDiff,
+} from '../src/db/seed-evals.js';
+import { groundFindings } from '../src/platform/grounding.js';
+import { scoreRun, type ScoredCaseInput } from '../src/modules/eval/scoring.js';
 
 /**
  * Invariants over the demo PR fixtures (`src/db/seed-prs/`).
@@ -246,5 +254,91 @@ describe('the #482 brief fixture (seed-brief.ts)', () => {
   it('the #482 brief fixture satisfies PrBriefStored and lists blast and specs as missing', () => {
     expect(PrBriefStored.safeParse(brief).success).toBe(true);
     expect(brief.missing_inputs).toEqual(['blast', 'specs']);
+  });
+});
+
+describe('the eval fixture (seed-evals.ts)', () => {
+  it('every eval fixture expectation survives groundFindings against its case’s input_diff', () => {
+    expect(EVAL_FIXTURE_CASES.length).toBeGreaterThan(0);
+    for (const c of EVAL_FIXTURE_CASES) {
+      const diff = parseUnifiedDiff(evalCaseInputDiff(c.file, c.patch));
+      const { kept, dropped } = groundFindings(
+        [
+          {
+            id: c.name,
+            severity: 'WARNING',
+            category: 'other',
+            title: c.title,
+            file: c.file,
+            start_line: c.startLine,
+            end_line: c.endLine,
+            rationale: 'fixture expectation',
+            confidence: 1,
+          } as never,
+        ],
+        diff,
+      );
+      expect({ case: c.name, dropped: dropped.map((d) => d.reason) }).toEqual({
+        case: c.name,
+        dropped: [],
+      });
+      expect(kept).toHaveLength(1);
+    }
+  });
+
+  it('each eval fixture run’s stored results and metrics equal scoreRun over its seeded findings', () => {
+    for (const run of EVAL_FIXTURE_RUNS) {
+      const inputs: ScoredCaseInput[] = run.results.map((r) => {
+        const c = EVAL_FIXTURE_CASES.find((x) => x.name === r.case_name)!;
+        expect(c, `${r.case_name} has no fixture case`).toBeDefined();
+        return {
+          case_id: `id-${r.case_name}`,
+          case_name: r.case_name,
+          expectation: {
+            type: c.type,
+            file: c.file,
+            start_line: c.startLine,
+            end_line: c.endLine,
+          },
+          kept: r.findings,
+          dropped: r.dropped,
+          duration_ms: r.duration_ms,
+          cost_usd: r.cost_usd,
+        };
+      });
+      const scored = scoreRun(inputs);
+
+      expect(
+        scored.results.map(({ case_id: _id, ...rest }) => rest),
+        `v${run.version} case results`,
+      ).toEqual(run.results);
+      expect(scored.metrics, `v${run.version} metrics`).toEqual({
+        recall: run.recall,
+        precision: run.precision,
+        citation_accuracy: run.citationAccuracy,
+        traces_passed: run.tracesPassed,
+        traces_total: run.results.length,
+      });
+    }
+  });
+
+  it('the eval fixture has a must_find case, a must_not_flag case and two completed runs whose agent_version and system_prompt differ', () => {
+    const types = EVAL_FIXTURE_CASES.map((c) => c.type);
+    expect(types).toContain('must_find');
+    expect(types).toContain('must_not_flag');
+
+    expect(EVAL_FIXTURE_RUNS).toHaveLength(2);
+    const [a, b] = EVAL_FIXTURE_RUNS;
+    expect(a!.version).not.toBe(b!.version);
+    expect(a!.prompt).not.toBe(b!.prompt);
+    // v1 → v2 is the one-line change the compare view demonstrates.
+    expect(b!.prompt).toContain(EVAL_PROMPT_V2_ONLY_LINE);
+    expect(a!.prompt).not.toContain(EVAL_PROMPT_V2_ONLY_LINE);
+    // Each run covers every case, so it is a complete run.
+    for (const run of EVAL_FIXTURE_RUNS) {
+      expect(run.results.map((r) => r.case_name).sort()).toEqual(
+        EVAL_FIXTURE_CASES.map((c) => c.name).sort(),
+      );
+    }
   });
 });

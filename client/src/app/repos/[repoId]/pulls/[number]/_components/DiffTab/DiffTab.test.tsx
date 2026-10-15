@@ -10,6 +10,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { PrFile } from "@/lib/types";
 import type { FindingRecord, ReviewRecord, SmartDiffResponse } from "@devdigest/shared";
 import { brief, prReview, shell } from "@/test/messages";
@@ -38,9 +39,11 @@ afterEach(() => {
 
 function renderWithIntl(ui: React.ReactElement) {
   return render(
-    <NextIntlClientProvider locale="en" messages={{ prReview, shell, brief }}>
-      {ui}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="en" messages={{ prReview, shell, brief }}>
+        {ui}
+    </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -654,5 +657,20 @@ describe("DiffTab — target file / line", () => {
     renderWithIntl(<DiffTab prId="pr-499" filesCount={7} files={FILES} target={LOCK_TARGET} />);
     expect(screen.getByText(/ioredis: 5\.4\.1/)).toBeInTheDocument();
     expect(scrollIntoView).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("DiffTab — eval case control", () => {
+  it("an inline finding card carries the Turn into eval case control", () => {
+    smartDiffData = smartDiffFixture();
+    reviewsData = [REVIEW];
+    const { container } = renderWithIntl(
+      <DiffTab prId="pr-499" filesCount={7} files={FILES} canComment />,
+    );
+    const card = container.querySelector('[data-finding-id="f-critical"]') as HTMLElement;
+    expect(card).not.toBeNull();
+    expect(
+      within(card).getByRole("button", { name: prReview.finding.evalCase.action }),
+    ).toBeInTheDocument();
   });
 });

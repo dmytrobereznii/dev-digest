@@ -55,4 +55,31 @@ Newest first within each section. Format, and the bar an entry must clear:
 
 ## Recurring Errors & Fixes
 
+- **2026-10-10** — `make e2e` ending "2/17 flows passed", with every data flow
+  timing out on `wait --url /pulls` or `wait --text` and the page showing "No
+  repo selected", means the automation browser cannot reach the API port. On
+  this machine agent-browser 0.38.1 (HeadlessChrome 153) fails every fetch
+  from the web port to another local port with `Failed to fetch`, while
+  `curl` gets 200 from the same URL. The flows are not the cause, so do not
+  re-run the 6-minute lane. Check in ten seconds against a running stack:
+  `agent-browser open http://localhost:3000/agents && agent-browser eval
+  "fetch('http://localhost:3001/health').then(r=>r.status).catch(e=>'ERR '+e.message)"`.
+  Not fixed by `AGENT_BROWSER_ARGS=--disable-features=LocalNetworkAccessChecks`,
+  `AGENT_BROWSER_ALLOWED_DOMAINS`, another port, a fresh browser or running
+  outside the sandbox. Cause not found as of this date; flows 15 to 17 were
+  written without ever running.
+  `scripts/e2e.sh:45`
+  **Fixed 2026-10-10 in `scripts/e2e.sh` (`API_HOST=localhost`).** The exact
+  error is `net::ERR_ADDRESS_INVALID`, and it is not cross-origin: this
+  browser cannot connect to IPv4 loopback at all, even on a direct visit to
+  `http://127.0.0.1:<port>`, while `::1` works and `curl -4` is fine. The web
+  server listens on both families and the API's default bind is `127.0.0.1`
+  only, so pages loaded and every API call failed. With `localhost` Fastify
+  binds `127.0.0.1` and `::1` and the lane is 17/17. Why this machine blocks
+  IPv4 loopback for the test Chrome is still unknown (macOS Local Network
+  permission and a connected NordVPN are the two candidates); the dev stack
+  keeps the IPv4-only bind. `agent-browser` reuses a running browser, so
+  `--args` and `AGENT_BROWSER_ARGS` silently do nothing unless the lifecycle
+  line says `launched: true`.
+
 ## Open Questions

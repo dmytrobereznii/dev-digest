@@ -16,6 +16,7 @@ aliases, not published modules):
 | `reviewer-core/` | `@devdigest/reviewer-core`  | Pure review engine: diff → prompt → LLM → findings    | —    |
 | `e2e/`           | `@devdigest/e2e`            | Deterministic browser e2e (agent-browser)             | —    |
 | `mcp/`           | `@devdigest/mcp`            | Local stdio MCP server over the API                   | — (stdio) |
+| `evals/`         | `@devdigest/evals`          | Evals for the Claude Code harness (skills, agents, `CLAUDE.md`) | —    |
 | `server/src/vendor/shared` | `@devdigest/shared` | Zod contracts shared across every package             | —    |
 
 `repo-intel` (the codebase indexer that powers the **Indexed** badge and feeds
@@ -137,7 +138,9 @@ cd ../client && pnpm install && pnpm dev               # web on :3000
 
 One test suite per package, each gated by its own GitHub Actions workflow with a
 path filter — full strategy in **[`TESTING.md`](TESTING.md)**. In this fork the
-workflows are manual-only (`workflow_dispatch`); the suites run locally.
+workflows are manual-only (`workflow_dispatch`); the suites run locally. The
+harness evals in [`evals/`](evals/README.md) are the exception: their three
+`eval-*.yml` workflows run on push and pull request.
 
 | Suite | Workflow | Needs Docker |
 |-------|----------|--------------|

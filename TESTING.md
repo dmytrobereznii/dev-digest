@@ -1,14 +1,16 @@
 # Testing & CI strategy
 
-DevDigest is five independent packages (no workspace), so testing is organised
+DevDigest is six independent packages (no workspace), so testing is organised
 as **one suite per package**, each with its own CI workflow, runner, and path
 filter. A package's suite runs only when that package (or a package it depends
 on at type-check time) changes.
 
-> **In this fork the workflows are manual-only.** Every suite runs locally
-> (`make check`, `make e2e`); each workflow's `push` / `pull_request` triggers
-> are commented out and only `workflow_dispatch` is left. Uncomment the block
-> in `.github/workflows/*.yml` to get automatic runs back.
+> **In this fork the product workflows are manual-only.** Every suite runs
+> locally (`make check`, `make e2e`); each workflow's `push` / `pull_request`
+> triggers are commented out and only `workflow_dispatch` is left. Uncomment
+> the block in `.github/workflows/*.yml` to get automatic runs back. The three
+> `eval-*.yml` workflows are the exception: they trigger on push and pull
+> request, path-filtered to the harness.
 
 ## Philosophy — typological, not exhaustive
 
@@ -37,6 +39,7 @@ If a test wouldn't catch a class of regression we care about, we don't write it.
 | reviewer-core | `reviewer-core/` | unit (engine) | vitest | `reviewer-core.yml` | no |
 | mcp | `mcp/` | unit (hermetic) | vitest | `mcp.yml` | no |
 | e2e web | `e2e/` | browser e2e (deterministic) | agent-browser + `run.ts` | `e2e-web.yml` | yes (stack) |
+| harness evals | `evals/` | static gate + live model evals | tsx + vitest + Claude Agent SDK | `eval-skills.yml` `eval-agents.yml` `eval-workflow.yml` | CI only, and only for a non-Anthropic model (LiteLLM proxy) |
 
 ## What each suite covers
 
@@ -64,14 +67,21 @@ a PR, the 5 tools' selection/error/shaping logic, sanitizing and redaction,
 spawns the real entry point to catch stray stdout writes. `fetch` is stubbed
 via `test/helpers/fake-api.ts`; no DB, GitHub, or live API.
 
+**harness evals** — see `evals/README.md`. These test the Claude Code harness
+(`.claude/skills`, `.claude/agents`, `CLAUDE.md`), not the product. Only
+`eval:quality` is deterministic and runs in `make check`; the skill, agent and
+workflow tiers start live model sessions, so their results vary from run to
+run and none is a required check. `CLAUDE.md` → _Harness evals_ says which
+tier a change calls for.
+
 **e2e web** — see `e2e/README.md`. Deterministic agent-browser flows over the
 main journeys (boot → PR list → PR detail; agents) against a real seeded stack.
 No `chat`, no model key.
 
 ## Running locally
 
-`make check` runs everything below except the browser e2e lane (~30s) and is
-the pre-PR gate. Its web-build step skips itself while a dev server holds
+`make check` runs everything below except the browser e2e lane and the live
+model evals (~30s) and is the pre-PR gate. Its web-build step skips itself while a dev server holds
 :3000 (they share `client/.next`), so stop `make dev` for a full run. The per-package commands stay useful for a tight inner loop:
 
 ```sh

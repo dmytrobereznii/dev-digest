@@ -1,0 +1,193 @@
+# Harness evals, skills tier (evals/ package, pnpm, vitest + Claude Agent SDK).
+#
+# Blocking, no model and no key: install, typecheck, `pnpm eval:quality`.
+# Model part: only the CHANGED skills that have their own evals/skills/<name>/*.eval.ts
+# run (selected by evals/scripts/ci-detect.mjs). A changed skill without evals is a
+# visible "SKIP <name> (no evals)" line, never a failure.
+#
+# Content tier => direct OpenRouter call, no proxy. Defaults match the local runs (Haiku
+# under test, Sonnet as judge). Model names come from
+# repository variables (Settings > Secrets and variables > Actions > Variables):
+#   EVAL_MODEL_SKILLS / EVAL_JUDGE_MODEL_SKILLS   (defaults anthropic/claude-haiku-4.5 / anthropic/claude-sonnet-5)
+#
+# Model jobs run for same-repo pull requests and for pushes to the default branch. A push to
+# any other branch runs only the deterministic jobs: its pull request already runs the models,
+# and running both would double the spend.
+#
+# Secret: OPENROUTER_API_KEY (repository Actions secret). Same-repo runs only: model
+# jobs are skipped for fork PRs, and the trigger is `pull_request`, never
+# `pull_request_target`. Not a required check (the repo has no branch protection).
+name: eval-skills
+
+on:
+  push:
+    paths:
+      - '.claude/skills/**'
+      - 'evals/skills/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-skills.yml'
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - 'evals/skills/**'
+      - 'evals/src/**'
+      - '.github/workflows/eval-skills.yml'
+
+permissions:
+  contents: read
+
+# One run per event and branch; a newer commit cancels the older run of the same kind. Push and
+# pull_request runs never cancel each other (a cancelled run shows as a failed check on the PR).
+concurrency:
+  group: eval-skills-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Deterministic gate: no model, no key. Blocks.
+  static:
+    name: static (typecheck + quality)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: evals
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm typecheck
+
+      # SKILL.md structure/frontmatter/links. A missing eval file is a warning.
+      - run: pnpm eval:quality
+
+  # Which changed skills have evals? No model, no key.
+  detect:
+    name: detect changed skills
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skills: ${{ steps.detect.outputs.skills }}
+      skipped_skills: ${{ steps.detect.outputs.skipped_skills }}
+    steps:
+      # Full history: the diff needs the PR base / the previous push tip.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Changed files -> eval suites
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          zero=0000000000000000000000000000000000000000
+          names() { git -c core.quotepath=off diff --name-only "$@"; }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            files="$(names "$PR_BASE_SHA...$PR_HEAD_SHA")"
+          elif [ "$PUSH_BEFORE" != "$zero" ] && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            files="$(names "$PUSH_BEFORE" "$PUSH_AFTER")"
+          else
+            # New branch (all-zero before) or a force-push that dropped the old tip:
+            # compare with where the branch left the default branch, else the tip commit alone.
+            if base="$(git merge-base "origin/$DEFAULT_BRANCH" "$PUSH_AFTER" 2>/dev/null)"; then
+              files="$(names "$base" "$PUSH_AFTER")"
+            else
+              files="$(git -c core.quotepath=off diff-tree --no-commit-id --name-only -r --root "$PUSH_AFTER")"
+            fi
+          fi
+
+          echo "changed files:"
+          printf '%s\n' "$files" | sed 's/^/  /'
+          CHANGED_FILES="$files" node evals/scripts/ci-detect.mjs
+
+      - name: Report skills without evals
+        env:
+          SKIPPED: ${{ steps.detect.outputs.skipped_skills }}
+        run: |
+          for n in $SKIPPED; do
+            echo "SKIP $n (no evals)"
+            echo "::notice title=eval-skills::SKIP $n (no evals)"
+          done
+
+  fork-notice:
+    name: model evals skipped (fork PR)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: echo "::notice title=eval-skills::Model evals skipped - pull requests from forks get no secrets. Deterministic checks still ran."
+
+  skills:
+    name: skill ${{ matrix.skill }}
+    needs: [detect, static]
+    if: >-
+      needs.detect.outputs.skills != '[]' &&
+      ((github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository) ||
+       (github.event_name == 'push' &&
+        github.ref_name == github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        skill: ${{ fromJSON(needs.detect.outputs.skills) }}
+    defaults:
+      run:
+        working-directory: evals
+    env:
+      EVAL_BACKEND: openrouter
+      EVAL_MODEL: ${{ vars.EVAL_MODEL_SKILLS || 'anthropic/claude-haiku-4.5' }}
+      EVAL_JUDGE_MODEL: ${{ vars.EVAL_JUDGE_MODEL_SKILLS || 'anthropic/claude-sonnet-5' }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Right after checkout (the job's working directory is evals/, which does not exist
+      # before it), and before install or the proxy, so a missing secret fails fast and clearly.
+      - name: Require OPENROUTER_API_KEY
+        run: |
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error title=Missing secret::Repository secret OPENROUTER_API_KEY is not set (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: evals/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run skill evals
+        env:
+          SKILL: ${{ matrix.skill }}
+        run: pnpm vitest run "skills/$SKILL"

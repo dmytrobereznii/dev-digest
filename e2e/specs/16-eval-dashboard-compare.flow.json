@@ -1,0 +1,18 @@
+{
+  "name": "Eval Dashboard compares the seeded agent's two runs in a prompt diff",
+  "description": "Sidebar Eval Dashboard -> the Eval Demo Reviewer row -> tick the v1 and v2 run checkboxes -> Compare -> the modal's prompt diff holds the one line only the v2 system prompt has. Checkboxes are located by 'Select run v1' / 'Select run v2' (substring of the aria-label), not the ran-at part, which follows the browser's time zone. Read-only; no run is started.",
+  "steps": [
+    { "cmd": ["open", "{BASE}/agents"], "label": "load a page with the sidebar" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "sidebar renders" },
+    { "cmd": ["find", "text", "Eval Dashboard", "click"], "label": "open the Eval Dashboard from the sidebar" },
+    { "cmd": ["wait", "--url", "/eval"], "label": "dashboard route reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "dashboard data settles" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Open eval view of Eval Demo Reviewer"], "label": "open the seeded agent's row" },
+    { "cmd": ["wait", "--url", "/eval/"], "label": "agent eval view reached" },
+    { "cmd": ["wait", "--load", "networkidle"], "label": "runs settle" },
+    { "cmd": ["find", "role", "checkbox", "click", "--name", "Select run v1"], "label": "select the v1 run" },
+    { "cmd": ["find", "role", "checkbox", "click", "--name", "Select run v2"], "label": "select the v2 run" },
+    { "cmd": ["find", "role", "button", "click", "--name", "Compare", "--exact"], "label": "open the Compare modal" },
+    { "cmd": ["wait", "--text", "Treat a constant-time HMAC signature comparison as correct and never report it."], "label": "the line only the v2 prompt holds is in the prompt diff" }
+  ]
+}

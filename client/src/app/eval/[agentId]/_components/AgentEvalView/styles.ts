@@ -1,0 +1,51 @@
+import type { CSSProperties } from "react";
+
+export const s = {
+  page: { padding: "24px 32px", maxWidth: 1200, margin: "0 auto" } satisfies CSSProperties,
+  back: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 13,
+    color: "var(--text-secondary)",
+    textDecoration: "none",
+  } satisfies CSSProperties,
+  headerRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 16,
+    margin: "14px 0 20px",
+  } satisfies CSSProperties,
+  h1: { fontSize: 24, fontWeight: 700, margin: 0 } satisfies CSSProperties,
+  meta: { fontSize: 13, color: "var(--text-secondary)", marginTop: 4 } satisfies CSSProperties,
+  controls: { display: "flex", alignItems: "center", gap: 12 } satisfies CSSProperties,
+  error: { fontSize: 13, color: "var(--crit)", maxWidth: 420 } satisfies CSSProperties,
+  tiles: { display: "flex", gap: 14, marginBottom: 20 } satisfies CSSProperties,
+  card: {
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border)",
+    borderRadius: 9,
+    padding: 18,
+    marginBottom: 20,
+  } satisfies CSSProperties,
+  cardTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: "var(--text-muted)",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  } satisfies CSSProperties,
+  placeholder: { fontSize: 13, color: "var(--text-muted)", marginTop: 12 } satisfies CSSProperties,
+  runsHead: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  } satisfies CSSProperties,
+  selected: { fontSize: 13, color: "var(--text-secondary)", fontWeight: 400 } satisfies CSSProperties,
+  notFound: { padding: "48px 32px", textAlign: "center" } satisfies CSSProperties,
+};

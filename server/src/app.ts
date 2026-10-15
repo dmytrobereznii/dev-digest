@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { loadConfig, type AppConfig } from './platform/config.js';
 import { createDb, type Db } from './db/client.js';
 import { Container, type ContainerOverrides } from './platform/container.js';
+import { EVAL_RUN_INTERRUPTED } from './modules/eval/constants.js';
 import { AppError } from './platform/errors.js';
 import { modules } from './modules/index.js';
 import { ReviewService } from './modules/reviews/service.js';
@@ -80,6 +81,8 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   try {
     const reaped = await new ReviewService(container).reapStaleRuns();
     if (reaped > 0) app.log.info({ reaped }, 'reaped stale running agent_runs on boot');
+    const evalReaped = await container.evalRepo.failRunningRuns(EVAL_RUN_INTERRUPTED);
+    if (evalReaped > 0) app.log.info({ reaped: evalReaped }, 'failed interrupted eval runs on boot');
   } catch (err) {
     app.log.warn({ err: (err as Error).message }, 'stale-run reaping failed (non-fatal)');
   }

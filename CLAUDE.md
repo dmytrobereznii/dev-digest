@@ -4,7 +4,7 @@ Local-first AI pull-request review. Architecture and package map: @README.md
 
 ## Repo shape
 
-Five standalone packages — **not** a workspace. Each has its own `package.json`
+Six standalone packages — **not** a workspace. Each has its own `package.json`
 and lockfile; cross-package imports resolve through tsconfig path aliases, not
 published modules. Run every script from inside its package directory.
 
@@ -17,8 +17,10 @@ Everything is TypeScript on Node ≥ 22, with Zod contracts at every boundary.
 | `reviewer-core/` | Pure engine, `openai` SDK (OpenRouter) + Zod, no runtime deps beyond them · vitest | **npm** | `test` `typecheck` |
 | `e2e/` | Vercel agent-browser driven by a `tsx` runner, JSON flow specs | **npm** | `test` `typecheck` `e2e:hermetic` |
 | `mcp/` | Local stdio MCP server, `@modelcontextprotocol/sdk` + Zod, thin HTTP client of the API · vitest | **npm** | `start` `test` `typecheck` |
+| `evals/` | Evals for the harness itself (`.claude/skills`, `.claude/agents`, this file), vitest + Claude Agent SDK | pnpm | `eval:quality` `eval:skills` `eval:agents` `eval:workflow` `typecheck` |
 
-Never run pnpm in `reviewer-core/`, `e2e/` or `mcp/`, or npm in `server/`/`client/`.
+Never run pnpm in `reviewer-core/`, `e2e/` or `mcp/`, or npm in `server/`,
+`client/` or `evals/`.
 
 `reviewer-core` emits no JS — the server imports its **TypeScript source**
 through an alias, so `reviewer-core/node_modules` must exist or the API crashes
@@ -61,6 +63,44 @@ Full suite map, per-package commands and conventions: @TESTING.md
   when the user explicitly asks for one — never to "clean up" or fix a hang.
   `make stop` is the safe stop; for a clean DB, use `make e2e`'s ephemeral stack.
 
+## Harness evals
+
+`evals/` tests the harness, not the product: every skill, agent and this file.
+Reference: `evals/README.md`.
+
+| In `evals/` | Make target | What runs |
+|---|---|---|
+| `pnpm eval:quality` | `make eval-quality` | Static `SKILL.md` gate, no model. Part of `make check` |
+| `pnpm eval:skills` | `make eval-skills` | A skill injected as the system prompt, scored by an LLM judge |
+| `pnpm eval:agents` | `make eval-agents` | An agent definition with its read-only tools, scored by an LLM judge |
+| `pnpm eval:workflow` | `make eval-workflow` | The real harness; asserts on the trace: dispatch, skill activation, files read |
+
+The last three start live model sessions on the Claude Code subscription, so
+they are never part of `make check`. Run them on purpose.
+
+**After changing the harness, run the eval that covers the change** before
+calling it done:
+
+| Changed | Minimum run |
+|---|---|
+| `.claude/skills/**` | `eval:quality` + `eval:skills` (one skill: `pnpm vitest run skills/<name>`) |
+| `.claude/agents/**` | `eval:agents` (one agent: `pnpm vitest run agents/<name>`) + `eval:workflow` |
+| `CLAUDE.md`, or anything else that changes routing | `eval:workflow` |
+| An eval case, a fixture or the judge | Re-run that case and re-take its baseline |
+
+- Cases and fixtures live in `evals/skills/<name>/`, `evals/agents/<name>/` and
+  `evals/workflow/`, never inside `.claude/`: a fixture there is part of the
+  skill's payload. `pnpm eval:scaffold <name>` (`--agent <name>`) writes the stub.
+- A skill or agent with no eval is skipped, not failed.
+- To compare two versions, label the baseline **before** the edit:
+  `pnpm eval:repeat <pattern> --label baseline`, edit, repeat with
+  `--label candidate`, then `pnpm eval:delta baseline candidate`. A series is
+  two runs (`repeat` caps `-n` at 2), and it aggregates every record written
+  while it runs, so never run two evals at once.
+- CI runs the same three tiers on OpenRouter for the changed artefacts only
+  (`.github/workflows/eval-{skills,agents,workflow}.yml`). They are the only
+  workflows that trigger on push and pull request, and none is a required check.
+
 ## Do not touch
 
 These change only through the tool that owns them. Hand edits break things
@@ -69,7 +109,7 @@ far from the diff.
 | Zone | Owner — the only way to change it |
 |---|---|
 | `server/src/db/migrations/**`, incl. `meta/_journal.json` | Edit `server/src/db/schema/`, then `pnpm db:generate` in `server/`. A merged migration is never edited; add a new one |
-| `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml` | `pnpm install` / `pnpm add` in that package |
+| `server/pnpm-lock.yaml`, `client/pnpm-lock.yaml`, `evals/pnpm-lock.yaml` | `pnpm install` / `pnpm add` in that package |
 | `reviewer-core/package-lock.json`, `e2e/package-lock.json`, `mcp/package-lock.json` | `npm install` in that package |
 | `server/clones/**` | Runtime data written by the server; git-ignored |
 

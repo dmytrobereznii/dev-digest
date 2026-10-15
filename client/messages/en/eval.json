@@ -1,84 +1,107 @@
 {
-  "dashboard": {
-    "defaultTitle": "Eval Dashboard",
-    "loading": "Loading eval metrics…",
-    "casesSummary": "{count, plural, one {# eval case} other {# eval cases}} · gold set · {runs, plural, one {# run} other {# runs}}",
-    "configure": "Configure eval cases →",
-    "runEval": "Run eval ({count})",
-    "running": "Running…",
-    "metricTrend": "Metric trend",
-    "recentRuns": "Recent runs",
-    "noRuns": "No runs yet. Create an eval case and run it.",
-    "metrics": {
-      "recall": "RECALL",
-      "precision": "PRECISION",
-      "citationAccuracy": "CITATION ACCURACY"
+  "metrics": {
+    "recall": "Recall",
+    "precision": "Precision",
+    "citationAccuracy": "Citation accuracy",
+    "tracesPassed": "Traces passed",
+    "cost": "Cost",
+    "none": "—",
+    "delta": "{direction, select, up {▲ {n}pt} down {▼ {n}pt} other {0pt}}"
+  },
+  "runs": {
+    "title": "Recent runs",
+    "empty": "No runs yet",
+    "selected": "{count} selected",
+    "status": {
+      "running": "Running…",
+      "completed": "Completed",
+      "failed": "Failed"
     },
-    "legend": {
-      "recall": "Recall",
-      "precision": "Precision",
-      "citation": "Citation"
-    },
-    "table": {
+    "columns": {
+      "agent": "Agent",
       "ranAt": "Ran at",
+      "version": "Version",
       "recall": "Recall",
       "precision": "Precision",
       "citation": "Citation",
       "pass": "Pass",
       "cost": "Cost"
     },
-    "pass": "pass",
-    "fail": "fail"
-  },
-  "caseEditor": {
-    "newCase": "New eval case",
-    "caseTitle": "Eval case · {name}",
-    "runCase": "Run case",
-    "running": "Running…",
-    "save": "Save",
-    "saving": "Saving…",
-    "nameLabel": "Name",
-    "namePlaceholder": "stripe-key-leak",
-    "inputLabel": "Input",
-    "tabs": {
-      "diff": "Diff",
-      "prMeta": "PR meta"
-    },
-    "diffPlaceholder": "--- a/src/config.ts\n+++ b/src/config.ts\n@@ -10,6 +10,7 @@\n+  stripeKey: \"sk_live_...\"",
-    "titleLabel": "Title",
-    "titlePlaceholder": "Add Stripe integration",
-    "bodyLabel": "Body",
-    "bodyPlaceholder": "Wire up payments via Stripe SDK.",
-    "preview": "Preview",
-    "expectedOutput": "Expected output",
-    "validJson": "valid JSON",
-    "invalidJson": "invalid JSON",
-    "lastRunPassed": "Last run passed",
-    "lastRunFailed": "Last run failed",
-    "resultSummary": "recall {recall}% · precision {precision}% · citation {citation}% · {duration}s"
+    "selectRun": "Select run v{version} · {ranAt}",
+    "passOf": "{passed}/{total} pass"
   },
   "evalsTab": {
-    "metricsTitle": "Eval metrics",
-    "metricsSubtitle": "Recall / Precision / Citation for this agent's eval cases",
+    "title": "Eval metrics",
+    "subtitle": "Recall, precision and citation accuracy for this agent's eval cases",
     "casesHeading": "Eval cases",
-    "newCase": "New case",
-    "loadingCases": "Loading cases…",
-    "emptyCases": "No eval cases yet. Create one to assert this agent's expected findings on a sample diff.",
-    "neverRun": "never run",
-    "passed": "passed",
-    "failed": "failed",
-    "recallSuffix": " · recall {recall}%",
-    "run": "Run",
+    "passing": "{passed} / {total} passing",
+    "empty": "No eval cases yet. Cases are created from accepted or dismissed findings on a pull request.",
+    "runAll": "Run all evals",
     "running": "Running…",
-    "edit": "Edit",
-    "delete": "Delete"
+    "viewDashboard": "View full dashboard",
+    "neverRun": "never run",
+    "mustNotFlag": "must not flag",
+    "expectedGot": "{type, select, must_find {expected 1 finding, got {n}} other {expected 0 findings, got {n}}}",
+    "deleteCase": "Delete case {name}",
+    "loadError": "Could not load the eval cases.",
+    "retry": "Retry",
+    "runError": "Eval run failed: {error}"
   },
-  "page": {
-    "crumbSkillsLab": "Skills Lab",
-    "crumbEvalDashboard": "Eval Dashboard",
-    "crumbAgents": "Agents",
-    "crumbEvals": "Evals",
-    "crumbNewCase": "New case",
-    "crumbEvalCase": "Eval case"
+  "caseModal": {
+    "title": "Eval case · {name}",
+    "pullRequest": "Pull request",
+    "noDescription": "No description",
+    "expectation": "Expectation",
+    "input": "Input diff",
+    "lastRunPassed": "Last run passed",
+    "lastRunFailed": "Last run failed",
+    "resultSummary": "expected {expected}, matched {matched} · {duration}s · {cost}",
+    "close": "Close"
+  },
+  "deleteCase": {
+    "title": "Delete eval case {name}?",
+    "body": "Past runs keep this case's results.",
+    "confirm": "Delete case",
+    "cancel": "Cancel",
+    "deleting": "Deleting…"
+  },
+  "dashboard": {
+    "title": "Eval Dashboard",
+    "subtitle": "Recall, precision and citation accuracy of every agent with eval cases",
+    "empty": "No eval cases yet. Cases are created from accepted or dismissed findings on a pull request.",
+    "noRuns": "No runs yet",
+    "recentRuns": "Recent eval runs · all agents",
+    "loadError": "Could not load the eval dashboard.",
+    "retry": "Retry",
+    "agentRow": "Open eval view of {name}",
+    "passOf": "{passed}/{total} pass"
+  },
+  "agentView": {
+    "allAgents": "All agents",
+    "meta": "{model} · {runs, plural, one {# run} other {# runs}} · {cases, plural, one {# case} other {# cases}}",
+    "runEval": "Run eval",
+    "running": "Running…",
+    "notFound": "This agent does not exist.",
+    "metricTrend": "Metric trend",
+    "trendPlaceholder": "The trend appears after two completed runs.",
+    "legend": {
+      "recall": "Recall",
+      "precision": "Precision",
+      "citation": "Citation"
+    },
+    "compare": "Compare",
+    "runError": "Eval run failed: {error}"
+  },
+  "compare": {
+    "title": "{older} → {newer}",
+    "promptDiff": "System prompt",
+    "promptUnchanged": "System prompt unchanged",
+    "removedIn": "Removed in {version}",
+    "addedIn": "Added in {version}",
+    "models": "Model: {older} → {newer}",
+    "passedOf": "{version}: {passed} of {total} passed",
+    "caseSetNotice": "These runs covered different case sets, so their metrics are not directly comparable: {onlyOlder} only in {older}, {onlyNewer} only in {newer}.",
+    "loading": "Loading runs…",
+    "close": "Close"
   }
 }

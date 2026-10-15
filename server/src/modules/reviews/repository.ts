@@ -113,6 +113,11 @@ export class ReviewRepository {
     return reviewRepo.getFinding(this.db, findingId);
   }
 
+  /** finding id → eval case id, for the findings that have a case. */
+  evalCaseIdsByFinding(findingIds: string[]): Promise<Map<string, string>> {
+    return reviewRepo.evalCaseIdsByFinding(this.db, findingIds);
+  }
+
   /** Resolve workspace_id + pr_id for a finding (via review → pr). */
   findingContext(
     findingId: string,

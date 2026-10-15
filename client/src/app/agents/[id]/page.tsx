@@ -13,7 +13,7 @@ import { useAgents, useAgent, useUpdateAgent } from "../../../lib/hooks/agents";
 import { ApiError } from "../../../lib/api";
 import { useActiveRepo } from "@/lib/repo-context";
 
-const VALID_TABS = ["config", "skills", "context"];
+const VALID_TABS = ["config", "skills", "context", "evals"];
 
 export default function AgentEditorPage() {
   const params = useParams<{ id: string }>();

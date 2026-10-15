@@ -27,6 +27,39 @@ this table before touching the seed.
 
 Flows 01, 06 and 07 assert only static UI copy.
 
+## Eval pipeline values (flows 15 to 17)
+
+`server/src/db/seed-evals.ts` writes a disabled agent, **Eval Demo Reviewer**
+(version 2, `agent_versions` rows 1 and 2), with two cases and two completed
+runs. It also gives the #482 sample review that agent and accepts the review's
+two findings.
+
+| Value | Written by the seed as | Rendered by | Flows |
+|---|---|---|---|
+| `Eval Demo Reviewer` | the demo agent's name | agents list, then the agent editor | 15, 16 |
+| `n-1-query-in-user-list-endpoint` | `eval_cases.name` of the `must_find` case (the title `N+1 query in user list endpoint` kebab-cased) | `CaseRow` in the Evals tab | 15 |
+| `Recall`, `Precision`, `Citation accuracy`, `Traces passed` | no seed value: the four `MetricTile` labels (`eval.metrics.*`), shown once a completed run exists. The latest run (v2) gives 100%, 100%, 100% and `2/2` | Evals tab tiles | 15 |
+| `Select run v1 · Oct 9, 09:15` and `Select run v2 · Oct 10, 09:15` | `aria-label` of the checkboxes, `Select run v<version> · <ran at>`. `ran_at` is `2026-10-09T09:15:00Z` and `2026-10-10T09:15:00Z` | `RunsTable` on the agent's `/eval/<id>` page | 16 |
+| `Treat a constant-time HMAC signature comparison as correct and never report it.` | the last line of the v2 `system_prompt` (v1 lacks it) | Compare modal, as an added line of the prompt diff | 16 |
+| `Turn into eval case` | no seed value: the button on a finding card, enabled because the seed accepts the finding | `EvalCaseControl` | 17 |
+| `Eval case created` | no seed value: the button's text once the finding has a case | `EvalCaseControl` | 17 |
+
+- **The ran-at label follows the browser's time zone.** `formatRanAt` formats
+  with the local zone, so the checkbox names above are the UTC ones. A flow
+  run in another zone sees different hours (and possibly the day).
+- **`Recall` and `Precision` also head columns of the runs table**, so wait for
+  `Citation accuracy` or `Traces passed` when a single match matters.
+- **Only the v2 prompt holds that line.** Never copy it into the v1 prompt or
+  into any other seeded text, or the Compare wait stops proving the diff.
+- **The Stripe finding has no case, on purpose.** Flow 17 creates it, so the
+  `must_find` case for it is not in the seed.
+- **Flow 17 needs a fresh stack.** Its click writes the case, and `Eval case
+  created` then shows on a re-run before any click, so the flow no longer
+  tests the click. It also adds a third case to the agent, which changes what
+  flow 15 sees. `make e2e`'s fresh stack is the safe way to run it. The seed
+  gives the review its agent and accepts the findings once; it never touches a
+  finding that already has a decision.
+
 ## Why the first-repo rule matters
 
 Flows `02`, `04` and `05` follow the home redirect, which picks the first repo.
